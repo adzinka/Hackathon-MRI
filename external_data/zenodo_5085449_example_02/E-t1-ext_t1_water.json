@@ -1,0 +1,154 @@
+{
+  "packet_version": "1.0",
+  "packet_id": "E-t1-ext_t1_water",
+  "subject_id": "sub-ext01",
+  "session_id": "ses-simwater",
+  "relative_time": {
+    "value": 6.0,
+    "unit": "month"
+  },
+  "origin": "SIMULATED",
+  "value_epistemic": "DERIVED",
+  "decision_epistemic": "INFERRED",
+  "system_qc_id": "ASSUMED:external-dataset",
+  "protocol_match": true,
+  "comparable": true,
+  "calibration_id": null,
+  "thresholds_ref": "thresholds-v1.0",
+  "interpretation_limit": "external data converted by the ScanTwin field mapper; windowed fit reads Cho/Cr ~3 % low on simulated truth; quality verdict about the measurement only, no clinical meaning; SIMULATED follow-up: incomplete water suppression: extra residual water 5x NAA",
+  "modality": "MRS",
+  "observable": "Cho_Cr",
+  "value": 0.5126,
+  "unit": "1",
+  "valid_range": [
+    0,
+    3
+  ],
+  "source_object": "derivatives/sub-ext01_ses-simwater_svs.nii.gz",
+  "source_sha256": "170448e8ca8433828e77ed3fc2d16a308f0f81aa008ee1a29f4a0ea53630232b",
+  "spatial_reference": {
+    "frame": "scanner",
+    "voi_size_mm": null
+  },
+  "uncertainty": {
+    "type": "SD",
+    "value": 0.0597,
+    "budget_ref": "windowed-fit CRLB (+) 0.045 other terms"
+  },
+  "qc_checks": [
+    {
+      "name": "mrs_linewidth_Hz",
+      "catalogue_id": "F12",
+      "value": 6.7107,
+      "unit": "Hz",
+      "raw_value_at_this_field": 16.183,
+      "scaled_to": "3 T-equivalent Hz (x 123.25 / nu0)",
+      "threshold": "ScanTwin catalogue v1.1 F12 (Hz limits scaled to this field)",
+      "status": "PASS",
+      "owner": "PM"
+    },
+    {
+      "name": "mrs_snr",
+      "catalogue_id": "F13",
+      "value": 161.8317,
+      "unit": "1",
+      "threshold": "ScanTwin catalogue v1.1 F13",
+      "status": "PASS",
+      "owner": "QE"
+    },
+    {
+      "name": "mrs_water_ratio",
+      "catalogue_id": "F15",
+      "value": 1.9928,
+      "unit": "1",
+      "threshold": "ScanTwin catalogue v1.1 F15",
+      "status": "FAIL",
+      "owner": "QE"
+    },
+    {
+      "name": "mrs_drift_Hz",
+      "catalogue_id": "F08",
+      "value": 0.4194,
+      "unit": "Hz",
+      "raw_value_at_this_field": 1.011,
+      "scaled_to": "3 T-equivalent Hz (x 123.25 / nu0)",
+      "threshold": "ScanTwin catalogue v1.1 F08 (Hz limits scaled to this field)",
+      "status": "PASS",
+      "owner": "PM"
+    },
+    {
+      "name": "mrs_transient_outliers",
+      "catalogue_id": "F23",
+      "value": 0.0,
+      "unit": "1",
+      "threshold": "ScanTwin catalogue v1.1 F23",
+      "status": "PASS",
+      "owner": "QE"
+    },
+    {
+      "name": "cho_crlb_pct",
+      "catalogue_id": "F14",
+      "value": 7.1593,
+      "unit": "%",
+      "threshold": "ScanTwin catalogue v1.1 F14",
+      "status": "PASS",
+      "owner": "QE"
+    },
+    {
+      "name": "missing_values",
+      "value": 0,
+      "unit": "1",
+      "threshold": "FAIL > 0",
+      "status": "PASS",
+      "owner": "DS"
+    }
+  ],
+  "qc_status": "FAIL",
+  "qc_reasons": [
+    "F15 Residual water / NAA: FAIL"
+  ],
+  "acquisition_context": {
+    "field_strength_T": 7.0,
+    "spectrometer_frequency_MHz": 297.219948,
+    "sequence": "STEAM_metab",
+    "TE_s": 0.011,
+    "TR_s": 5.0,
+    "transients": 64,
+    "manufacturer": "SIEMENS"
+  },
+  "processing": {
+    "pipeline": "scantwin.ingest",
+    "version": "0.1",
+    "fit": "windowed (1.85-3.35 ppm) Lorentzian NAA/Cr/Cho + linear baseline",
+    "steps": [
+      "read example_02.nii.gz: shape (1, 1, 1, 2048, 32, 64), dwell 0.1666 ms, nu0 297.220 MHz (6.98 T)",
+      "de-identify: removed 6 identifying field(s): DeviceSerialNumber, InstitutionAddress, PatientDoB, PatientName, PatientSex, PatientWeight",
+      "combine 32 coils: SNR-weighted, phase-aligned (weights 0.06–1.00)",
+      "transients: 64 stored",
+      "orient: spectrum was mirrored (NAA found at 7.3 ppm); conjugated to the StarterPack convention",
+      "reference: NAA found at 1.989 ppm, shifted by +6.3 Hz to 2.01 ppm",
+      "phase: zero-order -59.0°",
+      "SIMULATED follow-up: fault 'water' strength 5.0 injected into the real transients (seed 105)"
+    ]
+  },
+  "provenance": {
+    "parents": [
+      "example_02.nii.gz (sha256 172e6117887ce55aa2677df85801cec38a62dd4fbc50c58b9b650ac5c2afc356)",
+      "derivatives/sub-ext01_ses-baseline_svs.nii.gz (real baseline, fault injected)"
+    ],
+    "activities": [
+      "NIfTI-MRS read",
+      "de-identification",
+      "coil combination",
+      "transient QC",
+      "frequency referencing",
+      "phasing",
+      "windowed fit",
+      "QC aggregation"
+    ]
+  },
+  "twin_action": {
+    "recommended": "reject",
+    "reason": "F15 Residual water / NAA"
+  }
+}

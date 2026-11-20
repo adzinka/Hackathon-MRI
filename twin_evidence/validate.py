@@ -181,6 +181,9 @@ def evaluate(packet: dict, thresholds: dict, schema: dict | None = None, manifes
     if packet.get("origin") == "SIMULATED" and packet.get("value_epistemic") == "MEASURED":
         F.append(Finding("epistemic_label", "FAIL", "DS", "value_epistemic", "MEASURED", "SIMULATED never MEASURED",
                          "a SIMULATED origin is never labelled MEASURED"))
+    if isinstance(packet.get("system_qc_id"), str) and packet["system_qc_id"].startswith("ASSUMED"):
+        F.append(Finding("system_qc", "WARN", "PM", "system_qc_id", packet["system_qc_id"], "verified system QC",
+                         "system QC assumed, not verified (external dataset without a site QC record)"))
     if "system_qc" in gates and packet.get("modality") in ("MRI", "MRS") and not packet.get("system_qc_id"):
         F.append(Finding("system_qc", "FAIL", "PM", "system_qc_id", None, "system_qc_id present", "no system QC reference"))
     # F11 + scanner twin: the scanner's state on the scan date (twin_evidence.scanner_link.ScannerRecord)

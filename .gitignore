@@ -6,3 +6,10 @@ out/
 *.zip
 .streamlit/secrets.toml
 .DS_Store
+
+# raw external scans: may contain identifying metadata, never commit
+real_data/
+*.dat
+*.SDAT
+*.SPAR
+*.7

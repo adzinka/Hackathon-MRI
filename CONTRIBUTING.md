@@ -6,7 +6,7 @@ git clone <repo-url> twin-evidence && cd twin-evidence
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 # the StarterPack is NOT in the repo: unzip MRI_Hackathon_DataScience_StarterPack_v0.3 next to this folder
-STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 50 tests must pass
+STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 57 tests must pass
 streamlit run app.py
 ```
 
@@ -23,6 +23,7 @@ streamlit run app.py
 | `twin_evidence/mrs_sim.py` | physics simulator of PRESS transients with injected faults (SIMULATED, known truth) | QE / Metrology |
 | `twin_evidence/mrs_fit.py` | time-domain fit (Cho/Cr with CRLB) + SNR / FWHM / residual-water QC | QE / DS |
 | `twin_evidence/scenarios.py` | 11 fault scenarios, gate, naive-Bayes fault model | all |
+| `twin_evidence/ingest.py` + `scripts/ingest_mrs.py` | field mapper: raw NIfTI-MRS (any field, coils, transients) → de-identified derivative + packet v1.0 + simulated follow-ups | DS |
 | `twin_evidence/scanner_link.py` | the two twins talk: scanner-twin state on the scan date → gate finding F11 on every subject packet; patient-or-machine attribution | Metrology / DT |
 | `twin_evidence/gates.py` | ScanTwin catalogue v1.1 gates with IDs, scan-context advice | all |
 | `twin_evidence/longitudinal.py` | weekly phantom + brain sessions on a failing scanner: the full chain | Metrology / DT |
@@ -35,6 +36,10 @@ streamlit run app.py
 Store individual MRS transients (NIfTI-MRS dimension DIM_DYN). Needed for gates F08 (drift) and F23 (motion); without them
 these gates are N/A. The catalogue lives in `docs/scantwin/` (xlsx from the bioengineer) + `catalogue/changes_v1.1.json`;
 run `python scripts/import_catalogue.py` after either changes.
+
+## External data
+Raw downloads never go into the repo (they can contain identifying metadata). Keep them outside, e.g.
+`../real_data/<source>/`, and run the converter with `python -I`. See `external_data/README.md`.
 
 ## Rules
 - Work on a branch (`git switch -c p2/rf-fault-scenario`), open a PR or merge after `pytest` is green.

@@ -184,9 +184,10 @@ def simulate(acq: Acquisition, root: Path | None = None, seed: int = 0) -> Simul
 
 
 # --- transient analysis (needs individual transients, as NIfTI-MRS DIM_DYN) -----------------------------------------
-def transient_shifts(transients: np.ndarray, search_hz: float = 30.0, step_hz: float = 0.25) -> tuple[np.ndarray, np.ndarray]:
+def transient_shifts(transients: np.ndarray, search_hz: float = 30.0, step_hz: float = 0.25,
+                     dwell: float = DWELL_S) -> tuple[np.ndarray, np.ndarray]:
     """Per-transient frequency offset by maximising |correlation| with the mean (apodised) transient."""
-    t = time_axis(transients.shape[1])
+    t = time_axis(transients.shape[1], dwell)
     apod = np.exp(-np.pi * 5.0 * t)
     ref = transients.mean(axis=0) * apod
     grid = np.arange(-search_hz, search_hz + 1e-9, step_hz)
@@ -198,9 +199,9 @@ def transient_shifts(transients: np.ndarray, search_hz: float = 30.0, step_hz: f
     return best, corr
 
 
-def _robust_shifts(transients: np.ndarray):
+def _robust_shifts(transients: np.ndarray, dwell: float = DWELL_S):
     """Per-transient shifts split into a smooth linear trend (drift) and flagged outliers (motion)."""
-    shifts, corr = transient_shifts(transients)
+    shifts, corr = transient_shifts(transients, dwell=dwell)
     n = shifts.size
     x = np.arange(n) / max(n - 1, 1) - 0.5
     keep = np.ones(n, bool)
@@ -214,17 +215,17 @@ def _robust_shifts(transients: np.ndarray):
     return shifts, trend, out, float(slope), resid
 
 
-def align_and_average(transients: np.ndarray) -> np.ndarray:
+def align_and_average(transients: np.ndarray, dwell: float = DWELL_S) -> np.ndarray:
     """Remove the drift trend from all transients and the individual jump from outlier transients, then average."""
-    shifts, trend, out, _, _ = _robust_shifts(transients)
+    shifts, trend, out, _, _ = _robust_shifts(transients, dwell)
     use = np.where(out, shifts, trend)
-    t = time_axis(transients.shape[1])
+    t = time_axis(transients.shape[1], dwell)
     return (transients * np.exp(-2j * np.pi * use[:, None] * t[None, :])).mean(axis=0)
 
 
-def transient_qc(transients: np.ndarray) -> dict:
+def transient_qc(transients: np.ndarray, dwell: float = DWELL_S) -> dict:
     """Drift (Hz over the acquisition) and fraction of outlier transients (motion), from the transients."""
-    shifts, trend, out, slope, resid = _robust_shifts(transients)
+    shifts, trend, out, slope, resid = _robust_shifts(transients, dwell)
     return {"drift_hz": slope, "transient_outlier_frac": float(out.mean()), "shift_sd_hz": float(resid[~out].std())}
 
 
