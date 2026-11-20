@@ -76,6 +76,16 @@ if not (Path(root) / "05_TwinReady_JSON_CSV").exists():
     st.stop()
 thresholds, schema, manifest, PK = load_pack(str(Path(root).resolve()))
 
+mode = st.sidebar.radio("Mode", ["🔎 Check a scan", "🧠 Twin explorer"], index=0, key="mode",
+                        help="Check a scan: upload any spectrum or packet and get a verdict. "
+                             "Twin explorer: the worked StarterPack example, scanner twin and fault scenarios.")
+if mode.startswith("🔎"):
+    from twin_evidence import check_page
+    st.sidebar.caption("Synthetic and public de-identified data only. Verdicts are about the measurement, never the person.")
+    check_page.render(st, starterpack_root=Path(root).resolve(), thresholds=thresholds, schema=schema,
+                      packets=PK, manifest=manifest)
+    st.stop()
+
 uploaded = st.sidebar.file_uploader("Unseen follow-up packet (JSON)", type="json")
 choices = {f"{n}  ·  {PK[n]['observable']}": PK[n] for n in FOLLOWUP}
 if uploaded is not None:

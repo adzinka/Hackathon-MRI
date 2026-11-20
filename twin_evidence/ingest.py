@@ -189,6 +189,31 @@ def write_derivative(ing: Ingested, path: Path) -> str:
     return sha256_file(path)
 
 
+def write_transients(ing: Ingested, path: Path) -> str:
+    """De-identified, coil-combined spectrum that KEEPS the individual transients (NIfTI-MRS dim 5 = DIM_DYN), so the
+    drift and motion gates still work when the file is read again. Returns its SHA-256."""
+    import nibabel as nib
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = ing.transients.T.astype(np.complex64).reshape(1, 1, 1, ing.transients.shape[1], ing.transients.shape[0])
+    img = nib.Nifti1Image(data, np.eye(4))
+    img.header["pixdim"][4] = ing.dwell
+    hdr = {k: v for k, v in ing.meta.items() if not k.startswith("dim_")}
+    hdr.update({"SpectrometerFrequency": [ing.nu0], "ResonantNucleus": ["1H"], "dim_5": "DIM_DYN",
+                "ScanTwinProcessing": [s for s in ing.steps if not s.startswith("de-identify")]})
+    img.header.extensions.append(nib.nifti1.Nifti1Extension(44, json.dumps(hdr).encode()))
+    nib.save(img, str(path))
+    return sha256_file(path)
+
+
+def read_bytes(data: bytes, name: str = "upload.nii.gz") -> Ingested:
+    """Read an uploaded file (bytes) through a private temporary copy."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / Path(name).name
+        p.write_bytes(data)
+        return read(p)
+
+
 def build_packet(ing: Ingested, m: dict, g: dict, *, packet_id: str, subject_id: str, session_id: str,
                  months: float, rel_path: str, sha: str, origin: str = "MEASURED", system_qc_id: str | None = None,
                  parents: list | None = None, limit_note: str = "") -> dict:
@@ -254,6 +279,7 @@ def degrade(ing: Ingested, fault: str, strength: float, seed: int = 0) -> Ingest
     shim:  extra Gaussian broadening (Hz FWHM)        drift: linear frequency drift over the scan (Hz)
     noise: noise SD x strength (weaker coil)           water: residual water line added (x NAA height)
     none:  only a fresh noise realisation (a repeat scan of an unchanged subject on a healthy scanner)
+    cho_up: a TRUE change of the subject: choline amplitude + strength (e.g. 0.2 = +20 %), healthy scanner
     """
     rng = np.random.default_rng(seed)
     tr = ing.transients.copy()
@@ -279,9 +305,15 @@ def degrade(ing: Ingested, fault: str, strength: float, seed: int = 0) -> Ingest
         phw = np.angle(sp[wsel][np.argmax(np.abs(sp[wsel]))])      # add in phase with the existing residual water
         tr = tr + (strength * h * np.exp(1j * phw) * np.exp(-np.pi * 15 * t)
                    * np.exp(2j * np.pi * F.freq_hz(4.65, ing.nu0) * t))[None, :]
+    elif fault == "cho_up":
+        # a TRUE chemistry change: add a choline line of `strength` x the fitted choline amplitude, same line shape
+        fit = F.fit_window(ing.fid, ing.dwell, nu0=ing.nu0)
+        a = fit.amplitudes["Cho"] * strength
+        f0 = F.freq_hz(F.METABOLITES["Cho"], ing.nu0) + fit.shift_hz
+        tr = tr + (a * np.exp(1j * fit.phase_rad) * np.exp(-np.pi * fit.lw_hz * t) * np.exp(2j * np.pi * f0 * t))[None, :]
     elif fault != "none":
         raise ValueError(fault)
-    if fault in ("none", "shim", "drift", "water"):
+    if fault in ("none", "shim", "drift", "water", "cho_up"):
         tr = tr + fresh(0.3)            # a new acquisition never has exactly the same noise
     steps = ing.steps + [f"SIMULATED follow-up: fault '{fault}' strength {strength} injected into the real transients (seed {seed})"]
     return Ingested(tr, tr.mean(0), ing.dwell, ing.nu0, ing.meta, ing.removed, steps, ing.shape, ing.dims,

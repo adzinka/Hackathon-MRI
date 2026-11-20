@@ -82,3 +82,9 @@ def test_repeat_scan_shows_no_change(raw_file):
     ing = I.read(raw_file)
     a, b = I.measure(ing), I.measure(I.degrade(ing, "none", 0.0, seed=2))
     assert abs(a["cho_cr"] - b["cho_cr"]) < 2 * a["cho_cr_crlb"]
+
+
+def test_true_change_is_recovered(raw_file):
+    ing = I.read(raw_file)
+    a, b = I.measure(ing), I.measure(I.degrade(ing, "cho_up", 0.3, seed=4))
+    assert b["cho_cr"] / a["cho_cr"] == pytest.approx(1.3, abs=0.06)

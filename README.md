@@ -74,6 +74,20 @@ STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q
   - the next-measurement planner uses Eq. 7.3.
 
 ## Streamlit demonstrator
+
+The sidebar has two modes.
+
+**🔎 Check a scan** (the landing page): upload a raw single-voxel spectrum (NIfTI-MRS `.nii.gz`, any field, with coils
+and transients) or an evidence packet (`.json`, e.g. an unseen Gate 3 packet), or pick an example (a real 7 T scan from
+Zenodo, CC BY 4.0, or the StarterPack scans). The converter (`twin_evidence/ingest.py`) de-identifies, combines coils,
+fixes the axis, references, phases, measures and fits. The page shows, as in the ScanTwin concept: the scan, scanner
+health (catalogue gates), the verdict and the gate that decided it, the range the result can support, the fix for the
+next scan, scan-context advice and the trace to the file, plus a downloadable packet. "Simulate a follow-up" injects a
+scanner fault or a true choline change into the real transients and answers *patient or machine?* with the catalogue's
+change rule F60 (not distinguishable / inconclusive / real change).
+
+**🧠 Twin explorer**: the worked StarterPack example and everything below.
+
 ```bash
 streamlit run app.py
 ```
