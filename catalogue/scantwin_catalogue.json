@@ -1,5 +1,6 @@
 {
   "source": "ScanTwin failure catalogue and QC thresholds.xlsx",
+  "version": "1.1",
   "failure_catalogue": [
     {
       "ID": "F01",
@@ -135,7 +136,8 @@
       "What physically happens": "Magnet or passive-shim temperature changes, often after gradient-heavy scans",
       "Category": "Hardware",
       "Context that raises the risk": "Scan right after diffusion / fMRI",
-      "Demo tier": "Built"
+      "Demo tier": "Built",
+      "Note": "Needs the individual transients (single averages). N/A when only the averaged spectrum is stored, as in the StarterPack."
     },
     {
       "ID": "F09",
@@ -237,7 +239,8 @@
       "What physically happens": "Noise and peak overlap limit how well the fit can pin the peak",
       "Category": "Processing",
       "Context that raises the risk": "—",
-      "Demo tier": "Built"
+      "Demo tier": "Built",
+      "Note": "CRLB measures precision, not bias. It stays below 20% even when faults shift Cho/Cr by 5 SD. Never use it as the only fit check; always combine it with F12 (linewidth), F13 (SNR) and F18 (fit residual)."
     },
     {
       "ID": "F15",
@@ -246,15 +249,16 @@
       "Effect on the result": "Huge residual water distorts the baseline; nearby peaks biased",
       "QC metric": "Residual water peak / NAA peak height",
       "Unit": "ratio",
-      "PASS if": "≤ 5",
-      "WARN if": "> 5 and ≤ 20",
-      "FAIL if": "> 20",
+      "PASS if": "≤ 0.5",
+      "WARN if": "> 0.5 and ≤ 1.5",
+      "FAIL if": "> 1.5",
       "Fix for the next scan": "Recalibrate water-suppression pulses; repeat",
-      "Threshold source": "Team proposal",
+      "Threshold source": "Team proposal, checked with simulator (Cho/Cr shifts by 1 SD at a ratio of about 0.3)",
       "What physically happens": "Water-suppression pulses mistuned in flip angle or frequency",
       "Category": "Acquisition",
       "Context that raises the risk": "—",
-      "Demo tier": "Designed"
+      "Demo tier": "Designed",
+      "Note": "Limit depends on the processing pipeline. It is valid for a fit without residual-water removal. Re-test if water removal (HLSVD) is added."
     },
     {
       "ID": "F16",
@@ -312,17 +316,18 @@
       "Scan type": "¹H MRS",
       "Failure mode": "Chemical-shift displacement",
       "Effect on the result": "Each metabolite comes from a slightly different cube, so ratios mix tissues",
-      "QC metric": "Displaced voxel fraction between metabolites",
-      "Unit": "%",
-      "PASS if": "≤ 10",
-      "WARN if": "> 10 and ≤ 25",
-      "FAIL if": "> 25",
+      "QC metric": "Change in displaced voxel fraction between baseline and follow-up",
+      "Unit": "percentage points",
+      "PASS if": "Same protocol (change ≈ 0)",
+      "WARN if": "Change > 2 percentage points",
+      "FAIL if": "Different sequence or RF bandwidth without harmonisation",
       "Fix for the next scan": "Higher-bandwidth pulses or sLASER sequence",
       "Threshold source": "Dossier §5.5 (2.4 mm/axis = 12% for PRESS at 3 T); Team proposal (limits)",
       "What physically happens": "Slice-selective pulses select position by frequency, which differs per metabolite",
       "Category": "Acquisition",
       "Context that raises the risk": "PRESS at high field, large voxel",
-      "Demo tier": "Built"
+      "Demo tier": "Built",
+      "Note": "PRESS at 3 T always gives about 12% displacement. This is a standing limitation of the method, not a session failure."
     },
     {
       "ID": "F20",
@@ -373,7 +378,8 @@
       "What physically happens": "Creatine itself can change, so X/Cr is not a pure measure of X",
       "Category": "Processing",
       "Context that raises the risk": "—",
-      "Demo tier": "Built"
+      "Demo tier": "Designed",
+      "Note": "Removed from the gates; becomes a gate once water-referenced data exist. Measurement card: ratios only; creatine assumed stable. A change in X/Cr may come from Cr. Absolute water-referenced values are needed to rule this out."
     },
     {
       "ID": "F23",
@@ -390,7 +396,8 @@
       "What physically happens": "Head moves, shifting the voxel and the field",
       "Category": "Subject",
       "Context that raises the risk": "Children, older adults, claustrophobia, pain",
-      "Demo tier": "Built"
+      "Demo tier": "Built",
+      "Note": "Same as F08. Needs individual transients; N/A on averaged data."
     },
     {
       "ID": "F24",
@@ -1020,6 +1027,23 @@
       "Category": "Processing",
       "Context that raises the risk": "—",
       "Demo tier": "Built"
+    },
+    {
+      "ID": "F61",
+      "Scan type": "¹H MRS",
+      "Failure mode": "Transmitter / flip-angle (B1) miscalibration",
+      "Effect on the result": "Lower signal and more water leakage; Cho/Cr biased (−0.12 in simulation) while the fit looks fine",
+      "QC metric": "Reference signal amplitude vs phantom baseline",
+      "Unit": "% deviation",
+      "PASS if": "≤ 10",
+      "WARN if": "> 10 and ≤ 20",
+      "FAIL if": "> 20",
+      "Fix for the next scan": "Recalibrate transmitter reference voltage; repeat",
+      "Threshold source": "Team proposal; effect size from simulator",
+      "What physically happens": "RF pulses deliver the wrong flip angle, so excitation, refocusing and water suppression are all off",
+      "Category": "Hardware",
+      "Context that raises the risk": "Large head, high field, voxel far from coil centre",
+      "Demo tier": "Built"
     }
   ],
   "decision_rules": [
@@ -1039,7 +1063,7 @@
       "Step": "3",
       "Rule": "Compute each gate's QC metric and compare with its PASS / WARN / FAIL limits",
       "Result": "One status per gate",
-      "Notes": "A metric that cannot be computed is kept as explicit null + reason, never imputed"
+      "Notes": "A metric that cannot be computed is kept as explicit null + reason, never imputed A gate whose input data are missing is shown as N/A with a reason, never as FAIL."
     },
     {
       "Step": "4",

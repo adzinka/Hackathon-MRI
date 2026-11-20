@@ -15,17 +15,17 @@
       0.02697963413485599
     ],
     "top_scenarios": {
-      "true_change": 0.30719913735460475,
-      "clean": 0.3056847529080813,
-      "voxel_misplacement": 0.2769506456119893,
-      "gradient": 0.09935520502671084,
+      "true_change": 0.3071991373546048,
+      "clean": 0.30568475290808134,
+      "voxel_misplacement": 0.27695064561198934,
+      "gradient": 0.09935520502671086,
       "motion": 0.010810256028031592
     },
     "blame": {
-      "patient": 0.31800939338263634,
-      "none": 0.3056847529080813,
-      "operator": 0.2769506456119893,
-      "machine": 0.09935520809729304
+      "patient": 0.3180093933826364,
+      "none": 0.30568475290808134,
+      "operator": 0.27695064561198934,
+      "machine": 0.09935520809729305
     },
     "note": "averaged spectrum only: drift, motion and alignment metrics are not available"
   },
@@ -45,17 +45,17 @@
       0.026751688943001346
     ],
     "top_scenarios": {
-      "poor_shim": 0.9220204621686244,
-      "motion": 0.06567189074885292,
-      "low_snr_coil": 0.012255045183083157,
-      "freq_drift": 4.34809257173574e-05,
-      "true_change": 4.646293906720989e-06
+      "poor_shim": 0.9220204621686242,
+      "motion": 0.0656718907488529,
+      "low_snr_coil": 0.012255045183083154,
+      "freq_drift": 4.3480925717357394e-05,
+      "true_change": 4.646293906720988e-06
     },
     "blame": {
-      "machine": 0.934318992881552,
-      "patient": 0.06567653704275964,
-      "none": 3.574726003464329e-06,
-      "operator": 8.953496850679656e-07
+      "machine": 0.9343189928815517,
+      "patient": 0.06567653704275962,
+      "none": 3.5747260034643285e-06,
+      "operator": 8.953496850679653e-07
     },
     "note": "averaged spectrum only: drift, motion and alignment metrics are not available"
   }

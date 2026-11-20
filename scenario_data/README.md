@@ -24,7 +24,7 @@ Code: `twin_evidence/mrs_sim.py` (simulator), `mrs_fit.py` (fit + QC), `scenario
 
 ## The 11 scenarios (`catalogue.json`, `summary.csv`, 60 runs each)
 
-Gate = the ScanTwin catalogue gates (`twin_evidence/gates.py`, IDs from the team catalogue in `docs/scantwin/`).
+Gate = the ScanTwin catalogue v1.1 gates (`twin_evidence/gates.py`, IDs from the team catalogue in `docs/scantwin/`).
 The threshold check against the simulator is in `threshold_check.csv` and `docs/scantwin/REVIEW.md`.
 
 Sources: `MRI_MRS_Essential_Errors_Explained.md` (§1–7), hardware classes from Dossier §5.2, and one true change.
@@ -37,9 +37,9 @@ Sources: `MRI_MRS_Essential_Errors_Explained.md` (§1–7), hardware classes fro
 | patient motion | patient | 26.4 | 9.2 → 8.8 | **16 % outlier transients** | 0.694 (0.689) | 78 % WARN, 20 % FAIL (F23) |
 | frequency drift | machine | 22.8 | **14.8 → 8.9** | **drift 11.3 Hz**; alignment fixes it | 0.668 (0.689) | 98 % WARN |
 | voxel misplacement (4 mm) | operator | 32.5 | 8.8 → 8.8 | GM fraction 20 % → 5 % | **0.729 (0.726)** | **100 % FAIL (F20)** |
-| incomplete water suppression | machine | 31.6 | 8.8 → 8.8 | **residual water 2.1× NAA** | **0.568** (0.689) | **98 % PASS** ⚠️ F15 gap |
+| incomplete water suppression | machine | 31.6 | 8.8 → 8.8 | **residual water 2.1× NAA** | **0.568** (0.689) | 100 % FAIL (F15 v1.1) |
 | protocol TE 144 ms | operator | 20.1 | 8.6 → 8.7 | metadata differ | **0.808** (0.689) | 100 % WARN |
-| RF transmit (B1 −20 %) | machine | 24.6 | 8.7 → 8.7 | residual water 2.2× | **0.566** (0.689) | 60 % WARN (F13), 40 % PASS ⚠️ |
+| RF transmit (B1 −20 %) | machine | 24.6 | 8.7 → 8.7 | residual water 2.2×, reference −22 % | **0.566** (0.689) | 100 % FAIL (F15, F61) |
 | gradient scale +4 % | machine | 35.2 | 8.8 → 8.8 | voxel larger and moved | **0.668 (0.666)** | **98 % PASS** |
 | true change (Cho +20 %) | patient | 31.8 | 8.8 → 8.8 | | **0.830 (0.827)** | **98 % PASS** |
 
@@ -53,7 +53,8 @@ What the numbers teach:
    spectrum, yet Cho/Cr moves. The catalogue gate F20 (prescribed voxel position vs baseline) now catches the
    misplacement; the gradient error is caught only by the scanner twin (phantom geometry). This is the strongest
    argument for a scanner twin.
-4. **Water and B1 faults pass the catalogue F15 limit** while biasing Cho/Cr by −0.12. See `docs/scantwin/REVIEW.md`.
+4. **Water and B1 faults** bias Cho/Cr by −0.12. Catalogue v1.0 let them pass (F15 WARN > 5); v1.1 (F15 WARN > 0.5,
+   new F61) catches both. See `docs/scantwin/REVIEW.md`.
 
 ## Fault classifier (`fault_model.json`, confusion matrices)
 
@@ -93,7 +94,7 @@ and update the brain twin.
 | shim degrading | shim ✅ | **WARN** (SNR 22.8, LW 11.6 Hz, like the real November) | 0.680 | **MACHINE** |
 | receive coil degrading | receive coil ✅ | WARN | 0.690 | MACHINE |
 | B0 drift | B0 drift ✅ | WARN | **0.553** | MACHINE |
-| B1 miscalibration | B1 transmit ✅ | WARN | **0.569** | MACHINE |
+| B1 miscalibration | B1 transmit ✅ | **FAIL** (F15 residual water) | **0.569** | MACHINE |
 | gradient drift | gradient ✅ | **PASS** | 0.687 (truth 0.686) | **HIDDEN MACHINE FAULT** |
 | stable + true Cho change | stable ✅ | PASS | **0.828** (truth 0.827) | CLEAN: patient changed |
 

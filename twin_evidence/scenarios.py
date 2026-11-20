@@ -79,8 +79,8 @@ METRICS = {
 
 # team-proposal gates for the new metrics, on top of thresholds-v1.0 (mrs_snr, mrs_linewidth_Hz)
 NEW_GATES = [
-    {"name": "mrs_water_ratio", "unit": "1", "owner": "QE", "warn_above": 5.0, "fail_above": 20.0, "applies_to": ["MRS"],
-     "note": "ScanTwin catalogue F15 (team proposal): residual water peak / NAA peak height"},
+    {"name": "mrs_water_ratio", "unit": "1", "owner": "QE", "warn_above": 0.5, "fail_above": 1.5, "applies_to": ["MRS"],
+     "note": "ScanTwin catalogue v1.1 F15: residual water / NAA peak; valid for a fit without residual-water removal"},
     {"name": "mrs_drift_Hz", "unit": "Hz", "owner": "PM", "warn_above": 6.0, "fail_above": 12.0, "applies_to": ["MRS"],
      "note": "ScanTwin catalogue F08: 0.05 / 0.1 ppm at 3 T (Dossier §5.4)"},
     {"name": "mrs_transient_outliers", "unit": "1", "owner": "QE", "warn_above": 0.05, "fail_above": 0.20, "applies_to": ["MRS"],
@@ -115,7 +115,9 @@ def measure(sim: S.Simulated) -> dict:
         # F21: CSF fraction from segmenting the voxel, vs the baseline voxel (0 % CSF in the StarterPack VOI)
         "csf_change_pp": 100 * (tissue["CSF"] + tissue["outside"]),
         "protocol_diff": abs(sim.acq.te_ms - S.TE_REF_MS) / S.TE_REF_MS,
-        "csde_pct": 12.0,   # PRESS, 3 T, 20 mm voxel: 2.4 mm per axis (Dossier §5.5)
+        "csde_pct": 12.0,   # PRESS, 3 T, 20 mm voxel: 2.4 mm per axis (Dossier §5.5): standing limitation
+        "csde_change_pp": 0.0,   # F19 v1.1: same sequence and RF pulses in every simulated session
+        "ref_amp_dev_pct": sim.truth["ref_amp_dev_pct"],
         "cho_cr_truth_tissue": sim.truth["Cho_Cr_tissue"], "cho_cr_truth_measurable": sim.truth["Cho_Cr_measurable"],
         "gm_fraction": tissue["GM"],
     }

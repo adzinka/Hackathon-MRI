@@ -20,7 +20,7 @@ from twin_evidence.validate import evaluate, load_json, load_manifest, to_months
 from twin_evidence import scanner as scn
 from twin_evidence import views
 
-st.set_page_config(page_title="Twin Evidence", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="ScanTwin", page_icon="🧠", layout="wide")
 
 BASELINE = ["E-t0-roi", "E-t0-naa", "E-t0-cho"]
 FOLLOWUP = ["E-t1-cho", "E-t1-naa", "E-t1-roi", "E-t1-chobad"]
@@ -70,7 +70,7 @@ def fmt(v, obs):
 
 
 # ---------- sidebar ----------
-st.sidebar.title("Twin Evidence")
+st.sidebar.title("ScanTwin")
 root = st.sidebar.text_input("StarterPack v0.3 folder", "../MRI_Hackathon_DataScience_StarterPack_v0.3")
 if not (Path(root) / "05_TwinReady_JSON_CSV").exists():
     st.error(f"StarterPack not found at `{root}`. Set the path in the sidebar.")
@@ -112,7 +112,9 @@ base = next(((bp, bev, be) for bp, bev, be in rows[:-1] if bp.get("observable") 
 alt = run_twin(seq, th_alt, schema, manifest, root)[1][-1][2] if show_alt else None
 
 # ---------- header ----------
-st.title("From Spins to a Health Digital Twin")
+st.title("ScanTwin")
+st.markdown("**A digital twin of the MRI scanner and of the subject.** It does not tell you what is wrong with the patient. "
+            "It tells you whether the scan is good enough to say anything at all, and how to make the next one better.")
 st.caption("Evidence gate + gated Kalman update · StarterPack v0.3 · Hackathon Dossier v1.6 (§3.10, §5.3, §7.5, §7.7, §8.2)")
 
 c = st.columns(4)
@@ -129,7 +131,7 @@ elif base:
 
 tab_upd, tab_dec, tab_prov, tab_time, tab_3d, tab_scan, tab_sc = st.tabs(
     ["① Prior → evidence → posterior", "② Decision", "③ Provenance", "④ Timeline (all packets)",
-     "⑤ 3D evidence map", "⑥ Scanner twin", "⑦ Fault scenarios"])
+     "⑤ 3D evidence map", "⑥ Scanner twin", "⑦ ScanTwin: fault scenarios"])
 
 # ---------- ① prior -> evidence -> posterior ----------
 with tab_upd:
@@ -479,6 +481,9 @@ with tab_sc:
             key = c1.selectbox("Fault scenario", [s.key for s in SCN.CATALOGUE], index=2,
                                format_func=lambda k: f"{SCN.BY_KEY[k].title}  ·  blame: {SCN.BY_KEY[k].blame}")
             seed = c2.number_input("Noise seed (another scan)", 0, 999, 7, 1)
+            from twin_evidence.gates import context_factors, context_advice, STANDING_LIMITATIONS
+            ctx = st.multiselect("Scan context (changes only the warnings and fix advice, never the limits)",
+                                 [r["Context factor"] for r in context_factors()], default=[])
             sc = SCN.BY_KEY[key]
             res = _one_scan(key, int(seed), str(Path(root).resolve()))
             m, g = res["m"], res["gate"]
@@ -516,6 +521,13 @@ with tab_sc:
                     st.markdown("**Fix for the next scan** (from the catalogue)")
                     for d in dec:
                         st.markdown(f"- **{d['id']}**: {d['fix']}")
+                if ctx:
+                    adv = context_advice(ctx, det)
+                    if adv:
+                        st.markdown("**Scan context**")
+                        st.dataframe([{"": STATUS_ICON.get(a["gate_status"], "⚪"), "context": a["factor"].split(" (")[0],
+                                       "raises": f"{a['id']} {a['failure']}", "reading": a["reading"], "advice": a["advice"]}
+                                      for a in adv], width="stretch", hide_index=True)
                 if show_al:
                     st.caption(f"Aligning the transients narrows the line {m['fwhm_hz']:.1f} → {m['fwhm_aligned_hz']:.1f} Hz: "
                                "a frequency problem (drift or motion), not the shim.")
@@ -525,8 +537,8 @@ with tab_sc:
                     blame = SCN.blame_of(post)
                     st.markdown("Most likely cause: " + " · ".join(f"**{b}** {p:.0%}" for b, p in list(blame.items())[:3]))
                     st.caption("A statement about the measurement, not about the person.")
-                st.caption("Standing notes (never change the verdict): F19 chemical-shift displacement 12 % (PRESS, 3 T; common "
-                           "to both sessions); F22 ratios only, no water reference.")
+                st.caption("Standing limitations (never change the verdict): " +
+                           " · ".join(f"{x['id']}: {x['label']}" for x in STANDING_LIMITATIONS))
             tf = res["tissue"]
             st.caption(f"Voxel tissue (truth): WM {tf['WM']:.0%}, GM {tf['GM']:.0%}, CSF {tf['CSF']:.0%}, outside {tf['outside']:.0%}. "
                        f"Signal scale {res['truth']['signal_scale']:.2f}.")

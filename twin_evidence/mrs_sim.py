@@ -177,7 +177,9 @@ def simulate(acq: Acquisition, root: Path | None = None, seed: int = 0) -> Simul
     for i in range(n):
         s = _noiseless(amps, acq.lw_hz, acq.shim_hz, shifts[i], t, water, acq.water_lw_hz, phases[i]) * gains[i]
         out[i] = s + sd * (rng.normal(size=t.size) + 1j * rng.normal(size=t.size))
-    truth = {**truth, "water_residual_total": water, "noise_sd_per_transient": sd}
+    # F61: transmitter reference amplitude measured on the phantom vs its baseline (1.5 % measurement scatter)
+    ref_dev = 100 * abs(1 - truth["b1_efficiency"]) + abs(rng.normal(0, 1.5))
+    truth = {**truth, "water_residual_total": water, "noise_sd_per_transient": sd, "ref_amp_dev_pct": ref_dev}
     return Simulated(out, acq, truth, shifts, motion)
 
 

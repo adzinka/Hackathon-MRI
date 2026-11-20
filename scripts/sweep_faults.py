@@ -78,15 +78,19 @@ def main() -> None:
         sim_warn = crossing(xs, [p[1] for p in pts], 1.0)
         sim_fail = crossing(xs, [p[1] for p in pts], 2.0)
         cat_warn = g.warn[1] if g.warn else None
+        # rule: WARN must fire before the apparent change reaches 2 SD; a WARN limit much earlier than 1 SD is too strict
         if sim_warn is None:
             verdict = "OK: no harmful bias within the tested range (the gate protects against noise, not bias)"
         elif cat_warn is None:
             verdict = "no numeric WARN limit to compare"
         else:
-            lenient = (sim_warn < cat_warn) if g.warn[0] == ">" else (sim_warn > cat_warn)
-            ratio = (cat_warn / sim_warn) if g.warn[0] == ">" else (sim_warn / cat_warn)
-            verdict = (f"TOO LENIENT: bias reaches 1 SD at {sim_warn:.2f}, the catalogue warns only at {cat_warn}"
-                       if lenient and ratio > 1.5 else "OK: consistent with the simulation" if not lenient or ratio <= 1.5 else "")
+            up = g.warn[0] == ">"
+            beyond_2sd = sim_fail is not None and ((cat_warn > sim_fail) if up else (cat_warn < sim_fail))
+            if beyond_2sd:
+                verdict = f"TOO LENIENT: bias reaches 2 SD at {sim_fail:.2f}, the catalogue warns only at {cat_warn}"
+            else:
+                verdict = f"OK: WARN at {cat_warn} fires before the bias reaches 2 SD" + (
+                    f" ({sim_fail:.2f})" if sim_fail is not None else "")
         check.append({"gate": gid, "label": g.label, "metric": g.metric, "catalogue_warn": cat_warn,
                       "catalogue_fail": g.fail[1] if g.fail else None,
                       "sim_metric_at_1sd_bias": None if sim_warn is None else round(sim_warn, 2),

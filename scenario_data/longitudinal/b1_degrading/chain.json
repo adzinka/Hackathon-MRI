@@ -39,23 +39,21 @@
     },
     {
       "packet_id": "E-t1-sim_b1_degrading",
-      "status": "WARN",
-      "action": "update_with_warning",
+      "status": "FAIL",
+      "action": "reject",
       "reasons": [
-        "mrs_snr: value 21.09 1 vs WARN < 25.0; FAIL < 10.0"
+        "mrs_snr: value 21.09 1 vs WARN < 25.0; FAIL < 10.0",
+        "mrs_water_ratio: value 2.358 1 vs WARN > 0.5; FAIL > 1.5"
       ],
       "value": 0.5693,
       "u": 0.0914,
       "truth_tissue": 0.6887800000000001,
       "truth_measurable": 0.6887800000000002,
-      "posterior": {
-        "x": 0.670856194129175,
-        "sd": 0.052696725717609284
-      },
-      "K": 0.16620530271613368
+      "posterior": null,
+      "K": null
     }
   ],
-  "verdict": "MACHINE: the brain WARN matches a scanner fault (b1_transmit). Fix the scanner, then repeat.",
+  "verdict": "MACHINE: the brain FAIL matches a scanner fault (b1_transmit). Fix the scanner, then repeat.",
   "z": {
     "ph_fwhm_hz": 0.20291951227286914,
     "ph_snr": -1.8716520982293807,

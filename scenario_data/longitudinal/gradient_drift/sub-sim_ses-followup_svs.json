@@ -23,7 +23,8 @@
     "b1_efficiency": 1.0,
     "signal_scale": 1.0768906249999997,
     "water_residual_total": 0.0,
-    "noise_sd_per_transient": 0.599409977754772
+    "noise_sd_per_transient": 0.599409977754772,
+    "ref_amp_dev_pct": 1.5742471298483858
   },
   "acquisition": {
     "lw_hz": 8.7,

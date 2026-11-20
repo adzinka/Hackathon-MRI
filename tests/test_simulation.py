@@ -70,11 +70,16 @@ def test_each_fault_trips_its_catalogue_gate(root, key, gate_id):
     assert SC.run(key, root, seed=7)[f"check_{gate_id}"] in ("WARN", "FAIL")
 
 
-def test_known_gap_water_suppression_passes_f15_but_biases_cho(root):
-    """Documents a finding (docs/scantwin/REVIEW.md): with the catalogue F15 limit (WARN > 5) a residual water of ~2x NAA
-    passes, yet Cho/Cr is biased by several SD. If the team lowers the F15 limit, update this test."""
+def test_f15_v11_catches_the_water_bias(root):
+    """Catalogue v1.1 tightened F15 after the simulator review: residual water ~2x NAA biases Cho/Cr by several SD and
+    must no longer pass. (With v1.0, WARN > 5, it passed.)"""
     r = SC.run("water_suppression", root, seed=7)
-    assert r["check_F15"] == "PASS" and r["cho_cr"] < 0.689 - 3 * 0.022
+    assert r["cho_cr"] < 0.689 - 3 * 0.022 and r["check_F15"] == "FAIL"
+
+
+def test_f61_catches_transmitter_miscalibration(root):
+    r = SC.run("b1_transmit", root, seed=7)
+    assert r["check_F61"] == "FAIL" and SC.run("clean", root, seed=7)["check_F61"] == "PASS"
 
 
 @pytest.mark.parametrize("key", sorted(SC.SPECTRALLY_SILENT))

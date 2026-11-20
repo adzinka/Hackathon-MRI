@@ -101,12 +101,12 @@
       "name": "mrs_water_ratio",
       "unit": "1",
       "owner": "QE",
-      "warn_above": 5.0,
-      "fail_above": 20.0,
+      "warn_above": 0.5,
+      "fail_above": 1.5,
       "applies_to": [
         "MRS"
       ],
-      "note": "ScanTwin catalogue F15 (team proposal): residual water peak / NAA peak height"
+      "note": "ScanTwin catalogue v1.1 F15: residual water / NAA peak; valid for a fit without residual-water removal"
     },
     {
       "name": "mrs_drift_Hz",

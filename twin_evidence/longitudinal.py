@@ -176,9 +176,10 @@ def run_fault(fault: str, root: Path, out: Path, th11: dict, schema: dict, templ
     machine = dx["fault_class"] != "stable"
     brain_flagged = ev1.status != "PASS"
     if brain_flagged and machine:
-        verdict = f"MACHINE: the brain WARN matches a scanner fault ({dx['fault_class']}). Fix the scanner, then repeat."
+        verdict = f"MACHINE: the brain {ev1.status} matches a scanner fault ({dx['fault_class']}). Fix the scanner, then repeat."
     elif brain_flagged:
-        verdict = "SESSION: the scanner is stable, so the poor brain spectrum comes from this session (motion, position, local shim)."
+        verdict = (f"SESSION: the scanner is stable, so the brain {ev1.status} comes from this session "
+                   "(motion, position, local shim).")
     elif machine:
         verdict = (f"HIDDEN MACHINE FAULT: the brain spectrum passes, but the scanner twin sees {dx['fault_class']}. "
                    "Values may be biased without any spectral warning.")

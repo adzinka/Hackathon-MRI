@@ -1,0 +1,41 @@
+{
+  "version": "1.1",
+  "title": "ScanTwin catalogue, change list v1.1 (after simulator review)",
+  "author": "team bioengineer",
+  "updates": {
+    "F15": {
+      "PASS if": "≤ 0.5", "WARN if": "> 0.5 and ≤ 1.5", "FAIL if": "> 1.5",
+      "Threshold source": "Team proposal, checked with simulator (Cho/Cr shifts by 1 SD at a ratio of about 0.3)",
+      "Note": "Limit depends on the processing pipeline. It is valid for a fit without residual-water removal. Re-test if water removal (HLSVD) is added."
+    },
+    "F19": {
+      "QC metric": "Change in displaced voxel fraction between baseline and follow-up", "Unit": "percentage points",
+      "PASS if": "Same protocol (change ≈ 0)", "WARN if": "Change > 2 percentage points",
+      "FAIL if": "Different sequence or RF bandwidth without harmonisation",
+      "Note": "PRESS at 3 T always gives about 12% displacement. This is a standing limitation of the method, not a session failure."
+    },
+    "F22": {
+      "Demo tier": "Designed",
+      "Note": "Removed from the gates; becomes a gate once water-referenced data exist. Measurement card: ratios only; creatine assumed stable. A change in X/Cr may come from Cr. Absolute water-referenced values are needed to rule this out."
+    },
+    "F08": {"Note": "Needs the individual transients (single averages). N/A when only the averaged spectrum is stored, as in the StarterPack."},
+    "F23": {"Note": "Same as F08. Needs individual transients; N/A on averaged data."},
+    "F14": {"Note": "CRLB measures precision, not bias. It stays below 20% even when faults shift Cho/Cr by 5 SD. Never use it as the only fit check; always combine it with F12 (linewidth), F13 (SNR) and F18 (fit residual)."}
+  },
+  "new_rows": [
+    {
+      "ID": "F61", "Scan type": "¹H MRS", "Failure mode": "Transmitter / flip-angle (B1) miscalibration",
+      "Effect on the result": "Lower signal and more water leakage; Cho/Cr biased (−0.12 in simulation) while the fit looks fine",
+      "QC metric": "Reference signal amplitude vs phantom baseline", "Unit": "% deviation",
+      "PASS if": "≤ 10", "WARN if": "> 10 and ≤ 20", "FAIL if": "> 20",
+      "Fix for the next scan": "Recalibrate transmitter reference voltage; repeat",
+      "Threshold source": "Team proposal; effect size from simulator",
+      "What physically happens": "RF pulses deliver the wrong flip angle, so excitation, refocusing and water suppression are all off",
+      "Category": "Hardware", "Context that raises the risk": "Large head, high field, voxel far from coil centre", "Demo tier": "Built"
+    }
+  ],
+  "data_contract": "Store individual MRS transients (NIfTI-MRS dimension DIM_DYN). Needed for F08 and F23, and the only way to tell frequency drift (fixable by alignment) from a bad shim (not fixable).",
+  "decision_rules_step3_addition": "A gate whose input data are missing is shown as N/A with a reason, never as FAIL.",
+  "naming": "ScanTwin",
+  "ui": "Scan context input on the ScanTwin tab, from the Context factors sheet; it changes only warnings and fix advice, never the limits."
+}

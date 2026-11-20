@@ -107,6 +107,23 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+IDENTIFYING = {"patientname", "patient_name", "patient_full_name", "first_name", "last_name", "surname", "patientbirthdate", "birth_date", "birthdate", "dob",
+               "patientid", "patient_id", "address", "phone", "email", "mrn", "social_security", "insurance_id"}
+
+
+def _identifying_keys(obj, prefix="") -> list[str]:
+    found = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if str(k).lower().replace(" ", "") in IDENTIFYING:
+                found.append(prefix + str(k))
+            found += _identifying_keys(v, prefix + str(k) + ".")
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            found += _identifying_keys(v, f"{prefix}{i}.")
+    return found
+
+
 def evaluate(packet: dict, thresholds: dict, schema: dict | None = None, manifest: dict[str, str] | None = None,
              root: Path | None = None) -> Evaluation:
     """Re-evaluate one evidence packet. Returns status, twin action and every finding with its reason."""
@@ -166,6 +183,22 @@ def evaluate(packet: dict, thresholds: dict, schema: dict | None = None, manifes
                          "a SIMULATED origin is never labelled MEASURED"))
     if "system_qc" in gates and packet.get("modality") in ("MRI", "MRS") and not packet.get("system_qc_id"):
         F.append(Finding("system_qc", "FAIL", "PM", "system_qc_id", None, "system_qc_id present", "no system QC reference"))
+    # F57 (ScanTwin catalogue): nominal field and spectrometer frequency both recorded
+    acq = packet.get("acquisition_context") if isinstance(packet.get("acquisition_context"), dict) else {}
+    has_b0, has_nu = isinstance(acq.get("field_strength_T"), (int, float)), isinstance(acq.get("spectrometer_frequency_MHz"), (int, float))
+    if packet.get("modality") in ("MRI", "MRS"):
+        st57 = "PASS" if has_b0 and has_nu else "WARN" if has_b0 else "FAIL"
+        F.append(Finding("F57_field_frequency", st57, "QE", "acquisition_context", None, "nominal field and nu0 both present",
+                         "both recorded" if st57 == "PASS" else "only the nominal field" if st57 == "WARN" else "neither recorded"))
+    # F59 (ScanTwin catalogue): de-identification, pseudonymous ids only and no identifying fields anywhere
+    ident = _identifying_keys(packet)
+    sid = packet.get("subject_id")
+    pseudo = isinstance(sid, str) and sid.startswith("sub-")
+    if ident or not pseudo:
+        F.append(Finding("F59_deidentification", "FAIL", "DS", ", ".join(ident) or "subject_id", None, "pseudonymous ids only",
+                         "identifying field present: " + ", ".join(ident) if ident else "subject_id is not a pseudonym (sub-...)"))
+    else:
+        F.append(Finding("F59_deidentification", "PASS", "DS", "subject_id", sid, "pseudonymous ids only", "pseudonymous"))
     if "protocol_match" in gates and packet.get("protocol_match") is False:
         F.append(Finding("protocol_match", "WARN", "PM", "protocol_match", False, "same sequence, TE, TR, field", "protocol differs from baseline"))
 

@@ -6,7 +6,7 @@ git clone <repo-url> twin-evidence && cd twin-evidence
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 # the StarterPack is NOT in the repo: unzip MRI_Hackathon_DataScience_StarterPack_v0.3 next to this folder
-STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 32 tests must pass
+STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 39 tests must pass
 streamlit run app.py
 ```
 
@@ -28,6 +28,11 @@ streamlit run app.py
 | `scripts/export_scanner_data.py` | builds `scanner_data/` for the scanner experts | Metrology |
 | `docs/` | team briefing and pitch showcase pages | pitch |
 | `CHECKPOINTS.md` | the plan: what must be true after each working hour | all |
+
+## Data contract (ScanTwin catalogue v1.1)
+Store individual MRS transients (NIfTI-MRS dimension DIM_DYN). Needed for gates F08 (drift) and F23 (motion); without them
+these gates are N/A. The catalogue lives in `docs/scantwin/` (xlsx from the bioengineer) + `catalogue/changes_v1.1.json`;
+run `python scripts/import_catalogue.py` after either changes.
 
 ## Rules
 - Work on a branch (`git switch -c p2/rf-fault-scenario`), open a PR or merge after `pytest` is green.

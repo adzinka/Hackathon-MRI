@@ -46,7 +46,13 @@ known truth. "1 SD" = scatter of a clean scan (≈ 0.021 in Cho/Cr). 8 scans per
 | F23 motion outliers | > 5 % | never | ✅ protects precision, not bias |
 | **F15 residual water / NAA** | **> 5** | **≈ 0.3** | ⚠️ **too lenient by ~15×**: at a ratio of 1.4 Cho/Cr is already 4.6 SD low and still PASSes |
 
-## Issues for a team decision
+## Status: resolved in catalogue v1.1
+
+The team bioengineer answered all five issues in `catalogue/changes_v1.1.json` (F15 tightened, F19 → between-session
+check, F22 → measurement-card limitation, notes on F08 / F14 / F23, new row F61, data-contract requirement, N/A rule,
+name ScanTwin, scan-context input). All are implemented; see `docs/cards/measurement_card_Cho_Cr.md`.
+
+## Issues for a team decision (as raised, v1.0)
 
 1. **F15 is too lenient for our pipeline.** Our fit has no residual-water model, so the water tail biases Cr and Cho.
    Options: (a) set F15 WARN > 0.5, FAIL > 1.5 for this pipeline, or (b) add water removal (HLSVD, as LCModel / Osprey

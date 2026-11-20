@@ -3,10 +3,11 @@
 Source: docs/scantwin/ScanTwin failure catalogue and QC thresholds.xlsx (imported to catalogue/scantwin_catalogue.json).
 Each gate keeps the catalogue ID, so every verdict can name the row it came from and show that row's fix.
 
-Two catalogue rows are applied as NOTES, not as gates, by team decision (see docs/scantwin/REVIEW.md):
-  F19 chemical-shift displacement: PRESS at 3 T always gives ~12 %, so every scan, baseline included, would WARN;
-      it is common to both sessions and mostly cancels in the change.
-  F22 Cr reference: the StarterPack has ratios only, so every MRS scan would WARN; we show it as a standing limitation.
+Catalogue v1.1 (team change list, catalogue/changes_v1.1.json, after docs/scantwin/REVIEW.md):
+  F15 tightened to WARN > 0.5, FAIL > 1.5 (valid for a fit without residual-water removal).
+  F19 is a between-session check (change of the displaced fraction); the ~12 % of PRESS at 3 T is a standing limitation.
+  F22 is no longer a gate: it is a limitation on the measurement card until water-referenced data exist.
+  F61 (new): transmitter / flip-angle (B1) miscalibration, reference amplitude vs phantom baseline.
 """
 from __future__ import annotations
 
@@ -43,13 +44,15 @@ MRS_GATES = [
     Gate("F12", "fwhm_hz", "Linewidth (shim)", "Hz", "≤ 10", (">", 10.0), (">", 20.0)),
     Gate("F13", "snr", "SNR", "1", "≥ 25", ("<", 25.0), ("<", 10.0)),
     Gate("F14", "cho_crlb_pct", "Cho fit CRLB", "%", "≤ 20", (">", 20.0), (">", 50.0)),
-    Gate("F15", "water_ratio", "Residual water / NAA", "1", "≤ 5", (">", 5.0), (">", 20.0)),
+    Gate("F15", "water_ratio", "Residual water / NAA", "1", "≤ 0.5", (">", 0.5), (">", 1.5)),
     Gate("F08", "drift_abs_hz", "Frequency drift", "Hz", "≤ 6", (">", 6.0), (">", 12.0)),
     Gate("F23", "outlier_pct", "Transients rejected (motion)", "%", "≤ 5", (">", 5.0), (">", 20.0)),
     Gate("F20", "voxel_shift_mm", "Voxel centre vs baseline", "mm", "≤ 2", (">", 2.0), (">", 3.0)),
     Gate("F21", "csf_change_pp", "CSF fraction change", "pp", "≤ 5", (">", 5.0), (">", 15.0)),
     Gate("F35", "protocol_diff", "Protocol vs baseline (TE)", "", "match", (">", 0.5), None),
-    Gate("F19", "csde_pct", "Chemical-shift displacement", "%", "≤ 10", (">", 10.0), (">", 25.0), applies=False),
+    Gate("F19", "csde_change_pp", "Chemical-shift displacement, change vs baseline", "pp", "≈ 0 (same protocol)",
+         (">", 2.0), None),
+    Gate("F61", "ref_amp_dev_pct", "Transmitter reference vs phantom baseline", "%", "≤ 10", (">", 10.0), (">", 20.0)),
 ]
 
 
@@ -59,6 +62,8 @@ NA_REASON = {
     "voxel_shift_mm": "needs the baseline voxel position",
     "csf_change_pp": "needs a tissue segmentation of this session",
     "cho_crlb_pct": "needs a spectral fit",
+    "ref_amp_dev_pct": "needs the transmitter reference / phantom baseline of this scanner",
+    "csde_change_pp": "needs the sequence and RF bandwidth of both sessions",
 }
 
 
@@ -90,10 +95,16 @@ def evaluate_mrs(m: dict) -> dict:
     deciding = [r for r in active if r["status"] == worst and worst != "PASS"]
     verdict = {"PASS": "update", "WARN": "update_with_warning", "FAIL": "reject"}[worst]
     return {"status": worst, "verdict": verdict, "gates": results, "deciding": deciding,
-            "notes": [r for r in results if not r["applies"]] + [{"id": "F22", "label": "Cr reference",
-                     "status": "WARN", "applies": False, "fix": row("F22").get("Fix for the next scan", ""),
-                     "value": "ratios only", "unit": "", "pass_if": "ratios + absolute values agree",
-                     "source": row("F22").get("Threshold source", "")}]}
+            "notes": [r for r in results if not r["applies"]] + STANDING_LIMITATIONS}
+
+
+# shown on every MRS verdict and on the measurement card; never change the verdict (catalogue v1.1)
+STANDING_LIMITATIONS = [
+    {"id": "F19", "label": "PRESS at 3 T displaces each metabolite's voxel by ~12 % (2.4 mm per axis); common to both sessions",
+     "applies": False},
+    {"id": "F22", "label": "Ratios only; creatine assumed stable. A change in X/Cr may come from Cr; absolute "
+     "water-referenced values are needed to rule this out", "applies": False},
+]
 
 
 def supported_range(value: float, u: float, status: str) -> tuple[float, float]:
@@ -101,3 +112,34 @@ def supported_range(value: float, u: float, status: str) -> tuple[float, float]:
     r = u * u * (2.0 if status == "WARN" else 1.0)
     h = 1.96 * r ** 0.5
     return value - h, value + h
+
+
+@lru_cache(maxsize=1)
+def context_factors() -> list[dict]:
+    """Rows of the catalogue's 'Context factors' sheet, with the failure IDs each one raises."""
+    if not CATALOGUE.exists():
+        return []
+    import re
+    rows = json.loads(CATALOGUE.read_text(encoding="utf-8")).get("context_factors", [])
+    for r in rows:
+        r["ids"] = re.findall(r"F\d{2}", r.get("Raises the risk of") or "")
+    return rows
+
+
+def context_advice(selected: list[str], gates_result: dict) -> list[dict]:
+    """Scan context changes only the warnings and the fix advice, never the PASS / WARN / FAIL limits (catalogue v1.1)."""
+    status = {g["id"]: g["status"] for g in gates_result["gates"]}
+    out = []
+    for r in context_factors():
+        if r["Context factor"] not in selected:
+            continue
+        for fid in r["ids"]:
+            st = status.get(fid)
+            if st is None:                     # the factor raises a failure mode of another scan type
+                continue
+            out.append({"factor": r["Context factor"], "id": fid, "failure": row(fid).get("Failure mode", ""),
+                        "gate_status": st or "not a gate for this scan type",
+                        "advice": r["How the twin uses it"],
+                        "reading": ("matches the context: fix the cause first" if st in ("WARN", "FAIL")
+                                    else "watch this gate on the next scan" if st == "PASS" else "")})
+    return out

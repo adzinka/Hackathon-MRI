@@ -96,6 +96,9 @@ def judge(pack, mutate):
     ("SNR 9 (re-evaluated)", lambda p: p["qc_checks"][0].__setitem__("value", 9.0), "mrs_snr"),
     ("no system QC id", lambda p: p.pop("system_qc_id"), "system_qc"),
     ("SIMULATED labelled MEASURED", lambda p: p.__setitem__("value_epistemic", "MEASURED"), "epistemic_label"),
+    ("identifying field left in (F59)", lambda p: p.__setitem__("PatientName", "Jane Doe"), "F59_deidentification"),
+    ("subject id not a pseudonym (F59)", lambda p: p.__setitem__("subject_id", "jane.doe"), "F59_deidentification"),
+    ("neither field nor frequency (F57)", lambda p: p.__setitem__("acquisition_context", {"sequence": "PRESS"}), "F57_field_frequency"),
 ])
 def test_fail_paths(pack, label, mutate, rule):
     ev = judge(pack, mutate)
@@ -106,3 +109,8 @@ def test_fail_paths(pack, label, mutate, rule):
 def test_protocol_change_warns(pack):
     ev = judge(pack, lambda p: p.__setitem__("protocol_match", False))
     assert ev.status == "WARN" and any(f.rule == "protocol_match" for f in ev.findings)
+
+
+def test_frequency_missing_warns_f57(pack):
+    ev = judge(pack, lambda p: p["acquisition_context"].pop("spectrometer_frequency_MHz"))
+    assert any(f.rule == "F57_field_frequency" and f.status == "WARN" for f in ev.findings)
