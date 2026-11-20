@@ -16,7 +16,7 @@
       "ph_snr": 2.4991652463096297,
       "ph_freq_hz": 0.0,
       "ph_water_ratio": -0.30603064938472746,
-      "ph_distortion_pct": 7.400863698033702
+      "ph_distortion_pct": 11.867735411198053
     }
   },
   "expected_class": "gradient",
@@ -59,13 +59,13 @@
     "ph_snr": 2.4991652463096297,
     "ph_freq_hz": 0.0,
     "ph_water_ratio": -0.30603064938472746,
-    "ph_distortion_pct": 7.400863698033702
+    "ph_distortion_pct": 11.867735411198053
   },
   "weeks_to_fail": {
     "ph_fwhm_hz": null,
     "ph_snr": null,
     "ph_freq_hz": null,
     "ph_water_ratio": null,
-    "ph_distortion_pct": 8.923040676993294
+    "ph_distortion_pct": 1.0308702941118388
   }
 }

@@ -127,9 +127,9 @@ if e.kind == "update":
 elif base:
     c[3].metric("Twin variable", f"{fmt(twin.state[obs].x, obs)} ± {fmt(twin.state[obs].sd, obs)}", "unchanged", delta_color="off")
 
-tab_upd, tab_dec, tab_prov, tab_time, tab_3d, tab_scan = st.tabs(
+tab_upd, tab_dec, tab_prov, tab_time, tab_3d, tab_scan, tab_sc = st.tabs(
     ["① Prior → evidence → posterior", "② Decision", "③ Provenance", "④ Timeline (all packets)",
-     "⑤ 3D evidence map", "⑥ Scanner twin"])
+     "⑤ 3D evidence map", "⑥ Scanner twin", "⑦ Fault scenarios"])
 
 # ---------- ① prior -> evidence -> posterior ----------
 with tab_upd:
@@ -442,3 +442,130 @@ with tab_scan:
 
 Same code as the brain twin: the same gate, the same gated Kalman step, only new observables and their drift (`twin_evidence/scanner.py`).
 """)
+
+
+# ---------- ⑦ fault scenarios (SIMULATED, known truth) ----------
+@st.cache_data(show_spinner=False)
+def _scenario_data(folder: str):
+    from twin_evidence import scenario_views as sv
+    return sv.load(Path(folder))
+
+
+@st.cache_data(show_spinner="Simulating 64 transients and fitting …", max_entries=64)
+def _one_scan(key: str, seed: int, r: str):
+    from twin_evidence import mrs_sim as S, scenarios as SC
+    sim = S.simulate(SC.BY_KEY[key].acq, Path(r), seed)
+    clean = S.simulate(SC.BY_KEY["clean"].acq, Path(r), seed)
+    m = SC.measure(sim)
+    g = SC.gate(m)
+    return {"m": m, "gate": g, "fid": sim.average(), "clean": clean.average(), "aligned": S.align_and_average(sim.transients),
+            "truth": {k: v for k, v in sim.truth.items() if k != "tissue"}, "tissue": sim.truth["tissue"]}
+
+
+with tab_sc:
+    from twin_evidence import scenarios as SCN, scenario_views as SV
+    sd_dir = Path(__file__).resolve().parent / "scenario_data"
+    data = _scenario_data(str(sd_dir))
+    st.warning("SIMULATED, with known truth. Each fault is injected into 64 PRESS transients built with the StarterPack "
+               "signal model, then processed by the same fit, QC and gate as real data. Assumptions: `scenario_data/README.md`.")
+    if data is None:
+        st.error("No `scenario_data/` yet. Run `python scripts/generate_scenarios.py ../MRI_Hackathon_DataScience_StarterPack_v0.3`.")
+    else:
+        s1, s2, s3, s4 = st.tabs(["Single scan", "All 11 scenarios", "Real November scan", "Scanner over time"])
+
+        with s1:
+            c1, c2 = st.columns([2, 1])
+            key = c1.selectbox("Fault scenario", [s.key for s in SCN.CATALOGUE], index=2,
+                               format_func=lambda k: f"{SCN.BY_KEY[k].title}  ·  blame: {SCN.BY_KEY[k].blame}")
+            seed = c2.number_input("Noise seed (another scan)", 0, 999, 7, 1)
+            sc = SCN.BY_KEY[key]
+            res = _one_scan(key, int(seed), str(Path(root).resolve()))
+            m, g = res["m"], res["gate"]
+            k = st.columns(4)
+            k[0].metric("Gate", f"{STATUS_ICON[g['status']]} {g['status']}")
+            k[1].metric("Cho/Cr measured", f"{m['cho_cr']:.3f} ± {m['cho_cr_crlb']:.3f}")
+            k[2].metric("Cho/Cr truth (tissue)", f"{res['truth']['Cho_Cr_tissue']:.3f}",
+                        f"error {m['cho_cr'] - res['truth']['Cho_Cr_tissue']:+.3f}", delta_color="off")
+            k[3].metric("Who is to blame", sc.blame, sc.kind, delta_color="off")
+            left, right = st.columns([3, 2])
+            with left:
+                show_al = m["fwhm_gain_aligned"] > 1.0
+                st.plotly_chart(SV.spectra_compare(res["clean"], res["fid"], res["aligned"] if show_al else None,
+                                                   f"{sc.title}: spectrum vs a clean scan (same noise seed)"), width="stretch")
+                st.caption(f"Expected signature: {sc.expected}.  Source: {sc.source}.")
+            with right:
+                st.markdown("**Quality checks** (thresholds-team-v1.1)")
+                labels = {"mrs_snr": ("SNR", f"{m['snr']:.1f}"), "mrs_linewidth_Hz": ("Linewidth / Hz", f"{m['fwhm_hz']:.1f}"),
+                          "mrs_water_ratio": ("Residual water / NAA", f"{m['water_ratio']:.2f}"),
+                          "protocol_match": ("TE / ms", f"{m['te_ms']:.0f}"),
+                          "mrs_drift_Hz": ("Drift / Hz (transients)", f"{m['drift_abs_hz']:.1f}"),
+                          "mrs_transient_outliers": ("Outlier transients", f"{m['outlier_frac']:.0%}")}
+                st.dataframe([{"": STATUS_ICON[stt], "check": labels[c][0], "value": labels[c][1], "status": stt}
+                              for c, stt in g["checks"].items()], width="stretch", hide_index=True)
+                if show_al:
+                    st.caption(f"Aligning the transients narrows the line {m['fwhm_hz']:.1f} → {m['fwhm_aligned_hz']:.1f} Hz: "
+                               "a frequency problem (drift or motion), not the shim.")
+                st.markdown("**Diagnosis** (naive-Bayes fault model, trained on simulations)")
+                post = data["model"].posterior(m, SV.QUALITY_ALL)
+                st.plotly_chart(SV.posterior_bar(post, 5), width="stretch")
+                blame = SCN.blame_of(post)
+                st.markdown("Blame: " + " · ".join(f"**{b}** {p:.0%}" for b, p in list(blame.items())[:3]))
+                st.success(f"Next step: {sc.next_step}")
+            tf = res["tissue"]
+            st.caption(f"Voxel tissue (truth): WM {tf['WM']:.0%}, GM {tf['GM']:.0%}, CSF {tf['CSF']:.0%}, outside {tf['outside']:.0%}. "
+                       f"Signal scale {res['truth']['signal_scale']:.2f}.")
+
+        with s2:
+            st.markdown("**What each fault does to Cho/Cr** (60 simulated scans each). Green = the gate mostly passes it, "
+                        "amber = the gate mostly warns. Black bar = the true tissue value.")
+            st.plotly_chart(SV.bias_chart(data["summary"]), width="stretch")
+            st.dataframe([{"scenario": SCN.BY_KEY[r["scenario"]].title, "blame": r["blame"], "type": r["kind"],
+                           "SNR": round(float(r["snr_mean"]), 1), "FWHM / Hz": round(float(r["fwhm_hz_mean"]), 1),
+                           "FWHM aligned": round(float(r["fwhm_aligned_hz_mean"]), 1), "water": round(float(r["water_ratio_mean"]), 2),
+                           "drift / Hz": round(float(r["drift_abs_hz_mean"]), 1), "outliers": f"{float(r['outlier_frac_mean']):.0%}",
+                           "Cho/Cr": f"{float(r['cho_cr_mean']):.3f} ± {float(r['cho_cr_sd']):.3f}",
+                           "truth": round(float(r["cho_cr_truth_tissue"]), 3),
+                           "PASS": f"{float(r['gate_PASS']):.0%}", "WARN": f"{float(r['gate_WARN']):.0%}"} for r in data["summary"]],
+                         width="stretch", hide_index=True)
+            acc = data["run_info"]["accuracy"]
+            a1, a2 = st.columns(2)
+            a1.metric("Fault model, all metrics (held-out)", f"{acc['all_metrics']['grouped']:.0%} group",
+                      f"{acc['all_metrics']['exact']:.0%} exact scenario", delta_color="off")
+            a2.metric("Averaged spectrum only (like the StarterPack)", f"{acc['averaged_only']['grouped']:.0%} group",
+                      f"{acc['averaged_only']['exact']:.0%} exact scenario", delta_color="off")
+            st.info("Spectrally silent: voxel misplacement, a gradient error and a true change pass the gate with a clean "
+                    "spectrum, yet Cho/Cr moves. Only the scanner twin (phantom geometry) and tissue fractions tell them apart.")
+
+        with s3:
+            st.markdown("The fault model was trained **only on simulations**. Here it reads the **real** StarterPack spectra "
+                        "(averaged files: drift and motion metrics are not available).")
+            r1, r2 = st.columns(2)
+            for col, sess in ((r1, "baseline"), (r2, "followup")):
+                d = data["real"][sess]
+                mm = d["metrics"]
+                col.markdown(f"#### {'May (baseline)' if sess == 'baseline' else 'November (follow-up)'}")
+                col.caption(f"SNR {mm['snr']:.1f} · linewidth {mm['fwhm_hz']:.1f} Hz · residual water {mm['water_ratio']:.2f} · "
+                            f"fitted Cho/Cr {d['cho_cr_fit'][0]:.3f} ± {d['cho_cr_fit'][1]:.3f}")
+                col.plotly_chart(SV.posterior_bar(d["top_scenarios"], 5), width="stretch")
+                col.markdown("Blame: " + " · ".join(f"**{b}** {p:.0%}" for b, p in list(d["blame"].items())[:3]))
+            st.success("November looks like a **shim problem**. Whether it is the scanner's shim or this session's local shim "
+                       "cannot be decided from one spectrum: the scanner twin's phantom record decides. Next: re-shim, repeat "
+                       "PRESS and keep the individual transients.")
+
+        with s4:
+            names = {t: v["summary"]["title"] + (" + true Cho change" if t.endswith("_biology") else "") for t, v in data["long"].items()}
+            tag = st.radio("Scanner state from week 14 to 26", list(data["long"]), index=1, horizontal=True, format_func=names.get)
+            L = data["long"][tag]
+            row, chain = L["summary"], L["chain"]
+            from twin_evidence.longitudinal import PHANTOM_OBS
+            st.plotly_chart(SV.phantom_chart(L["weekly"], {o: v[4] for o, v in PHANTOM_OBS.items()}), width="stretch")
+            b0, b1 = chain["brain"]
+            v1, v2, v3 = st.columns(3)
+            v1.metric("Scanner twin diagnosis", row["diagnosed_class"], "correct" if row["correct"] == "True" else "WRONG",
+                      delta_color="off")
+            v2.metric("Brain follow-up gate", f"{STATUS_ICON[b1['status']]} {b1['status']}", b1["action"], delta_color="off")
+            v3.metric("Brain Cho/Cr (truth)", f"{b1['value']:.3f}", f"truth {b1['truth_tissue']:.3f}", delta_color="off")
+            box = st.success if row["verdict"].startswith("CLEAN") else st.warning if row["verdict"].startswith(("MACHINE", "SESSION")) else st.error
+            box(row["verdict"])
+            st.caption(f"Why: {chain['diagnosis']['why']}. Brain reasons: " + ("; ".join(b1["reasons"]) if b1["reasons"] else "none") +
+                       ". The brain sessions are schema-v1.0 packets with their own NIfTI file and SHA-256, judged by the same gate.")

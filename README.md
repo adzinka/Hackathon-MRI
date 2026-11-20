@@ -92,6 +92,11 @@ Pick a follow-up packet in the sidebar (or upload an unseen one). Tabs:
    frequency, run through the same gate and Kalman step. Three scenarios (stable, shim degrading, B0 drift). Its verdict
    feeds the competing explanations of the brain twin and the bore colour in the 3D map, and it forecasts when the phantom
    will cross the FAIL limit. The StarterPack has no phantom data yet; the series and its thresholds are our assumptions.
+7. **Fault scenarios** (`scenario_data/`, **SIMULATED with known truth**): pick one of 11 faults (the seven error sources
+   of `scanner_data/MRI_MRS_Essential_Errors_Explained.md` plus coil, B1, gradient and a true change) and see the
+   simulated spectrum next to a clean one, every quality check, the measured vs true Cho/Cr and the fault model's
+   diagnosis with who is to blame. Further sub-tabs: what each fault does to Cho/Cr (60 scans each), the fault model
+   applied to the real November spectrum, and six hardware faults followed for 26 weeks through to the brain decision.
 
 The WARN variance factor in the sidebar is the declared team policy (default 2).
 

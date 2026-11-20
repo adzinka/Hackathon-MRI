@@ -77,8 +77,12 @@ def _gate(obs: str, value: float) -> str:
     return gate_value(OBS[obs][4], value)
 
 
-def track(data: dict, obs_spec: dict, warn_factor: float = 2.0) -> dict:
-    """Run weekly phantom values through the gate and the gated Kalman step, one scalar twin per observable.
+def track(data: dict, obs_spec: dict, warn_factor: float = 2.0, gate_evidence: bool = False) -> dict:
+    """Run weekly phantom values through the Kalman step, one scalar twin per observable.
+
+    For the scanner twin a bad phantom value is not bad evidence: it is good evidence of a bad machine. So by default
+    every reading updates the twin with its own SD, and the PASS/WARN/FAIL status only describes the machine's health.
+    gate_evidence=True applies the brain-twin policy instead (WARN x warn_factor, FAIL rejected).
 
     data: obs -> sequence of weekly values; obs_spec: obs -> (label, unit, per-scan SD, drift SD per 6 months, gates).
     Returns series, the twin state at the first and last week, z of the change, and a straight-line forecast of the
@@ -93,8 +97,9 @@ def track(data: dict, obs_spec: dict, warn_factor: float = 2.0) -> dict:
         for o, (label, unit, sd, _, gates) in obs_spec.items():
             v = float(data[o][wk])
             st = gate_value(gates, v)
-            ev = Evaluation(f"PH-w{wk:02d}-{o}", st, st, {"PASS": "update", "WARN": "update_with_warning", "FAIL": "reject"}[st],
-                            {"PASS": 1.0, "WARN": warn_factor, "FAIL": None}[st], sd if st != "FAIL" else None,
+            est = st if gate_evidence else "PASS"
+            ev = Evaluation(f"PH-w{wk:02d}-{o}", est, st, {"PASS": "update", "WARN": "update_with_warning", "FAIL": "reject"}[est],
+                            {"PASS": 1.0, "WARN": warn_factor, "FAIL": None}[est], sd if est != "FAIL" else None,
                             [Finding(o, st, "PM", o, round(v, 3), str(gates), f"{label} {v:.2f} {unit}")])
             pk = {"packet_id": ev.packet_id, "observable": o, "value": v, "origin": "SIMULATED",
                   "relative_time": {"value": round(t, 4), "unit": "month"}}

@@ -26,8 +26,12 @@ The StarterPack contains **no phantom record**. The packets only point to one (`
 is labelled SIMULATED wherever it appears.
 
 Each phantom CSV has, per week and per observable: the raw value, its gate status (PASS / WARN / FAIL), and the
-scanner-twin estimate `twin_x ± twin_sd`. That estimate uses the same gated Kalman step as the brain twin:
-WARN counts at half weight, FAIL is rejected.
+scanner-twin estimate `twin_x ± twin_sd`. That estimate uses the same Kalman step as the brain twin, with one
+difference: every phantom reading updates the twin at full weight. A bad phantom value is good evidence of a bad
+machine, so the status describes the machine's health and does not reject the reading.
+
+**Physics-based version:** `../scenario_data/` simulates the phantom spectra themselves (linewidth, SNR, frequency,
+residual water, geometry) for six hardware faults and follows them through to the brain decision. Start there.
 
 ## Our draft: fault signatures (please correct this)
 

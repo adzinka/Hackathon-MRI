@@ -6,15 +6,15 @@
     "why": "centre frequency moved",
     "signature": {
       "fwhm_up": true,
-      "snr_down": false,
+      "snr_down": true,
       "freq_moved": true,
       "water_up": false,
       "geometry_up": false
     },
     "z": {
-      "ph_fwhm_hz": 7.877461722550953,
-      "ph_snr": -1.8243800612360097,
-      "ph_freq_hz": 22.39301032129641,
+      "ph_fwhm_hz": 25.585222663431246,
+      "ph_snr": -5.952463755106206,
+      "ph_freq_hz": 35.00369649003716,
       "ph_water_ratio": 1.7750896265499563,
       "ph_distortion_pct": 0.8627846827257059
     }
@@ -59,16 +59,16 @@
   ],
   "verdict": "MACHINE: the brain WARN matches a scanner fault (b0_drift). Fix the scanner, then repeat.",
   "z": {
-    "ph_fwhm_hz": 7.877461722550953,
-    "ph_snr": -1.8243800612360097,
-    "ph_freq_hz": 22.39301032129641,
+    "ph_fwhm_hz": 25.585222663431246,
+    "ph_snr": -5.952463755106206,
+    "ph_freq_hz": 35.00369649003716,
     "ph_water_ratio": 1.7750896265499563,
     "ph_distortion_pct": 0.8627846827257059
   },
   "weeks_to_fail": {
-    "ph_fwhm_hz": 20.178224815646185,
-    "ph_snr": 14.681010037344226,
-    "ph_freq_hz": 4.922062336330079,
+    "ph_fwhm_hz": 0.0,
+    "ph_snr": 1.300434440595556,
+    "ph_freq_hz": 0.0,
     "ph_water_ratio": 138.2676513947252,
     "ph_distortion_pct": null
   }

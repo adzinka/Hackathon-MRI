@@ -15,7 +15,7 @@
       "ph_fwhm_hz": 0.20291951227286914,
       "ph_snr": -1.8716520982293807,
       "ph_freq_hz": 0.0,
-      "ph_water_ratio": 25.200793334530175,
+      "ph_water_ratio": 29.80752151279572,
       "ph_distortion_pct": 0.8627846827257059
     }
   },
@@ -61,14 +61,14 @@
     "ph_fwhm_hz": 0.20291951227286914,
     "ph_snr": -1.8716520982293807,
     "ph_freq_hz": 0.0,
-    "ph_water_ratio": 25.200793334530175,
+    "ph_water_ratio": 29.80752151279572,
     "ph_distortion_pct": 0.8627846827257059
   },
   "weeks_to_fail": {
     "ph_fwhm_hz": null,
     "ph_snr": 19.471666582660458,
     "ph_freq_hz": null,
-    "ph_water_ratio": 4.653478300540377,
+    "ph_water_ratio": 3.122105636743889,
     "ph_distortion_pct": null
   }
 }

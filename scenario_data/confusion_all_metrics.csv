@@ -1,12 +1,12 @@
-true \ predicted,true_change,clean,poor_shim,b1_transmit,water_suppression,motion,gradient,freq_drift,voxel_misplacement,low_snr_coil,protocol_te
-true_change,6,10,0,0,0,0,4,0,10,0,0
-clean,6,10,0,0,0,0,4,0,10,0,0
-poor_shim,0,0,30,0,0,0,0,0,0,0,0
-b1_transmit,0,0,0,30,0,0,0,0,0,0,0
+true \ predicted,freq_drift,voxel_misplacement,motion,clean,water_suppression,low_snr_coil,b1_transmit,protocol_te,true_change,poor_shim,gradient
+freq_drift,30,0,0,0,0,0,0,0,0,0,0
+voxel_misplacement,0,11,0,8,0,0,0,0,3,0,8
+motion,0,0,30,0,0,0,0,0,0,0,0
+clean,0,10,0,10,0,0,0,0,6,0,4
 water_suppression,0,0,0,0,30,0,0,0,0,0,0
-motion,0,0,0,0,0,30,0,0,0,0,0
-gradient,1,0,0,0,0,0,24,0,5,0,0
-freq_drift,0,0,0,0,0,0,0,30,0,0,0
-voxel_misplacement,3,8,0,0,0,0,8,0,11,0,0
-low_snr_coil,0,0,0,0,0,0,0,0,0,30,0
-protocol_te,0,0,0,0,0,0,0,0,0,0,30
+low_snr_coil,0,0,0,0,0,30,0,0,0,0,0
+b1_transmit,0,0,0,0,0,0,30,0,0,0,0
+protocol_te,0,0,0,0,0,0,0,30,0,0,0
+true_change,0,10,0,10,0,0,0,0,6,0,4
+poor_shim,0,0,0,0,0,0,0,0,0,30,0
+gradient,0,5,0,0,0,0,0,0,1,0,24
