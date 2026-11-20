@@ -1,0 +1,71 @@
+{
+  "fault": "gradient_drift",
+  "title": "Gradient scale drift",
+  "diagnosis": {
+    "fault_class": "gradient",
+    "why": "phantom geometry changed; spectra unaffected",
+    "signature": {
+      "fwhm_up": false,
+      "snr_down": false,
+      "freq_moved": false,
+      "water_up": false,
+      "geometry_up": true
+    },
+    "z": {
+      "ph_fwhm_hz": 0.21230055991722463,
+      "ph_snr": 2.4991652463096297,
+      "ph_freq_hz": 0.0,
+      "ph_water_ratio": -0.30603064938472746,
+      "ph_distortion_pct": 7.400863698033702
+    }
+  },
+  "expected_class": "gradient",
+  "correct": true,
+  "brain": [
+    {
+      "packet_id": "E-t0-sim_gradient_drift",
+      "status": "PASS",
+      "action": "update",
+      "reasons": [],
+      "value": 0.6911,
+      "u": 0.0493,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.6911,
+        "sd": 0.0493
+      },
+      "K": null
+    },
+    {
+      "packet_id": "E-t1-sim_gradient_drift",
+      "status": "PASS",
+      "action": "update",
+      "reasons": [],
+      "value": 0.687,
+      "u": 0.0485,
+      "truth_tissue": 0.6859200000000001,
+      "truth_measurable": 0.6859200000000002,
+      "posterior": {
+        "x": 0.6886971082611557,
+        "sd": 0.037129312897863254
+      },
+      "K": 0.5860711558156804
+    }
+  ],
+  "verdict": "HIDDEN MACHINE FAULT: the brain spectrum passes, but the scanner twin sees gradient. Values may be biased without any spectral warning.",
+  "z": {
+    "ph_fwhm_hz": 0.21230055991722463,
+    "ph_snr": 2.4991652463096297,
+    "ph_freq_hz": 0.0,
+    "ph_water_ratio": -0.30603064938472746,
+    "ph_distortion_pct": 7.400863698033702
+  },
+  "weeks_to_fail": {
+    "ph_fwhm_hz": null,
+    "ph_snr": null,
+    "ph_freq_hz": null,
+    "ph_water_ratio": null,
+    "ph_distortion_pct": 8.923040676993294
+  }
+}

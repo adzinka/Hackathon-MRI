@@ -1,0 +1,74 @@
+{
+  "fault": "shim_degrading",
+  "title": "Shim degrading",
+  "diagnosis": {
+    "fault_class": "shim",
+    "why": "phantom lines broadened (SNR falls with peak height)",
+    "signature": {
+      "fwhm_up": true,
+      "snr_down": true,
+      "freq_moved": false,
+      "water_up": false,
+      "geometry_up": false
+    },
+    "z": {
+      "ph_fwhm_hz": 9.225557936817411,
+      "ph_snr": -3.377989432064787,
+      "ph_freq_hz": -0.6677446284506571,
+      "ph_water_ratio": 0.8609952537469887,
+      "ph_distortion_pct": 0.8627846827257059
+    }
+  },
+  "expected_class": "shim",
+  "correct": true,
+  "brain": [
+    {
+      "packet_id": "E-t0-sim_shim_degrading",
+      "status": "PASS",
+      "action": "update",
+      "reasons": [],
+      "value": 0.6911,
+      "u": 0.0493,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.6911,
+        "sd": 0.0493
+      },
+      "K": null
+    },
+    {
+      "packet_id": "E-t1-sim_shim_degrading",
+      "status": "WARN",
+      "action": "update_with_warning",
+      "reasons": [
+        "mrs_snr: value 22.78 1 vs WARN < 25.0; FAIL < 10.0",
+        "mrs_linewidth_Hz: value 11.59 Hz vs WARN > 10.0 Hz; FAIL > 20.0 Hz"
+      ],
+      "value": 0.6804,
+      "u": 0.0502,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.6868426742742729,
+        "sd": 0.04478115241441306
+      },
+      "K": 0.39788090894646355
+    }
+  ],
+  "verdict": "MACHINE: the brain WARN matches a scanner fault (shim). Fix the scanner, then repeat.",
+  "z": {
+    "ph_fwhm_hz": 9.225557936817411,
+    "ph_snr": -3.377989432064787,
+    "ph_freq_hz": -0.6677446284506571,
+    "ph_water_ratio": 0.8609952537469887,
+    "ph_distortion_pct": 0.8627846827257059
+  },
+  "weeks_to_fail": {
+    "ph_fwhm_hz": 10.522536271970782,
+    "ph_snr": 8.189302471684217,
+    "ph_freq_hz": null,
+    "ph_water_ratio": 256.79443008696745,
+    "ph_distortion_pct": null
+  }
+}

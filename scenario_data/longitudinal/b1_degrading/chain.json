@@ -1,0 +1,74 @@
+{
+  "fault": "b1_degrading",
+  "title": "RF transmit (B1) miscalibration",
+  "diagnosis": {
+    "fault_class": "b1_transmit",
+    "why": "residual water rose (water suppression depends on flip angle)",
+    "signature": {
+      "fwhm_up": false,
+      "snr_down": false,
+      "freq_moved": false,
+      "water_up": true,
+      "geometry_up": false
+    },
+    "z": {
+      "ph_fwhm_hz": 0.20291951227286914,
+      "ph_snr": -1.8716520982293807,
+      "ph_freq_hz": 0.0,
+      "ph_water_ratio": 25.200793334530175,
+      "ph_distortion_pct": 0.8627846827257059
+    }
+  },
+  "expected_class": "b1_transmit",
+  "correct": true,
+  "brain": [
+    {
+      "packet_id": "E-t0-sim_b1_degrading",
+      "status": "PASS",
+      "action": "update",
+      "reasons": [],
+      "value": 0.6911,
+      "u": 0.0493,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.6911,
+        "sd": 0.0493
+      },
+      "K": null
+    },
+    {
+      "packet_id": "E-t1-sim_b1_degrading",
+      "status": "WARN",
+      "action": "update_with_warning",
+      "reasons": [
+        "mrs_snr: value 21.09 1 vs WARN < 25.0; FAIL < 10.0",
+        "mrs_water_ratio: value 2.358 1 vs WARN > 1.0; FAIL > 3.0"
+      ],
+      "value": 0.5693,
+      "u": 0.0914,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.670856194129175,
+        "sd": 0.052696725717609284
+      },
+      "K": 0.16620530271613368
+    }
+  ],
+  "verdict": "MACHINE: the brain WARN matches a scanner fault (b1_transmit). Fix the scanner, then repeat.",
+  "z": {
+    "ph_fwhm_hz": 0.20291951227286914,
+    "ph_snr": -1.8716520982293807,
+    "ph_freq_hz": 0.0,
+    "ph_water_ratio": 25.200793334530175,
+    "ph_distortion_pct": 0.8627846827257059
+  },
+  "weeks_to_fail": {
+    "ph_fwhm_hz": null,
+    "ph_snr": 19.471666582660458,
+    "ph_freq_hz": null,
+    "ph_water_ratio": 4.653478300540377,
+    "ph_distortion_pct": null
+  }
+}

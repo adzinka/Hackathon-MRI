@@ -64,8 +64,8 @@ def simulate(scenario: str = "shim_degrading", seed: int = 3) -> dict:
     return {"phantom_linewidth_Hz": lw, "phantom_snr": snr, "freq_offset_Hz": fo}
 
 
-def _gate(obs: str, value: float) -> str:
-    g = OBS[obs][4]
+def gate_value(gates: dict, value: float) -> str:
+    g = gates
     if "fail_above" in g and value > g["fail_above"] or "fail_below" in g and value < g["fail_below"]:
         return "FAIL"
     if "warn_above" in g and value > g["warn_above"] or "warn_below" in g and value < g["warn_below"]:
@@ -73,41 +73,55 @@ def _gate(obs: str, value: float) -> str:
     return "PASS"
 
 
-def run(scenario: str = "shim_degrading", warn_factor: float = 2.0, seed: int = 3) -> ScannerReport:
-    data = simulate(scenario, seed)
-    q6 = {o: (lambda x, s=spec[3]: s) for o, spec in OBS.items()}
+def _gate(obs: str, value: float) -> str:
+    return gate_value(OBS[obs][4], value)
+
+
+def track(data: dict, obs_spec: dict, warn_factor: float = 2.0) -> dict:
+    """Run weekly phantom values through the gate and the gated Kalman step, one scalar twin per observable.
+
+    data: obs -> sequence of weekly values; obs_spec: obs -> (label, unit, per-scan SD, drift SD per 6 months, gates).
+    Returns series, the twin state at the first and last week, z of the change, and a straight-line forecast of the
+    weeks until each FAIL limit.
+    """
+    q6 = {o: (lambda x, s=spec[3]: s) for o, spec in obs_spec.items()}
     twin = Twin(q6=q6)
-    series = {o: [] for o in OBS}
-    for wk in range(WEEKS + 1):
+    n = len(next(iter(data.values())))
+    series = {o: [] for o in obs_spec}
+    for wk in range(n):
         t = wk * MONTHS_PER_WEEK
-        for o, (label, unit, sd, _, _) in OBS.items():
+        for o, (label, unit, sd, _, gates) in obs_spec.items():
             v = float(data[o][wk])
-            st = _gate(o, v)
+            st = gate_value(gates, v)
             ev = Evaluation(f"PH-w{wk:02d}-{o}", st, st, {"PASS": "update", "WARN": "update_with_warning", "FAIL": "reject"}[st],
                             {"PASS": 1.0, "WARN": warn_factor, "FAIL": None}[st], sd if st != "FAIL" else None,
-                            [Finding(o, st, "PM", o, round(v, 2), str(OBS[o][4]), f"{label} {v:.1f} {unit}")])
+                            [Finding(o, st, "PM", o, round(v, 3), str(gates), f"{label} {v:.2f} {unit}")])
             pk = {"packet_id": ev.packet_id, "observable": o, "value": v, "origin": "SIMULATED",
                   "relative_time": {"value": round(t, 4), "unit": "month"}}
             e = twin.ingest(pk, ev)
             s = twin.state[o]
             series[o].append({"week": wk, "t": t, "value": v, "status": st, "x": s.x, "sd": s.sd, "action": e.action})
-    t0 = {o: (series[o][0]["x"], series[o][0]["sd"]) for o in OBS}
-    t1 = {o: (series[o][-1]["x"], series[o][-1]["sd"]) for o in OBS}
-    z = {o: (t1[o][0] - t0[o][0]) / math.hypot(t0[o][1], t1[o][1]) for o in OBS}
-
-    # forecast: straight line through the last 8 weekly posteriors, weeks until the FAIL limit
+    t0 = {o: (series[o][0]["x"], series[o][0]["sd"]) for o in obs_spec}
+    t1 = {o: (series[o][-1]["x"], series[o][-1]["sd"]) for o in obs_spec}
+    z = {o: (t1[o][0] - t0[o][0]) / math.hypot(t0[o][1], t1[o][1]) for o in obs_spec}
     weeks_to_fail = {}
-    for o, spec in OBS.items():
+    for o, spec in obs_spec.items():
         xs = np.array([p["week"] for p in series[o][-8:]], float)
         ys = np.array([p["x"] for p in series[o][-8:]], float)
         slope = np.polyfit(xs, ys, 1)[0]
         g = spec[4]
         lim, toward = (g["fail_above"], slope > 0) if "fail_above" in g else (g["fail_below"], slope < 0)
-        noise_slope = spec[2] / 8
-        if toward and abs(slope) > noise_slope:
+        if toward and abs(slope) > spec[2] / 8:
             weeks_to_fail[o] = max(0.0, (lim - ys[-1]) / slope)
         else:
             weeks_to_fail[o] = None
+    status_now = worst(series[o][-1]["status"] for o in obs_spec)
+    return {"series": series, "t0": t0, "t1": t1, "z": z, "weeks_to_fail": weeks_to_fail, "status_now": status_now}
+
+
+def run(scenario: str = "shim_degrading", warn_factor: float = 2.0, seed: int = 3) -> ScannerReport:
+    tr = track(simulate(scenario, seed), OBS, warn_factor)
+    series, t0, t1, z, weeks_to_fail = tr["series"], tr["t0"], tr["t1"], tr["z"], tr["weeks_to_fail"]
     status_now = worst(series[o][-1]["status"] for o in OBS)
     recent = [p["status"] for p in series["phantom_linewidth_Hz"][-4:]]
     lw_up = z["phantom_linewidth_Hz"] > 1.96 or recent.count("PASS") == 0

@@ -1,0 +1,73 @@
+{
+  "fault": "coil_degrading",
+  "title": "Receive coil degrading",
+  "diagnosis": {
+    "fault_class": "receive_coil",
+    "why": "SNR fell with normal linewidth",
+    "signature": {
+      "fwhm_up": false,
+      "snr_down": true,
+      "freq_moved": false,
+      "water_up": false,
+      "geometry_up": false
+    },
+    "z": {
+      "ph_fwhm_hz": 0.23841717362325443,
+      "ph_snr": -3.4114475187862743,
+      "ph_freq_hz": 0.0,
+      "ph_water_ratio": -0.021771471457664865,
+      "ph_distortion_pct": 0.8627846827257059
+    }
+  },
+  "expected_class": "receive_coil",
+  "correct": true,
+  "brain": [
+    {
+      "packet_id": "E-t0-sim_coil_degrading",
+      "status": "PASS",
+      "action": "update",
+      "reasons": [],
+      "value": 0.6911,
+      "u": 0.0493,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.6911,
+        "sd": 0.0493
+      },
+      "K": null
+    },
+    {
+      "packet_id": "E-t1-sim_coil_degrading",
+      "status": "WARN",
+      "action": "update_with_warning",
+      "reasons": [
+        "mrs_snr: value 18.68 1 vs WARN < 25.0; FAIL < 10.0"
+      ],
+      "value": 0.6903,
+      "u": 0.0533,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.6908043595009915,
+        "sd": 0.04582254186610743
+      },
+      "K": 0.36955062376071734
+    }
+  ],
+  "verdict": "MACHINE: the brain WARN matches a scanner fault (receive_coil). Fix the scanner, then repeat.",
+  "z": {
+    "ph_fwhm_hz": 0.23841717362325443,
+    "ph_snr": -3.4114475187862743,
+    "ph_freq_hz": 0.0,
+    "ph_water_ratio": -0.021771471457664865,
+    "ph_distortion_pct": 0.8627846827257059
+  },
+  "weeks_to_fail": {
+    "ph_fwhm_hz": null,
+    "ph_snr": 11.011825005365214,
+    "ph_freq_hz": null,
+    "ph_water_ratio": null,
+    "ph_distortion_pct": null
+  }
+}

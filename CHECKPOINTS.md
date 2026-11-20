@@ -40,6 +40,13 @@ So the scanner error is half of our answer, not the whole question.
 | Prototype and communication | 10 % | app + showcase page, live unseen-packet demo |
 | Ethics and limits | 5 % | limitation card, "advises, never diagnoses" |
 
+## Status of the team plan (point 3: data for every scenario)
+
+Done: `scenario_data/` (see its README). 11 physics-simulated scenarios from `MRI_MRS_Essential_Errors_Explained.md`
+plus hardware classes, 660 scans with known truth, a fault classifier (96 % correct scenario group on held-out data),
+the classifier applied to the real November spectrum (poor shim 92 %), and six hardware faults over 26 weeks with the
+full chain to the brain decision (6/6 diagnosed). Open: experts to check the assumptions listed in that README.
+
 ## Checkpoints
 
 Each checkpoint has a **definition of done (DoD)** that anyone can check in two minutes. Hours count working time from now.

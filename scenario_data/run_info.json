@@ -1,0 +1,17 @@
+{
+  "n_per_scenario": 30,
+  "accuracy": {
+    "all_metrics": {
+      "exact": 0.7909090909090909,
+      "blame": 0.7909090909090909,
+      "grouped": 1.0
+    },
+    "averaged_only": {
+      "exact": 0.7636363636363637,
+      "blame": 0.7818181818181819,
+      "grouped": 0.9636363636363636
+    }
+  },
+  "seconds": 392.3,
+  "origin": "SIMULATED"
+}

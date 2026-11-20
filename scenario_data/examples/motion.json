@@ -1,0 +1,52 @@
+{
+  "origin": "SIMULATED",
+  "scenario": "motion",
+  "title": "Patient motion",
+  "truth": {
+    "Cho_Cr_tissue": 0.6887800000000001,
+    "NAA_Cr_tissue": 1.2506000000000002,
+    "Cho_Cr_measurable": 0.6887800000000002,
+    "NAA_Cr_measurable": 1.2506,
+    "tissue": {
+      "outside": 0.0,
+      "WM": 0.803,
+      "GM": 0.197,
+      "lesion": 0.0,
+      "CSF": 0.0
+    },
+    "voxel_center_mm": [
+      -16.0,
+      45.0,
+      6.0
+    ],
+    "voxel_size_mm": 20.0,
+    "b1_efficiency": 1.0,
+    "signal_scale": 1.0,
+    "water_residual_total": 0.0,
+    "noise_sd_per_transient": 0.599409977754772
+  },
+  "acquisition": {
+    "lw_hz": 8.7,
+    "shim_hz": 0.0,
+    "coil_noise_factor": 1.0,
+    "n_transients": 64,
+    "drift_hz": 0.0,
+    "motion_frac": 0.2,
+    "motion_hz": 10.0,
+    "motion_signal_loss": 0.35,
+    "water_residual": 0.0,
+    "water_lw_hz": 10.0,
+    "te_ms": 30.0,
+    "b1_error": 0.0,
+    "gradient_error": 0.0,
+    "voxel_offset_mm": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "freq_offset_hz": 0.0,
+    "cho_factor": 1.0,
+    "naa_factor": 1.0
+  },
+  "convention": "StarterPack v0.3 README; averaged over transients"
+}

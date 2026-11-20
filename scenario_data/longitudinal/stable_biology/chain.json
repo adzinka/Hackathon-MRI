@@ -1,0 +1,71 @@
+{
+  "fault": "stable_biology",
+  "title": "Scanner stable",
+  "diagnosis": {
+    "fault_class": "stable",
+    "why": "no phantom observable changed beyond its uncertainty",
+    "signature": {
+      "fwhm_up": false,
+      "snr_down": false,
+      "freq_moved": false,
+      "water_up": false,
+      "geometry_up": false
+    },
+    "z": {
+      "ph_fwhm_hz": 0.2158752612598589,
+      "ph_snr": 1.2603345606623693,
+      "ph_freq_hz": 0.0,
+      "ph_water_ratio": -0.26711983801890404,
+      "ph_distortion_pct": 0.8627846827257059
+    }
+  },
+  "expected_class": "stable",
+  "correct": true,
+  "brain": [
+    {
+      "packet_id": "E-t0-sim_stable_biology",
+      "status": "PASS",
+      "action": "update",
+      "reasons": [],
+      "value": 0.6911,
+      "u": 0.0493,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.6911,
+        "sd": 0.0493
+      },
+      "K": null
+    },
+    {
+      "packet_id": "E-t1-sim_stable_biology",
+      "status": "PASS",
+      "action": "update",
+      "reasons": [],
+      "value": 0.8278,
+      "u": 0.0497,
+      "truth_tissue": 0.826536,
+      "truth_measurable": 0.8265360000000002,
+      "posterior": {
+        "x": 0.7695883551300042,
+        "sd": 0.03765951696668971
+      },
+      "K": 0.5741649972933741
+    }
+  ],
+  "verdict": "CLEAN: scanner stable and brain evidence PASS; a change in the value is attributed to the patient.",
+  "z": {
+    "ph_fwhm_hz": 0.2158752612598589,
+    "ph_snr": 1.2603345606623693,
+    "ph_freq_hz": 0.0,
+    "ph_water_ratio": -0.26711983801890404,
+    "ph_distortion_pct": 0.8627846827257059
+  },
+  "weeks_to_fail": {
+    "ph_fwhm_hz": null,
+    "ph_snr": null,
+    "ph_freq_hz": null,
+    "ph_water_ratio": null,
+    "ph_distortion_pct": null
+  }
+}

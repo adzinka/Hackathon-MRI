@@ -1,0 +1,75 @@
+{
+  "fault": "b0_drift",
+  "title": "B0 drift",
+  "diagnosis": {
+    "fault_class": "b0_drift",
+    "why": "centre frequency moved",
+    "signature": {
+      "fwhm_up": true,
+      "snr_down": false,
+      "freq_moved": true,
+      "water_up": false,
+      "geometry_up": false
+    },
+    "z": {
+      "ph_fwhm_hz": 7.877461722550953,
+      "ph_snr": -1.8243800612360097,
+      "ph_freq_hz": 22.39301032129641,
+      "ph_water_ratio": 1.7750896265499563,
+      "ph_distortion_pct": 0.8627846827257059
+    }
+  },
+  "expected_class": "b0_drift",
+  "correct": true,
+  "brain": [
+    {
+      "packet_id": "E-t0-sim_b0_drift",
+      "status": "PASS",
+      "action": "update",
+      "reasons": [],
+      "value": 0.6911,
+      "u": 0.0493,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.6911,
+        "sd": 0.0493
+      },
+      "K": null
+    },
+    {
+      "packet_id": "E-t1-sim_b0_drift",
+      "status": "WARN",
+      "action": "update_with_warning",
+      "reasons": [
+        "mrs_snr: value 21.74 1 vs WARN < 25.0; FAIL < 10.0",
+        "mrs_linewidth_Hz: value 13.32 Hz vs WARN > 10.0 Hz; FAIL > 20.0 Hz",
+        "mrs_drift_Hz: value 7.9 Hz vs WARN > 4.0 Hz; FAIL > 12.0 Hz"
+      ],
+      "value": 0.5528,
+      "u": 0.0501,
+      "truth_tissue": 0.6887800000000001,
+      "truth_measurable": 0.6887800000000002,
+      "posterior": {
+        "x": 0.6359408819341573,
+        "sd": 0.044745595312570094
+      },
+      "K": 0.3988367177573585
+    }
+  ],
+  "verdict": "MACHINE: the brain WARN matches a scanner fault (b0_drift). Fix the scanner, then repeat.",
+  "z": {
+    "ph_fwhm_hz": 7.877461722550953,
+    "ph_snr": -1.8243800612360097,
+    "ph_freq_hz": 22.39301032129641,
+    "ph_water_ratio": 1.7750896265499563,
+    "ph_distortion_pct": 0.8627846827257059
+  },
+  "weeks_to_fail": {
+    "ph_fwhm_hz": 20.178224815646185,
+    "ph_snr": 14.681010037344226,
+    "ph_freq_hz": 4.922062336330079,
+    "ph_water_ratio": 138.2676513947252,
+    "ph_distortion_pct": null
+  }
+}

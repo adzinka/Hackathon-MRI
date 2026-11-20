@@ -1,0 +1,148 @@
+[
+  {
+    "key": "clean",
+    "title": "Clean scan (reference)",
+    "source": "StarterPack baseline",
+    "blame": "none",
+    "kind": "none",
+    "expected_signature": "SNR ~31, linewidth ~8.7 Hz, no drift, no outliers",
+    "next_step": "none",
+    "parameters": {},
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "low_snr_coil",
+    "title": "Low SNR: receive coil / RF chain",
+    "source": "errors file \u00a71; hardware",
+    "blame": "machine",
+    "kind": "random",
+    "expected_signature": "SNR down, linewidth normal",
+    "next_step": "coil element test with the phantom; check coil connection",
+    "parameters": {
+      "coil_noise_factor": 1.5
+    },
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "poor_shim",
+    "title": "B0 inhomogeneity / poor shim",
+    "source": "errors file \u00a72; Dossier \u00a75.4",
+    "blame": "machine",
+    "kind": "systematic",
+    "expected_signature": "linewidth up AND SNR down; alignment does not help",
+    "next_step": "re-shim (2 min) and repeat PRESS",
+    "parameters": {
+      "shim_hz": 7.0
+    },
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "motion",
+    "title": "Patient motion",
+    "source": "errors file \u00a73",
+    "blame": "patient",
+    "kind": "systematic",
+    "expected_signature": "outlier transients; linewidth up, recovers after alignment",
+    "next_step": "repeat with head padding; reject outlier transients",
+    "parameters": {
+      "motion_frac": 0.2,
+      "motion_hz": 10.0
+    },
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "freq_drift",
+    "title": "Frequency drift (B0 drift)",
+    "source": "errors file \u00a74; Dossier \u00a75.4",
+    "blame": "machine",
+    "kind": "systematic",
+    "expected_signature": "linear drift across transients; linewidth up, recovers after alignment",
+    "next_step": "frequency alignment of transients; check cryostat / room temperature",
+    "parameters": {
+      "drift_hz": 12.0
+    },
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "voxel_misplacement",
+    "title": "Voxel misplacement / tissue mixing",
+    "source": "errors file \u00a75; Dossier \u00a75.5",
+    "blame": "operator",
+    "kind": "systematic",
+    "expected_signature": "spectral quality normal, ratio shifted",
+    "next_step": "check voxel overlap and tissue fractions; re-place voxel",
+    "parameters": {
+      "voxel_offset_mm": [
+        0.0,
+        0.0,
+        -4.0
+      ]
+    },
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "water_suppression",
+    "title": "Incomplete water suppression",
+    "source": "errors file \u00a76",
+    "blame": "machine",
+    "kind": "systematic",
+    "expected_signature": "large residual water at 4.65 ppm",
+    "next_step": "recalibrate CHESS flip angles; repeat",
+    "parameters": {
+      "water_residual": 3.0
+    },
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "protocol_te",
+    "title": "Protocol mismatch (TE 144 ms)",
+    "source": "errors file \u00a77",
+    "blame": "operator",
+    "kind": "systematic",
+    "expected_signature": "metadata differ; SNR down; ratio shifted by T2 weighting",
+    "next_step": "repeat with the baseline protocol (TE 30 ms)",
+    "parameters": {
+      "te_ms": 144.0
+    },
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "b1_transmit",
+    "title": "RF transmit / B1 miscalibration",
+    "source": "hardware class; Dossier \u00a75.2",
+    "blame": "machine",
+    "kind": "systematic",
+    "expected_signature": "SNR down, more residual water, ratio unchanged",
+    "next_step": "transmitter (flip-angle) calibration",
+    "parameters": {
+      "b1_error": -0.2
+    },
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "gradient",
+    "title": "Gradient scale error (+4 %)",
+    "source": "hardware class; Dossier \u00a75.5",
+    "blame": "machine",
+    "kind": "systematic",
+    "expected_signature": "spectrum looks normal; only a phantom geometry check sees it",
+    "next_step": "gradient calibration with a grid phantom",
+    "parameters": {
+      "gradient_error": 0.04
+    },
+    "origin": "SIMULATED"
+  },
+  {
+    "key": "true_change",
+    "title": "True biological change (Cho +20 %)",
+    "source": "the patient",
+    "blame": "patient",
+    "kind": "none",
+    "expected_signature": "spectral quality normal, Cho/Cr up",
+    "next_step": "confirm with a repeat scan",
+    "parameters": {
+      "cho_factor": 1.2
+    },
+    "origin": "SIMULATED"
+  }
+]
