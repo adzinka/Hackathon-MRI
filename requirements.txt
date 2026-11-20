@@ -5,3 +5,4 @@ plotly>=5.20
 numpy>=1.24
 nibabel>=5.0
 scikit-image>=0.21
+openpyxl>=3.1

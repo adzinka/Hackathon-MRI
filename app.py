@@ -471,7 +471,8 @@ with tab_sc:
     if data is None:
         st.error("No `scenario_data/` yet. Run `python scripts/generate_scenarios.py ../MRI_Hackathon_DataScience_StarterPack_v0.3`.")
     else:
-        s1, s2, s3, s4 = st.tabs(["Single scan", "All 11 scenarios", "Real November scan", "Scanner over time"])
+        s1, s2, s3, s4, s5, s6 = st.tabs(["Single scan", "All 11 scenarios", "Real November scan", "Scanner over time",
+                                          "Threshold check", "ScanTwin catalogue"])
 
         with s1:
             c1, c2 = st.columns([2, 1])
@@ -494,23 +495,38 @@ with tab_sc:
                                                    f"{sc.title}: spectrum vs a clean scan (same noise seed)"), width="stretch")
                 st.caption(f"Expected signature: {sc.expected}.  Source: {sc.source}.")
             with right:
-                st.markdown("**Quality checks** (thresholds-team-v1.1)")
-                labels = {"mrs_snr": ("SNR", f"{m['snr']:.1f}"), "mrs_linewidth_Hz": ("Linewidth / Hz", f"{m['fwhm_hz']:.1f}"),
-                          "mrs_water_ratio": ("Residual water / NAA", f"{m['water_ratio']:.2f}"),
-                          "protocol_match": ("TE / ms", f"{m['te_ms']:.0f}"),
-                          "mrs_drift_Hz": ("Drift / Hz (transients)", f"{m['drift_abs_hz']:.1f}"),
-                          "mrs_transient_outliers": ("Outlier transients", f"{m['outlier_frac']:.0%}")}
-                st.dataframe([{"": STATUS_ICON[stt], "check": labels[c][0], "value": labels[c][1], "status": stt}
-                              for c, stt in g["checks"].items()], width="stretch", hide_index=True)
+                from twin_evidence.gates import supported_range
+                det = g["detail"]
+                st.markdown("**Scanner health: ScanTwin gates**")
+                fmtv = lambda v: "–" if v is None else (f"{v:.2f}" if isinstance(v, float) else str(v))
+                st.dataframe([{"": STATUS_ICON.get(x["status"], "⚪"), "ID": x["id"], "gate": x["label"],
+                               "value": f"{fmtv(x['value'])} {x['unit']}".strip(), "PASS if": x["pass_if"]}
+                              for x in det["gates"] if x["applies"]], width="stretch", hide_index=True, height=360)
+                dec = det["deciding"]
+                why = ", ".join(f"{d['id']} {d['label']}" for d in dec) if dec else "all gates PASS"
+                {"PASS": st.success, "WARN": st.warning, "FAIL": st.error}[g["status"]](
+                    f"**Scan verdict: {g['status']} → {g['verdict']}**  \nDecided by: {why}")
+                if g["status"] != "FAIL":
+                    lo, hi = supported_range(m["cho_cr"], math.hypot(m["cho_cr_crlb"], 0.045), g["status"])
+                    st.markdown(f"**What this result can tell you:** Cho/Cr {m['cho_cr']:.2f}, consistent with about "
+                                f"**{lo:.2f}–{hi:.2f}** at this scan quality.")
+                else:
+                    st.markdown("**What this result can tell you:** nothing. The value is not used and the twin does not change.")
+                if dec:
+                    st.markdown("**Fix for the next scan** (from the catalogue)")
+                    for d in dec:
+                        st.markdown(f"- **{d['id']}**: {d['fix']}")
                 if show_al:
                     st.caption(f"Aligning the transients narrows the line {m['fwhm_hz']:.1f} → {m['fwhm_aligned_hz']:.1f} Hz: "
                                "a frequency problem (drift or motion), not the shim.")
-                st.markdown("**Diagnosis** (naive-Bayes fault model, trained on simulations)")
-                post = data["model"].posterior(m, SV.QUALITY_ALL)
-                st.plotly_chart(SV.posterior_bar(post, 5), width="stretch")
-                blame = SCN.blame_of(post)
-                st.markdown("Blame: " + " · ".join(f"**{b}** {p:.0%}" for b, p in list(blame.items())[:3]))
-                st.success(f"Next step: {sc.next_step}")
+                with st.expander("Likely fault (fault model trained on simulations)"):
+                    post = data["model"].posterior(m, SV.QUALITY_ALL)
+                    st.plotly_chart(SV.posterior_bar(post, 5), width="stretch")
+                    blame = SCN.blame_of(post)
+                    st.markdown("Most likely cause: " + " · ".join(f"**{b}** {p:.0%}" for b, p in list(blame.items())[:3]))
+                    st.caption("A statement about the measurement, not about the person.")
+                st.caption("Standing notes (never change the verdict): F19 chemical-shift displacement 12 % (PRESS, 3 T; common "
+                           "to both sessions); F22 ratios only, no water reference.")
             tf = res["tissue"]
             st.caption(f"Voxel tissue (truth): WM {tf['WM']:.0%}, GM {tf['GM']:.0%}, CSF {tf['CSF']:.0%}, outside {tf['outside']:.0%}. "
                        f"Signal scale {res['truth']['signal_scale']:.2f}.")
@@ -561,7 +577,7 @@ with tab_sc:
             st.plotly_chart(SV.phantom_chart(L["weekly"], {o: v[4] for o, v in PHANTOM_OBS.items()}), width="stretch")
             b0, b1 = chain["brain"]
             v1, v2, v3 = st.columns(3)
-            v1.metric("Scanner twin diagnosis", row["diagnosed_class"], "correct" if row["correct"] == "True" else "WRONG",
+            v1.metric("Scanner twin: fault class", row["diagnosed_class"], "correct" if row["correct"] == "True" else "WRONG",
                       delta_color="off")
             v2.metric("Brain follow-up gate", f"{STATUS_ICON[b1['status']]} {b1['status']}", b1["action"], delta_color="off")
             v3.metric("Brain Cho/Cr (truth)", f"{b1['value']:.3f}", f"truth {b1['truth_tissue']:.3f}", delta_color="off")
@@ -569,3 +585,42 @@ with tab_sc:
             box(row["verdict"])
             st.caption(f"Why: {chain['diagnosis']['why']}. Brain reasons: " + ("; ".join(b1["reasons"]) if b1["reasons"] else "none") +
                        ". The brain sessions are schema-v1.0 packets with their own NIfTI file and SHA-256, judged by the same gate.")
+
+        with s5:
+            tc = sd_dir / "threshold_check.csv"
+            if not tc.exists():
+                st.info("Run `python scripts/sweep_faults.py ../MRI_Hackathon_DataScience_StarterPack_v0.3` to check the thresholds.")
+            else:
+                import csv as _csv
+                checks = list(_csv.DictReader(open(tc, encoding="utf-8")))
+                sweeps = list(_csv.DictReader(open(sd_dir / "sweeps.csv", encoding="utf-8")))
+                st.markdown("Each built MRS gate of the catalogue, checked with the simulator: the fault is added at increasing "
+                            "strength, and we record when Cho/Cr drifts from the truth by more than the normal scatter "
+                            f"(1 SD = {float(checks[0]['baseline_sd']):.3f}).")
+                st.dataframe([{"": "⚠️" if c["verdict"].startswith("TOO") else "✅", "ID": c["gate"], "gate": c["label"],
+                               "catalogue WARN": c["catalogue_warn"], "catalogue FAIL": c["catalogue_fail"],
+                               "bias reaches 1 SD at": c["sim_metric_at_1sd_bias"] or "never",
+                               "bias reaches 2 SD at": c["sim_metric_at_2sd_bias"] or "never", "verdict": c["verdict"]}
+                              for c in checks], width="stretch", hide_index=True)
+                gid = st.selectbox("Show the sweep for", [c["gate"] for c in checks],
+                                   format_func=lambda i: f"{i} {next(c['label'] for c in checks if c['gate'] == i)}")
+                st.plotly_chart(SV.sweep_chart([r for r in sweeps if r["gate"] == gid],
+                                               next(c for c in checks if c["gate"] == gid)), width="stretch")
+
+        with s6:
+            from twin_evidence.gates import catalogue as _cat
+            cat = list(_cat().values())
+            if not cat:
+                st.info("Run `python scripts/import_catalogue.py`.")
+            else:
+                f1, f2 = st.columns(2)
+                types = sorted({c["Scan type"] for c in cat})
+                tsel = f1.multiselect("Scan type", types, default=[t for t in types if "MRS" in t or t.startswith("All")])
+                tiers = f2.multiselect("Demo tier", ["Built", "Designed", "Future"], default=["Built", "Designed"])
+                rows = [c for c in cat if c["Scan type"] in tsel and c["Demo tier"] in tiers]
+                st.caption(f"{len(rows)} of {len(cat)} failure modes · source: docs/scantwin (team bioengineer). "
+                           "Built = simulated and gated in this app.")
+                st.dataframe([{"ID": c["ID"], "tier": c["Demo tier"], "scan type": c["Scan type"], "failure": c["Failure mode"],
+                               "effect": c["Effect on the result"], "metric": c["QC metric"], "PASS": c["PASS if"],
+                               "WARN": c["WARN if"], "FAIL": c["FAIL if"], "fix": c["Fix for the next scan"],
+                               "source": c["Threshold source"]} for c in rows], width="stretch", hide_index=True, height=480)

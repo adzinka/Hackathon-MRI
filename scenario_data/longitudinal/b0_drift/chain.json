@@ -44,7 +44,7 @@
       "reasons": [
         "mrs_snr: value 21.74 1 vs WARN < 25.0; FAIL < 10.0",
         "mrs_linewidth_Hz: value 13.32 Hz vs WARN > 10.0 Hz; FAIL > 20.0 Hz",
-        "mrs_drift_Hz: value 7.9 Hz vs WARN > 4.0 Hz; FAIL > 12.0 Hz"
+        "mrs_drift_Hz: value 7.9 Hz vs WARN > 6.0 Hz; FAIL > 12.0 Hz"
       ],
       "value": 0.5528,
       "u": 0.0501,

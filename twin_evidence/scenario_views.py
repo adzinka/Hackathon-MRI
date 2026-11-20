@@ -104,3 +104,23 @@ def phantom_chart(weekly: list[dict], gates: dict) -> go.Figure:
         fig.update_xaxes(title_text="week", row=1, col=c)
     fig.update_layout(height=320, margin=dict(l=10, r=10, t=40, b=10), legend=dict(orientation="h", y=-0.3))
     return fig
+
+
+def sweep_chart(rows: list[dict], check: dict) -> go.Figure:
+    """Fault strength sweep: gate metric vs apparent change in Cho/Cr, with the catalogue limits."""
+    x = [float(r["metric_mean"]) for r in rows]
+    y = [float(r["bias_in_sd"]) for r in rows]
+    st = [r["gate_status_at_mean"] for r in rows]
+    fig = go.Figure()
+    for lvl, lab in ((1, "1 SD"), (-1, ""), (2, "2 SD"), (-2, "")):
+        fig.add_hline(y=lvl, line=dict(color="#9aa5b1", dash="dot", width=1), annotation_text=lab, annotation_position="right")
+    for key, col in (("catalogue_warn", STATUS_COLOR["WARN"]), ("catalogue_fail", STATUS_COLOR["FAIL"])):
+        if check.get(key) not in (None, "", "None"):
+            fig.add_vline(x=float(check[key]), line=dict(color=col, dash="dash"),
+                          annotation_text=f"catalogue {key.split('_')[1].upper()}", annotation_position="top")
+    fig.add_trace(go.Scatter(x=x, y=y, mode="lines+markers", marker=dict(size=11, color=[STATUS_COLOR[s] for s in st]),
+                             line=dict(color="#2b6cb0"), text=[f"strength {r['strength']}" for r in rows],
+                             hovertemplate="%{text}<br>metric %{x:.2f}<br>Cho/Cr shift %{y:+.1f} SD<extra></extra>", name="simulated"))
+    fig.update_layout(height=360, margin=dict(l=10, r=10, t=30, b=10), showlegend=False,
+                      xaxis=dict(title=f"{rows[0]['metric']} (gate metric)"), yaxis=dict(title="apparent Cho/Cr change / baseline SD"))
+    return fig

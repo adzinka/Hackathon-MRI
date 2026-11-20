@@ -42,8 +42,7 @@
       "status": "WARN",
       "action": "update_with_warning",
       "reasons": [
-        "mrs_snr: value 21.09 1 vs WARN < 25.0; FAIL < 10.0",
-        "mrs_water_ratio: value 2.358 1 vs WARN > 1.0; FAIL > 3.0"
+        "mrs_snr: value 21.09 1 vs WARN < 25.0; FAIL < 10.0"
       ],
       "value": 0.5693,
       "u": 0.0914,

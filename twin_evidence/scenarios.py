@@ -79,51 +79,59 @@ METRICS = {
 
 # team-proposal gates for the new metrics, on top of thresholds-v1.0 (mrs_snr, mrs_linewidth_Hz)
 NEW_GATES = [
-    {"name": "mrs_water_ratio", "unit": "1", "owner": "QE", "warn_above": 1.0, "fail_above": 3.0, "applies_to": ["MRS"],
-     "note": "PROPOSAL: residual water peak / NAA peak; clean StarterPack spectra give ~0.15-0.25 (noise floor)"},
-    {"name": "mrs_drift_Hz", "unit": "Hz", "owner": "PM", "warn_above": 4.0, "fail_above": 12.0, "applies_to": ["MRS"],
-     "note": "PROPOSAL: uncorrected frequency drift over the acquisition; 12 Hz = 0.1 ppm (Dossier §5.4)"},
-    {"name": "mrs_transient_outliers", "unit": "1", "owner": "QE", "warn_above": 0.1, "fail_above": 0.3, "applies_to": ["MRS"],
-     "note": "PROPOSAL: fraction of transients with a frequency jump or low correlation (motion)"},
+    {"name": "mrs_water_ratio", "unit": "1", "owner": "QE", "warn_above": 5.0, "fail_above": 20.0, "applies_to": ["MRS"],
+     "note": "ScanTwin catalogue F15 (team proposal): residual water peak / NAA peak height"},
+    {"name": "mrs_drift_Hz", "unit": "Hz", "owner": "PM", "warn_above": 6.0, "fail_above": 12.0, "applies_to": ["MRS"],
+     "note": "ScanTwin catalogue F08: 0.05 / 0.1 ppm at 3 T (Dossier §5.4)"},
+    {"name": "mrs_transient_outliers", "unit": "1", "owner": "QE", "warn_above": 0.05, "fail_above": 0.20, "applies_to": ["MRS"],
+     "note": "ScanTwin catalogue F23 (team proposal): fraction of transients rejected as outliers"},
 ]
 
 
 # ------------------------------------------------------------------------------------------------- one run
 def measure(sim: S.Simulated) -> dict:
-    """Process a simulated acquisition exactly like real data: average, QC, fit; plus transient QC."""
+    """Process a simulated acquisition exactly like real data: average, QC, fit; plus transient QC and the
+    session-level metrics of the ScanTwin catalogue (voxel prescription, tissue segmentation, protocol)."""
     fid = sim.average()
     q = F.qc_metrics(fid)
     fit = F.fit(fid)
     cho, cho_sd = fit.ratio("Cho")
     naa, naa_sd = fit.ratio("NAA")
+    i = fit.names.index("Cho")
+    cho_amp = fit.amplitudes["Cho"]
+    crlb_pct = 100 * float(np.sqrt(fit.cov[i, i])) / abs(cho_amp) if cho_amp else float("inf")
     tq = S.transient_qc(sim.transients)
     fwhm_al = F.qc_metrics(S.align_and_average(sim.transients))["fwhm_hz"]
+    tissue = sim.truth["tissue"]
     return {
         "snr": q["snr"], "fwhm_hz": q["fwhm_hz"], "water_ratio": q["water_ratio"], "te_ms": sim.acq.te_ms,
-        "cho_cr": cho, "cho_cr_crlb": cho_sd, "naa_cr": naa, "naa_cr_crlb": naa_sd,
+        "cho_cr": cho, "cho_cr_crlb": cho_sd, "naa_cr": naa, "naa_cr_crlb": naa_sd, "cho_crlb_pct": min(crlb_pct, 999.0),
         "fit_lw_hz": fit.lw_hz, "fit_shift_hz": fit.shift_hz,
         "drift_abs_hz": abs(tq["drift_hz"]), "outlier_frac": tq["transient_outlier_frac"],
+        "outlier_pct": 100 * tq["transient_outlier_frac"],
         "fwhm_aligned_hz": fwhm_al, "fwhm_gain_aligned": q["fwhm_hz"] - fwhm_al,
+        # F20: the scanner only knows the prescribed position, so a gradient error does not show up here
+        "voxel_shift_mm": float(np.linalg.norm(sim.acq.voxel_offset_mm)),
+        # F21: CSF fraction from segmenting the voxel, vs the baseline voxel (0 % CSF in the StarterPack VOI)
+        "csf_change_pp": 100 * (tissue["CSF"] + tissue["outside"]),
+        "protocol_diff": abs(sim.acq.te_ms - S.TE_REF_MS) / S.TE_REF_MS,
+        "csde_pct": 12.0,   # PRESS, 3 T, 20 mm voxel: 2.4 mm per axis (Dossier §5.5)
         "cho_cr_truth_tissue": sim.truth["Cho_Cr_tissue"], "cho_cr_truth_measurable": sim.truth["Cho_Cr_measurable"],
-        "gm_fraction": sim.truth["tissue"]["GM"],
+        "gm_fraction": tissue["GM"],
     }
+
+
+LEGACY = {"mrs_snr": "F13", "mrs_linewidth_Hz": "F12", "mrs_water_ratio": "F15", "protocol_match": "F35",
+          "mrs_drift_Hz": "F08", "mrs_transient_outliers": "F23"}
 
 
 def gate(m: dict, ref_te_ms: float = S.TE_REF_MS) -> dict:
-    """PASS/WARN/FAIL per check, thresholds-v1.0 for SNR and linewidth plus the team-proposal gates."""
-    checks = {
-        "mrs_snr": "FAIL" if m["snr"] < 10 else "WARN" if m["snr"] < 25 else "PASS",
-        "mrs_linewidth_Hz": "FAIL" if m["fwhm_hz"] > 20 else "WARN" if m["fwhm_hz"] > 10 else "PASS",
-        "mrs_water_ratio": "FAIL" if m["water_ratio"] > 3 else "WARN" if m["water_ratio"] > 1 else "PASS",
-        "protocol_match": "WARN" if abs(m["te_ms"] - ref_te_ms) > 1e-6 else "PASS",
-    }
-    if m.get("drift_abs_hz") is not None:
-        checks["mrs_drift_Hz"] = "FAIL" if m["drift_abs_hz"] > 12 else "WARN" if m["drift_abs_hz"] > 4 else "PASS"
-    if m.get("outlier_frac") is not None:
-        checks["mrs_transient_outliers"] = "FAIL" if m["outlier_frac"] > 0.3 else "WARN" if m["outlier_frac"] > 0.1 else "PASS"
-    rank = {"PASS": 0, "WARN": 1, "FAIL": 2}
-    status = max(checks.values(), key=rank.get)
-    return {"status": status, "checks": checks}
+    """ScanTwin gates (catalogue IDs) on one scan. Returns status, verdict and checks by ID and by legacy name."""
+    from .gates import evaluate_mrs
+    r = evaluate_mrs(m)
+    by_id = {g["id"]: g["status"] for g in r["gates"] if g["applies"]}
+    checks = {**by_id, **{k: by_id[v] for k, v in LEGACY.items() if v in by_id}}
+    return {"status": r["status"], "checks": checks, "verdict": r["verdict"], "detail": r}
 
 
 def run(key: str, root: Path | None, seed: int = 0) -> dict:

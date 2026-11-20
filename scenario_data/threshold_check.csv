@@ -1,0 +1,7 @@
+gate,label,metric,catalogue_warn,catalogue_fail,sim_metric_at_1sd_bias,sim_metric_at_2sd_bias,baseline_sd,verdict
+F12,Linewidth (shim),fwhm_hz,10.0,20.0,13.63,,0.0209,OK: consistent with the simulation
+F13,SNR,snr,25.0,10.0,,,0.0209,"OK: no harmful bias within the tested range (the gate protects against noise, not bias)"
+F08,Frequency drift,drift_abs_hz,6.0,12.0,9.56,15.29,0.0209,OK: consistent with the simulation
+F15,Residual water / NAA,water_ratio,5.0,20.0,0.32,0.56,0.0209,"TOO LENIENT: bias reaches 1 SD at 0.32, the catalogue warns only at 5.0"
+F23,Transients rejected (motion),outlier_pct,5.0,20.0,,,0.0209,"OK: no harmful bias within the tested range (the gate protects against noise, not bias)"
+F20,Voxel centre vs baseline,voxel_shift_mm,2.0,3.0,1.87,5.34,0.0209,OK: consistent with the simulation

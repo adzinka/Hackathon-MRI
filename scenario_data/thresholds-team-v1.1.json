@@ -101,34 +101,34 @@
       "name": "mrs_water_ratio",
       "unit": "1",
       "owner": "QE",
-      "warn_above": 1.0,
-      "fail_above": 3.0,
+      "warn_above": 5.0,
+      "fail_above": 20.0,
       "applies_to": [
         "MRS"
       ],
-      "note": "PROPOSAL: residual water peak / NAA peak; clean StarterPack spectra give ~0.15-0.25 (noise floor)"
+      "note": "ScanTwin catalogue F15 (team proposal): residual water peak / NAA peak height"
     },
     {
       "name": "mrs_drift_Hz",
       "unit": "Hz",
       "owner": "PM",
-      "warn_above": 4.0,
+      "warn_above": 6.0,
       "fail_above": 12.0,
       "applies_to": [
         "MRS"
       ],
-      "note": "PROPOSAL: uncorrected frequency drift over the acquisition; 12 Hz = 0.1 ppm (Dossier \u00a75.4)"
+      "note": "ScanTwin catalogue F08: 0.05 / 0.1 ppm at 3 T (Dossier \u00a75.4)"
     },
     {
       "name": "mrs_transient_outliers",
       "unit": "1",
       "owner": "QE",
-      "warn_above": 0.1,
-      "fail_above": 0.3,
+      "warn_above": 0.05,
+      "fail_above": 0.2,
       "applies_to": [
         "MRS"
       ],
-      "note": "PROPOSAL: fraction of transients with a frequency jump or low correlation (motion)"
+      "note": "ScanTwin catalogue F23 (team proposal): fraction of transients rejected as outliers"
     }
   ],
   "twin_policy": {

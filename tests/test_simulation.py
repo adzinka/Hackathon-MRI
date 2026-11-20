@@ -64,17 +64,25 @@ def test_motion_is_flagged_by_transient_outliers(root):
     assert motion > 0.08 and clean < 0.03
 
 
-@pytest.mark.parametrize("key, check", [("low_snr_coil", "check_mrs_snr"), ("poor_shim", "check_mrs_linewidth_Hz"),
-                                        ("water_suppression", "check_mrs_water_ratio"), ("protocol_te", "check_protocol_match"),
-                                        ("freq_drift", "check_mrs_drift_Hz")])
-def test_each_fault_trips_its_gate(root, key, check):
-    assert SC.run(key, root, seed=7)[check] in ("WARN", "FAIL")
+@pytest.mark.parametrize("key, gate_id", [("low_snr_coil", "F13"), ("poor_shim", "F12"), ("protocol_te", "F35"),
+                                          ("freq_drift", "F08"), ("motion", "F23"), ("voxel_misplacement", "F20")])
+def test_each_fault_trips_its_catalogue_gate(root, key, gate_id):
+    assert SC.run(key, root, seed=7)[f"check_{gate_id}"] in ("WARN", "FAIL")
+
+
+def test_known_gap_water_suppression_passes_f15_but_biases_cho(root):
+    """Documents a finding (docs/scantwin/REVIEW.md): with the catalogue F15 limit (WARN > 5) a residual water of ~2x NAA
+    passes, yet Cho/Cr is biased by several SD. If the team lowers the F15 limit, update this test."""
+    r = SC.run("water_suppression", root, seed=7)
+    assert r["check_F15"] == "PASS" and r["cho_cr"] < 0.689 - 3 * 0.022
 
 
 @pytest.mark.parametrize("key", sorted(SC.SPECTRALLY_SILENT))
-def test_spectrally_silent_scenarios_pass_the_gate(root, key):
-    """Misplacement, gradient error and a true change all look clean: only the phantom or tissue fractions tell them apart."""
-    assert SC.run(key, root, seed=9)["gate"] == "PASS"
+def test_spectrally_silent_scenarios_have_clean_spectra(root, key):
+    """Misplacement, gradient error and a true change leave the spectrum clean (F12, F13, F15 pass). Only session
+    metadata (F20 voxel position) or the scanner twin (phantom geometry) can reveal the first two."""
+    r = SC.run(key, root, seed=9)
+    assert r["check_F12"] == r["check_F13"] == r["check_F15"] == "PASS"
 
 
 def test_scanner_chain_blames_the_machine_for_shim(root, tmp_path):
