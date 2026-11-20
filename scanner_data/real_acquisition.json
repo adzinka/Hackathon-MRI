@@ -1,0 +1,53 @@
+{
+  "origin": "REAL StarterPack v0.3 (synthetic teaching data, SIMULATED origin)",
+  "mrs_acquisition": {
+    "field_strength_T": 3.0,
+    "spectrometer_frequency_MHz": 123.25,
+    "sequence": "PRESS",
+    "TE_s": 0.03,
+    "TR_s": 2.0,
+    "averages": 64
+  },
+  "mrs_sidecar": {
+    "Manufacturer": "SYNTHETIC",
+    "MagneticFieldStrength": 3.0,
+    "SpectrometerFrequency": [
+      123.25
+    ],
+    "PulseSequenceType": "PRESS",
+    "EchoTime": 0.03,
+    "RepetitionTime": 2.0,
+    "NumberOfTransients": 64,
+    "WaterSuppression": true
+  },
+  "field_note": "Nominal field 3.0 T is a label; 123.25 MHz / 42.577 MHz/T = 2.895 T is the measured field (Dossier §5.4).",
+  "voi": {
+    "frame": "scanner",
+    "voi_center_mm": [
+      -16.0,
+      45.0,
+      6.0
+    ],
+    "voi_size_mm": [
+      20,
+      20,
+      20
+    ],
+    "csde_mm_NAA_Cho": 2.4
+  },
+  "roi_registration": {
+    "frame": "registered_anatomical",
+    "reference_image": "ses-baseline T1w",
+    "mask_propagated": true,
+    "reference_roi_volume_mm3": 22140.0,
+    "registration_rms_mm": 1.1,
+    "registration": "rigid, follow-up T1w to baseline T1w; baseline ROI mask propagated",
+    "mask": "03_BIDS_MRI/derivatives/roi/sub-01/ses-followup/anat/sub-01_ses-followup_space-T1w_label-ROI_probseg.nii.gz"
+  },
+  "references": {
+    "system_qc_id": "sysqc-synthetic-20261120",
+    "calibration_id": "phantom-2026-11",
+    "note": "These ids point to a system QC and a phantom calibration that are NOT in the StarterPack."
+  },
+  "spectrum_convention": "s(t) = sum a_j exp(-pi LW t) exp(+i 2 pi f_j t); f_j = (delta_j - 4.65 ppm) x 123.25 MHz; dwell 0.5 ms, 1024 points; SNR = NAA peak height / SD of real spectrum in -3..0 ppm"
+}

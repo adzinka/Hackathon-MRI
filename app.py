@@ -1,0 +1,444 @@
+"""Streamlit demonstrator on top of twin_evidence: prior -> evidence -> posterior, decision panel, provenance.
+
+run:  streamlit run app.py
+      (StarterPack path is taken from the sidebar; default ../MRI_Hackathon_DataScience_StarterPack_v0.3)
+Synthetic, educational data. No clinical meaning.
+"""
+from __future__ import annotations
+
+import copy
+import json
+import math
+from pathlib import Path
+
+import numpy as np
+import plotly.graph_objects as go
+import streamlit as st
+
+from twin_evidence.twin import Twin, CHI2_95_1DOF
+from twin_evidence.validate import evaluate, load_json, load_manifest, to_months
+from twin_evidence import scanner as scn
+from twin_evidence import views
+
+st.set_page_config(page_title="Twin Evidence", page_icon="🧠", layout="wide")
+
+BASELINE = ["E-t0-roi", "E-t0-naa", "E-t0-cho"]
+FOLLOWUP = ["E-t1-cho", "E-t1-naa", "E-t1-roi", "E-t1-chobad"]
+STATUS_COLOR = {"PASS": "#2e9e5b", "WARN": "#e0a100", "FAIL": "#d64545"}
+STATUS_ICON = {"PASS": "🟢", "WARN": "🟡", "FAIL": "🔴"}
+OWNER = {"QE": "Quantum Engineering", "PM": "Precision Mechanics / Metrology", "DS": "Data Science",
+         "DT": "Digital Twins", "shared": "shared"}
+C_PRIOR, C_EVID, C_POST, C_ALT = "#6b7a8f", "#e07b39", "#2b6cb0", "#9aa5b1"
+
+# candidate next measurements (Dossier §7.7); sigma_m in units of the observable, minutes of scanner time
+NEXT = {
+    "Cho_Cr": [("Repeat PRESS after re-shim", 0.050, "PASS", 4.1),
+               ("Double averages, no re-shim", 0.042, "WARN", 4.3)],
+    "NAA_Cr": [("Repeat PRESS after re-shim", 0.060, "PASS", 4.1),
+               ("Double averages, no re-shim", 0.057, "WARN", 4.3)],
+    "roi_volume": [("Registration + segmentation audit, then re-measure", 0.03, "PASS", 10.0),
+                   ("Repeat T1w scan, same pipeline", 0.19, "WARN", 6.0)],  # relative SD for the ROI
+}
+
+
+# ---------- data ----------
+@st.cache_data
+def load_pack(root: str):
+    r = Path(root)
+    tw = r / "05_TwinReady_JSON_CSV"
+    return (load_json(tw / "thresholds-v1.0.json"), load_json(tw / "evidence_packet_v1.0.schema.json"),
+            load_manifest(r / "manifest_sha256.csv"),
+            {n: load_json(tw / "packets" / f"{n}.json") for n in BASELINE + FOLLOWUP})
+
+
+def run_twin(packets, thresholds, schema, manifest, root):
+    twin, rows = Twin(), []
+    for p in packets:
+        ev = evaluate(p, thresholds, schema, manifest, Path(root))
+        rows.append((p, ev, twin.ingest(p, ev)))
+    return twin, rows
+
+
+def gauss(x, mu, sd):
+    return np.exp(-0.5 * ((x - mu) / sd) ** 2) / (sd * math.sqrt(2 * math.pi))
+
+
+def fmt(v, obs):
+    if v is None:
+        return "–"
+    return f"{v:,.0f}".replace(",", " ") if obs == "roi_volume" else f"{v:.3f}"
+
+
+# ---------- sidebar ----------
+st.sidebar.title("Twin Evidence")
+root = st.sidebar.text_input("StarterPack v0.3 folder", "../MRI_Hackathon_DataScience_StarterPack_v0.3")
+if not (Path(root) / "05_TwinReady_JSON_CSV").exists():
+    st.error(f"StarterPack not found at `{root}`. Set the path in the sidebar.")
+    st.stop()
+thresholds, schema, manifest, PK = load_pack(str(Path(root).resolve()))
+
+uploaded = st.sidebar.file_uploader("Unseen follow-up packet (JSON)", type="json")
+choices = {f"{n}  ·  {PK[n]['observable']}": PK[n] for n in FOLLOWUP}
+if uploaded is not None:
+    try:
+        up = json.load(uploaded)
+        choices = {f"⬆ {up.get('packet_id', 'uploaded')}  ·  {up.get('observable')}": up, **choices}
+    except json.JSONDecodeError as e:
+        st.sidebar.error(f"Not valid JSON: {e}")
+label = st.sidebar.radio("Follow-up packet to judge", list(choices))
+packet = choices[label]
+
+st.sidebar.markdown("**Declared team policy**")
+warn_factor = st.sidebar.slider("WARN variance factor (R = f·u² in the gain)", 1.0, 4.0,
+                                float(thresholds["twin_policy"]["WARN"]["R_factor"]), 0.5)
+show_alt = st.sidebar.checkbox("Show result without WARN policy (f = 1)", True)
+st.sidebar.markdown("**Scanner twin** (SIMULATED phantom record)")
+scenario = st.sidebar.radio("Scenario", list(scn.SCENARIOS), index=1,
+                            format_func=lambda k: {"stable": "scanner stable", "shim_degrading": "shim degrading",
+                                                   "b0_drift": "B0 drift"}[k])
+st.sidebar.caption("Synthetic, educational data (SIMULATED origin). No clinical meaning. Drafted with Claude, reviewed by the team.")
+
+th = copy.deepcopy(thresholds)
+th["twin_policy"]["WARN"]["R_factor"] = warn_factor
+th_alt = copy.deepcopy(thresholds)
+th_alt["twin_policy"]["WARN"]["R_factor"] = 1.0
+
+seq = [PK[n] for n in BASELINE] + [packet]
+scanner_rep = scn.run(scenario, warn_factor)
+twin, rows = run_twin(seq, th, schema, manifest, root)
+p, ev, e = rows[-1]
+obs = p.get("observable")
+base = next(((bp, bev, be) for bp, bev, be in rows[:-1] if bp.get("observable") == obs), None)
+alt = run_twin(seq, th_alt, schema, manifest, root)[1][-1][2] if show_alt else None
+
+# ---------- header ----------
+st.title("From Spins to a Health Digital Twin")
+st.caption("Evidence gate + gated Kalman update · StarterPack v0.3 · Hackathon Dossier v1.6 (§3.10, §5.3, §7.5, §7.7, §8.2)")
+
+c = st.columns(4)
+c[0].metric("Packet", p.get("packet_id", "?"), obs)
+c[1].metric("Gate status", f"{STATUS_ICON[ev.status]} {ev.status}",
+            f"stored: {ev.stored_status}" if ev.stored_status != ev.status else "stored status confirmed",
+            delta_color="off")
+c[2].metric("Twin action", e.action)
+if e.kind == "update":
+    c[3].metric("Twin variable", f"{fmt(e.posterior['x'], obs)} ± {fmt(e.posterior['sd'], obs)}",
+                f"{e.posterior['x'] - e.prior['x']:+.3g} vs prior", delta_color="off")
+elif base:
+    c[3].metric("Twin variable", f"{fmt(twin.state[obs].x, obs)} ± {fmt(twin.state[obs].sd, obs)}", "unchanged", delta_color="off")
+
+tab_upd, tab_dec, tab_prov, tab_time, tab_3d, tab_scan = st.tabs(
+    ["① Prior → evidence → posterior", "② Decision", "③ Provenance", "④ Timeline (all packets)",
+     "⑤ 3D evidence map", "⑥ Scanner twin"])
+
+# ---------- ① prior -> evidence -> posterior ----------
+with tab_upd:
+    if base is None:
+        st.warning(f"No baseline for observable `{obs}`: this packet would only initialise the state.")
+    else:
+        b_state = base[2].posterior
+        if e.kind == "update":
+            prior, post = e.prior, e.posterior
+            y, u, u_gain = e.y, e.u, math.sqrt(e.R_gain)
+        else:  # rejected: the state stays where it was
+            prior = post = b_state
+            y = p.get("value") if isinstance(p.get("value"), (int, float)) else None
+            u = (p.get("uncertainty") or {}).get("value")
+            u = u if isinstance(u, (int, float)) and u > 0 else None
+            u_gain = u
+
+        left, right = st.columns([3, 2])
+        with left:
+            sds = [s for s in (prior["sd"], post["sd"], u_gain) if s]
+            mus = [m for m in (prior["x"], post["x"], y) if m is not None]
+            xs = np.linspace(min(mus) - 4 * max(sds), max(mus) + 4 * max(sds), 600)
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=xs, y=gauss(xs, prior["x"], prior["sd"]), name="old estimate (prior, incl. drift Q)",
+                                     line=dict(color=C_PRIOR, width=2), fill="tozeroy", fillcolor="rgba(107,122,143,.12)"))
+            if y is not None and u:
+                rejected = e.kind == "reject"
+                fig.add_trace(go.Scatter(x=xs, y=gauss(xs, y, u), name="new measurement (packet u)" + (" — REJECTED" if rejected else ""),
+                                         line=dict(color=C_ALT if rejected else C_EVID, width=2, dash="dot" if rejected else "solid")))
+                if not rejected and abs(u_gain - u) > 1e-12:
+                    fig.add_trace(go.Scatter(x=xs, y=gauss(xs, y, u_gain), name=f"measurement as used in the gain (√{e.R_gain / e.R_gate:.1f}·u)",
+                                             line=dict(color=C_EVID, width=1.5, dash="dash")))
+            if e.kind == "update":
+                fig.add_trace(go.Scatter(x=xs, y=gauss(xs, post["x"], post["sd"]), name="new estimate (posterior)",
+                                         line=dict(color=C_POST, width=3), fill="tozeroy", fillcolor="rgba(43,108,176,.15)"))
+                if alt is not None and alt.kind == "update" and abs(alt.K - e.K) > 1e-9:
+                    fig.add_trace(go.Scatter(x=xs, y=gauss(xs, alt.posterior["x"], alt.posterior["sd"]), name="posterior without WARN policy",
+                                             line=dict(color=C_POST, width=1.5, dash="dot")))
+            for m, col in ((prior["x"], C_PRIOR), (y, C_EVID), (post["x"] if e.kind == "update" else None, C_POST)):
+                if m is not None:
+                    fig.add_vline(x=m, line=dict(color=col, width=1, dash="dot"))
+            fig.update_layout(height=420, margin=dict(l=10, r=10, t=40, b=10), legend=dict(orientation="h", y=-0.18),
+                              title=f"{obs}: old estimate → new measurement → new estimate",
+                              xaxis_title=f"{obs} [{p.get('unit')}]", yaxis_title="probability density", yaxis_showticklabels=False)
+            st.plotly_chart(fig, width="stretch")
+
+        with right:
+            # the same story over time: t0 state, drift, t1 measurement, posterior
+            t0 = to_months(base[0].get("relative_time")) or 0.0
+            t1 = to_months(p.get("relative_time")) or 6.0
+            f2 = go.Figure()
+            f2.add_trace(go.Scatter(x=[t0, t1], y=[b_state["x"], prior["x"]], mode="lines", name="prior carried forward",
+                                    line=dict(color=C_PRIOR, dash="dot")))
+            f2.add_trace(go.Scatter(x=[t0, t1, t1, t0], y=[b_state["x"] + 1.96 * b_state["sd"], prior["x"] + 1.96 * prior["sd"],
+                                                            prior["x"] - 1.96 * prior["sd"], b_state["x"] - 1.96 * b_state["sd"]],
+                                    fill="toself", fillcolor="rgba(107,122,143,.12)", line=dict(width=0), name="prior 95 % band"))
+            f2.add_trace(go.Scatter(x=[t0], y=[b_state["x"]], error_y=dict(array=[1.96 * b_state["sd"]]), mode="markers",
+                                    marker=dict(color=C_PRIOR, size=11), name="baseline t0"))
+            if y is not None and u:
+                f2.add_trace(go.Scatter(x=[t1 - 0.12], y=[y], error_y=dict(array=[1.96 * u]), mode="markers",
+                                        marker=dict(color=STATUS_COLOR[ev.status], size=11, symbol="x" if e.kind == "reject" else "diamond"),
+                                        name=f"measurement t1 ({ev.status})"))
+            if e.kind == "update":
+                f2.add_trace(go.Scatter(x=[t1 + 0.12], y=[post["x"]], error_y=dict(array=[1.96 * post["sd"]]), mode="markers",
+                                        marker=dict(color=C_POST, size=12), name="posterior t1"))
+            f2.update_layout(height=420, margin=dict(l=10, r=10, t=40, b=10), title="Over time (±95 %)",
+                             xaxis_title="months since baseline", yaxis_title=f"{obs} [{p.get('unit')}]",
+                             legend=dict(orientation="h", y=-0.25))
+            st.plotly_chart(f2, width="stretch")
+
+        if e.kind == "update":
+            st.markdown("**The step in numbers** (scalar Kalman, h = 1)")
+            st.latex(
+                rf"x^- = {fmt(e.prior['x'], obs)},\; P^- = P_0 + Q = {fmt(e.prior['sd'], obs)}^2,\; "
+                rf"y = {fmt(e.y, obs)},\; R_{{gate}} = u^2 = {fmt(e.u, obs)}^2,\; R_{{gain}} = {e.R_gain / e.R_gate:.1f}\,u^2")
+            st.latex(
+                rf"K = \frac{{P^-}}{{P^- + R_{{gain}}}} = {e.K:.3f},\quad x^+ = x^- + K(y - x^-) = {fmt(e.posterior['x'], obs)},"
+                rf"\quad \sigma^+ = {fmt(e.posterior['sd'], obs)}")
+            if alt is not None and alt.kind == "update" and abs(alt.K - e.K) > 1e-9:
+                st.caption(f"Without the WARN policy: K = {alt.K:.3f}, x⁺ = {fmt(alt.posterior['x'], obs)} ± {fmt(alt.posterior['sd'], obs)}. "
+                           "The policy factor is a declared team choice, not a physical constant (Dossier §7.5).")
+        else:
+            st.error("Evidence rejected: the twin state is **unchanged**. The measurement is shown greyed for transparency only.")
+
+# ---------- ② decision ----------
+with tab_dec:
+    col_a, col_b = st.columns([1, 1])
+    with col_a:
+        box = {"PASS": st.success, "WARN": st.warning, "FAIL": st.error}[ev.status]
+        box(f"### {STATUS_ICON[ev.status]} {ev.status} → `{e.action}`\n"
+            + {"update": "Evidence accepted with its packet uncertainty.",
+               "update_with_warning": f"Evidence accepted, but its variance is multiplied by {warn_factor:g} in the gain.",
+               "reject": "Evidence rejected. The twin state is not changed; the reasons are logged."}[e.action])
+        if ev.stored_status != ev.status:
+            st.info(f"Stored `qc_status` was **{ev.stored_status}**, re-evaluation gives **{ev.status}**. "
+                    "We never trust a stored status blindly.")
+        if e.kind == "update":
+            m = st.columns(3)
+            m[0].metric("z (did the measurement change?)", f"{e.z_change:+.2f}" if e.z_change is not None else "–",
+                        "≥ 1.96: beyond noise" if e.z_change is not None and abs(e.z_change) >= 1.96 else "within noise", delta_color="off")
+            m[1].metric("d² (surprising for the twin?)", f"{e.d2:.2f}",
+                        f"> {CHI2_95_1DOF}: model disagreement" if e.d2_flag else f"< {CHI2_95_1DOF}: consistent", delta_color="off")
+            m[2].metric("Gain K", f"{e.K:.3f}", "state held" if e.K < 0.05 else "state moves", delta_color="off")
+            if e.z_change is not None and abs(e.z_change) >= 1.96 and not e.d2_flag:
+                st.caption("Borderline z with an unsurprising d²: the twin updates with a warning and asks for a better measurement (Dossier §3.10).")
+            # level-4: prediction of the next repeat if nothing changes (Dossier §7.6)
+            nx = NEXT.get(obs, [])
+            if nx:
+                px = e.posterior
+                s_m = nx[0][1] * (px["x"] if obs == "roi_volume" else 1)
+                half = 1.96 * math.sqrt(px["sd"] ** 2 + s_m ** 2)
+                st.markdown(f"**Prediction** (no true change): a PASS-quality repeat should land in "
+                            f"**{fmt(px['x'] - half, obs)} … {fmt(px['x'] + half, obs)}** (95 %).")
+
+        st.markdown("#### Why? Non-PASS findings")
+        bad = [f for f in ev.findings if f.status != "PASS"]
+        if bad:
+            st.dataframe([{"": STATUS_ICON[f.status], "rule": f.rule, "owner": OWNER.get(f.owner, f.owner),
+                           "value": "" if f.value is None else str(f.value), "threshold": f.threshold, "reason": f.reason} for f in bad],
+                         width="stretch", hide_index=True)
+        else:
+            st.write("All checks passed.")
+        for n in ev.notes:
+            st.caption(f"note: {n}")
+        with st.expander(f"All {len(ev.findings)} checks"):
+            st.dataframe([{"": STATUS_ICON[f.status], "rule": f.rule, "owner": f.owner, "value": "" if f.value is None else str(f.value),
+                           "threshold": f.threshold, "re-evaluated by": f.source} for f in ev.findings],
+                         width="stretch", hide_index=True)
+
+    with col_b:
+        st.markdown("#### What should we measure next?")
+        st.caption("Eq. 7.3: posterior SD after an unbiased repeat with SD σₘ. Evidence selection, not treatment selection.")
+        if obs in twin.state and obs in NEXT:
+            s = twin.state[obs]
+            opts = []
+            for name, sig, qc, minutes in NEXT[obs]:
+                sm = sig * (s.x if obs == "roi_volume" else 1)
+                rf = 1.0 if qc == "PASS" else warn_factor
+                new_sd = twin.next_measurement(obs, sm, rf)
+                opts.append({"option": name, "σₘ": fmt(sm, obs), "expected QC": f"{STATUS_ICON[qc]} {qc}",
+                             "minutes": minutes, "σ now": fmt(s.sd, obs), "σ after": fmt(new_sd, obs),
+                             "variance gain / min": f"{(s.P - new_sd ** 2) / minutes:.2e}"})
+            st.dataframe(opts, width="stretch", hide_index=True)
+            rec = {"Cho_Cr": "**Repeat PRESS after re-shim** — not mainly for the variance gain, but because it removes the cause "
+                             "of the WARN (broad line, low SNR) and a possible Cho–Cr overlap bias.",
+                   "NAA_Cr": "**Repeat PRESS after re-shim** — removes the linewidth/SNR WARN; NAA/Cr shows no significant change.",
+                   "roi_volume": "**Registration and segmentation audit** — a +25 % volume change in six months is implausible; "
+                                 "the stated 4 % uncertainty is inconsistent with the 1.1 mm registration RMS."}
+            st.success(rec.get(obs, "Repeat with a PASS-quality protocol."))
+        st.markdown("#### Competing explanations")
+        expl = {"Cho_Cr": ["true chemistry change", "broad line / low SNR → fit bias (CRLB is a lower bound)",
+                           "voxel shift or chemical-shift displacement", "tissue-fraction change in the VOI"],
+                "NAA_Cr": ["measurement variation (z = −0.9: within noise)", "linewidth / SNR", "voxel shift"],
+                "roi_volume": ["mask propagated through an imperfect registration", "segmentation version",
+                               "geometric distortion", "true morphology (implausible: +25 % in 6 months)"]}
+        for x in expl.get(obs, ["true change", "measurement variation", "processing variation", "model discrepancy"]):
+            st.markdown(f"- {x}")
+        if obs in ("Cho_Cr", "NAA_Cr"):
+            st.info(("🛠 " if scanner_rep.machine_explains_mrs else "✅ ") + scanner_rep.verdict + "  \n*(scanner twin, SIMULATED scenario)*")
+        st.caption(f"Limit: {p.get('interpretation_limit', 'educational synthetic data')}")
+
+# ---------- ③ provenance ----------
+with tab_prov:
+    st.markdown("**Why did the twin change?** — from source file to twin variable")
+    src = p.get("source_object", "?")
+    f_src = {f.rule: f for f in ev.findings if f.rule in ("source_in_manifest", "source_sha256", "source_bytes")}
+    integ = "FAIL" if any(f.status == "FAIL" for f in f_src.values()) else "PASS"
+    acts = (p.get("provenance") or {}).get("activities", [])
+    proc = p.get("processing") or {}
+    acq = p.get("acquisition_context") or {}
+
+    def q(s):
+        return str(s).replace('"', "'")
+
+    dot = ['digraph G { rankdir=LR; node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];']
+    dot.append(f'src [label="source file\\n{q(Path(src).name)}\\nSHA-256 {"✓" if integ == "PASS" else "✗"}", fillcolor="{STATUS_COLOR[integ]}33"];')
+    dot.append(f'ctx [label="acquisition\\n{q(acq.get("sequence", p.get("modality")))} · {acq.get("field_strength_T", "?")} T\\n'
+               f'calibration {q(p.get("calibration_id", "–"))}\\nsystem QC {q(p.get("system_qc_id", "–"))}", fillcolor="#eeeeee"];')
+    prev = "src"
+    for i, a in enumerate(acts):
+        dot.append(f'a{i} [label="{q(a)}", shape=ellipse, fillcolor="#f5f5f5"]; {prev} -> a{i};')
+        prev = f"a{i}"
+    dot.append(f'pk [label="evidence packet\\n{q(p.get("packet_id"))}\\n{q(obs)} = {p.get("value")} ± {(p.get("uncertainty") or {}).get("value")}\\n'
+               f'{q(proc.get("pipeline", ""))} v{q(proc.get("version", ""))}", fillcolor="#fff6e5"]; {prev} -> pk; ctx -> pk;')
+    dot.append(f'gate [label="evidence gate\\n{ev.status} → {e.action}\\n{len([f for f in ev.findings if f.status != "PASS"])} non-PASS findings\\n'
+               f'{q(p.get("thresholds_ref", ""))}", fillcolor="{STATUS_COLOR[ev.status]}44"]; pk -> gate;')
+    if e.kind == "update":
+        dot.append(f'tw [label="twin variable {q(obs)}\\n{fmt(e.prior["x"], obs)} → {fmt(e.posterior["x"], obs)}\\n'
+                   f'σ {fmt(e.prior["sd"], obs)} → {fmt(e.posterior["sd"], obs)}\\nK = {e.K:.3f}", fillcolor="#dbe8f7"]; gate -> tw;')
+    else:
+        dot.append(f'tw [label="twin variable {q(obs)}\\nUNCHANGED\\nrejection logged", fillcolor="#eeeeee"]; gate -> tw [style=dashed, label="blocked"];')
+    if base:
+        dot.append(f'b [label="baseline packet\\n{q(base[0]["packet_id"])}\\n{fmt(base[2].posterior["x"], obs)} ± {fmt(base[2].posterior["sd"], obs)}", '
+                   f'fillcolor="#eeeeee"]; b -> tw [label="prior + drift Q"];')
+    dot.append("}")
+    st.graphviz_chart("\n".join(dot), width="stretch")
+
+    a, b = st.columns(2)
+    with a:
+        st.markdown("**Integrity**")
+        for f in f_src.values():
+            st.markdown(f"{STATUS_ICON[f.status]} `{f.rule}` — {f.reason}")
+        st.markdown(f"`{src}`")
+        if p.get("source_sha256"):
+            st.code(p["source_sha256"], language=None)
+    with b:
+        st.markdown("**Epistemic labels**")
+        st.markdown(f"- origin: `{p.get('origin')}`\n- value: `{p.get('value_epistemic')}`\n"
+                    f"- decision: `{p.get('decision_epistemic')}`\n- protocol match: `{p.get('protocol_match')}`")
+        st.markdown(f"**Processing:** {proc.get('fit', proc.get('pipeline', '–'))}")
+    with st.expander("Raw evidence packet (never modified by the gate)"):
+        st.json(p)
+    with st.expander("Machine-readable update event"):
+        st.json({"evaluation": ev.to_dict(), "twin_event": e.to_dict()})
+
+# ---------- ④ timeline ----------
+with tab_time:
+    st.markdown("All StarterPack packets, judged in order (baseline first). The selected packet is shown in the other tabs.")
+    full = [PK[n] for n in BASELINE + FOLLOWUP]
+    _, frows = run_twin(full, th, schema, manifest, root)
+    st.dataframe([{"": STATUS_ICON[fev.status], "packet": fp["packet_id"], "t [months]": to_months(fp.get("relative_time")),
+                   "observable": fp["observable"], "value": fp.get("value"), "u": (fp.get("uncertainty") or {}).get("value"),
+                   "stored": fp.get("qc_status"), "re-evaluated": fev.status, "action": fe.action,
+                   "K": round(fe.K, 3) if fe.K is not None else None,
+                   "posterior": f"{fmt(fe.posterior['x'], fp['observable'])} ± {fmt(fe.posterior['sd'], fp['observable'])}" if fe.posterior else "unchanged"}
+                  for fp, fev, fe in frows], width="stretch", hide_index=True)
+    st.caption("E-t1-chobad is rejected after E-t1-cho was accepted: the Cho/Cr state keeps the accepted value.")
+
+
+# ---------- ⑤ 3D evidence map ----------
+@st.cache_data(show_spinner="Loading the 3D volumes …")
+def _volumes(r: str):
+    from twin_evidence import anatomy
+    return anatomy.load_volumes(Path(r))
+
+
+with tab_3d:
+    try:
+        vol = _volumes(str(Path(root).resolve()))
+    except ImportError as err:
+        st.error(str(err))
+        st.stop()
+    status_of = {fp["observable"]: fev.status for fp, fev, _ in run_twin([PK[n] for n in BASELINE + FOLLOWUP[:3]], th, schema, manifest, root)[1][3:]}
+    st.markdown("**Where does each number come from, and what could have gone wrong?** Everything below is drawn from the "
+                "StarterPack files the packets point to. Colours are the gate status. The bore colour is the scanner twin.")
+    o1, o2 = st.columns(2)
+    show_bore = o1.toggle("Show the scanner bore", True)
+    show_fu = o2.toggle("Show the follow-up ROI mask", True)
+    left, right = st.columns([3, 2])
+    with left:
+        st.plotly_chart(views.brain_3d(vol, status_of.get("Cho_Cr", "WARN"), status_of.get("roi_volume", "WARN"),
+                                       scanner_rep, show_bore, show_fu), width="stretch")
+    sl_fig, sl = views.slices(vol, 0.0)
+    with right:
+        st.markdown("#### Possible causes, judged by the evidence")
+        mrs_machine = scanner_rep.machine_explains_mrs
+        causes = [
+            ("MRS", "Scanner shim / B0 got worse", "supported" if mrs_machine else "excluded",
+             "scanner twin: phantom linewidth rose" if mrs_machine else "scanner twin: phantom stable (SIMULATED)"),
+            ("MRS", "Local shim, voxel position or motion in this session", "open" if mrs_machine else "most likely",
+             "linewidth 8.7 → 11.4 Hz in the subject"),
+            ("MRS", "Chemical-shift displacement (NAA vs Cho voxel 2.4 mm)", "minor",
+             "same in both sessions, mostly cancels in Δ"),
+            ("MRS", "True Cho/Cr change", "open", "z = 2.05 borderline, d² = 3.66 not surprising"),
+            ("ROI", "Mask propagated through a 1.1 mm registration", "supported", "implies u ≈ 19 %, packet claims 4 %"),
+            ("ROI", "True growth of the region (+25 %)", "excluded",
+             f"T1w inside the ROI unchanged: mean Δ = {sl['roi_mean_diff']:+.1f} a.u., SD {sl['roi_sd_diff']:.1f} ≈ noise {sl['expected_noise_sd']:.1f}"),
+        ]
+        badge = {"supported": "🟠 supported", "most likely": "🟠 most likely", "open": "⚪ open", "minor": "⚪ minor",
+                 "excluded": "🟢 excluded"}
+        st.dataframe([{"": c[0], "cause": c[1], "verdict": badge[c[2]], "evidence": c[3]} for c in causes],
+                     width="stretch", hide_index=True)
+        st.caption("The 3D view is evidence for the twin, not the twin itself. The twin is the set of numbers with uncertainty "
+                   "and the rule that updates them.")
+    st.markdown("#### Slice through the ROI and the MRS voxel (z ≈ 0 mm)")
+    st.plotly_chart(sl_fig, width="stretch")
+    st.caption(f"Inside the baseline ROI ({sl['n_vox']} voxels) the follow-up minus baseline difference has mean "
+               f"{sl['roi_mean_diff']:+.1f} a.u. and SD {sl['roi_sd_diff']:.1f} a.u.; pure noise would give SD ≈ "
+               f"{sl['expected_noise_sd']:.1f}. The anatomy did not change; the larger follow-up mask is a processing artifact.")
+    st.markdown("#### The two spectra, recomputed from the raw NIfTI-MRS files")
+    sp_fig, qc = views.spectra(Path(root))
+    st.plotly_chart(sp_fig, width="stretch")
+    st.dataframe([{"session": s, "SNR from file": round(q["snr"], 1), "SNR in packet": {"baseline": 31.2, "followup": 24.8}[s],
+                   "FWHM from file / Hz": round(q["fwhm_hz"], 1), "FWHM in packet / Hz": {"baseline": 8.7, "followup": 11.4}[s]}
+                  for s, q in qc.items()], width="stretch", hide_index=True)
+    st.caption("A matching SHA-256 confirms the bytes, not the physics. Here we also re-measure the physics from the bytes: "
+               "SNR exactly, FWHM within a few percent (zero-filled estimate).")
+
+# ---------- ⑥ scanner twin ----------
+with tab_scan:
+    st.warning("SIMULATED: the StarterPack has no phantom record yet. These weekly phantom scans are generated for the "
+               "chosen scenario to show how a scanner twin would work. Thresholds are our team proposal.")
+    st.markdown(f"**Scenario:** {scn.SCENARIOS[scenario]}")
+    st.plotly_chart(views.scanner_trends(scanner_rep, warn_factor), width="stretch")
+    cols = st.columns(3)
+    for col, o in zip(cols, scn.OBS):
+        x0, s0 = scanner_rep.state_t0[o]
+        x1, s1 = scanner_rep.state_t1[o]
+        wtf = scanner_rep.weeks_to_fail[o]
+        col.metric(scn.OBS[o][0], f"{x1:.1f} ± {s1:.1f} {scn.OBS[o][1]}", f"z = {scanner_rep.z[o]:+.1f} since May", delta_color="off")
+        col.caption(f"forecast: FAIL limit in ≈ {wtf:.0f} weeks" if wtf is not None else "no trend toward the FAIL limit")
+    box = st.warning if scanner_rep.machine_explains_mrs else st.success
+    box(scanner_rep.verdict)
+    st.markdown("""
+**Why a scanner twin helps the brain twin**
+- It separates *the subject changed* from *the instrument changed*. A phantom never changes, so a trend in the phantom is the machine.
+- It feeds the gate: every brain packet carries `system_qc_id`. A scanner twin in FAIL can block brain updates automatically.
+- It predicts service: the forecast says when the phantom will cross the FAIL limit, so the shim can be fixed before patient data degrade.
+- It shows federation: two twins exchange only evidence under a data contract (Dossier §1.4).
+
+Same code as the brain twin: the same gate, the same gated Kalman step, only new observables and their drift (`twin_evidence/scanner.py`).
+""")

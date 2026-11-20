@@ -1,0 +1,867 @@
+<title>Twin Evidence Briefing</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~68ch) with wide breakout bands for cards, tables, the spectrum lab and the timeline. */
+:root {
+  --paper: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #142029;
+  --ink-2: #44535f;
+  --line: #d8dee4;
+  --signal: #0e6f7e;
+  --signal-soft: #dcefF1;
+  --pass: #237a46; --pass-bg: #e2f2e8;
+  --warn: #8a5b00; --warn-bg: #fbf0d6; --warn-mark: #d99a00;
+  --fail: #b2332f; --fail-bg: #f9e1df;
+  --prior: #6f7d89; --evid: #c8642a; --post: #2459a6;
+  --f-display: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --s1: .5rem; --s2: 1rem; --s3: 1.5rem; --s4: 2.5rem; --s5: 4.5rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f161c; --surface: #16212a; --ink: #e4ebf0; --ink-2: #a9b6c0; --line: #2a3843;
+    --signal: #5cc3d1; --signal-soft: #173840;
+    --pass: #7fd39c; --pass-bg: #163626; --warn: #f0c564; --warn-bg: #3a2e12; --warn-mark: #f0c564;
+    --fail: #f19a94; --fail-bg: #3d1d1c;
+    --prior: #9aa8b4; --evid: #f0955c; --post: #7aa9ee;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f161c; --surface: #16212a; --ink: #e4ebf0; --ink-2: #a9b6c0; --line: #2a3843;
+  --signal: #5cc3d1; --signal-soft: #173840;
+  --pass: #7fd39c; --pass-bg: #163626; --warn: #f0c564; --warn-bg: #3a2e12; --warn-mark: #f0c564;
+  --fail: #f19a94; --fail-bg: #3d1d1c;
+  --prior: #9aa8b4; --evid: #f0955c; --post: #7aa9ee;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--paper); color: var(--ink); font: 400 1rem/1.6 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 68rem; margin: 0 auto; padding-block: var(--s4) var(--s5); display: grid; gap: var(--s5); }
+.read { max-width: 44rem; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -.01em; }
+h2 { font-size: 1.65rem; font-weight: 600; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; }
+section { display: grid; gap: var(--s3); scroll-margin-top: 1rem; }
+.stack { display: grid; gap: var(--s2); }
+.eyebrow { font: 500 .74rem/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--signal); }
+.lede { font-size: 1.15rem; color: var(--ink-2); max-width: 42rem; }
+.mono, code { font-family: var(--f-mono); font-size: .9em; }
+code { background: var(--signal-soft); padding: .05em .35em; border-radius: 4px; }
+.muted { color: var(--ink-2); }
+.small { font-size: .86rem; }
+.num { font-variant-numeric: tabular-nums; }
+a { color: var(--signal); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+ul.plain { margin: 0; padding-left: 1.1rem; display: grid; gap: .3rem; }
+
+/* hero + contents */
+.hero { display: grid; gap: var(--s3); padding-bottom: var(--s3); border-bottom: 1px solid var(--line); }
+.question { font: 500 1.25rem/1.45 var(--f-display); padding: var(--s2) var(--s3); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; max-width: 46rem; }
+.facts { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); font: 400 .85rem/1.4 var(--f-mono); color: var(--ink-2); }
+nav.toc { display: flex; flex-wrap: wrap; gap: .4rem; }
+nav.toc a { font: 500 .82rem/1 var(--f-body); text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: .45rem .7rem; border-radius: 999px; }
+nav.toc a:hover { border-color: var(--signal); color: var(--signal); }
+
+/* analogy callout */
+.kid { display: grid; grid-template-columns: auto 1fr; gap: .2rem .8rem; padding: var(--s2) var(--s3); background: var(--signal-soft); border-radius: 10px; max-width: 46rem; }
+.kid .tag { font: 600 .7rem/1.7 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--signal); grid-row: span 2; }
+.kid p + p { grid-column: 2; }
+
+/* generic grids */
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--s2) var(--s3); }
+.grid3 > div { display: grid; gap: .35rem; padding-top: .8rem; border-top: 1px solid var(--line); align-content: start; }
+.answer { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--s2); }
+.answer div { padding: var(--s2); border-top: 3px solid var(--signal); background: var(--surface); border-radius: 0 0 8px 8px; display: grid; gap: .35rem; align-content: start; }
+.answer b { font-family: var(--f-display); font-size: 1.05rem; }
+
+/* is / is not */
+.isnot { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: var(--s2); }
+.isnot > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s2) var(--s3); display: grid; gap: .5rem; align-content: start; }
+.isnot h3 { display: flex; gap: .5rem; align-items: center; }
+.isnot .yes h3 { color: var(--pass); }
+.isnot .no h3 { color: var(--fail); }
+
+/* DTS map */
+.dts { display: grid; grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr)); gap: var(--s1); }
+.dts div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .75rem .9rem; display: grid; gap: .25rem; align-content: start; }
+.dts .ab { font: 600 .8rem/1 var(--f-mono); color: var(--signal); }
+.dts b { font-family: var(--f-display); font-weight: 600; }
+.dts span { font-size: .9rem; color: var(--ink-2); }
+
+/* ladder */
+.ladder { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; align-items: end; }
+.rung { display: grid; gap: .3rem; align-content: end; }
+.rung .bar { border-radius: 4px 4px 0 0; background: var(--signal); }
+.rung .lvl { font: 500 .78rem/1 var(--f-mono); color: var(--ink-2); }
+.rung .nm { font-size: .82rem; line-height: 1.3; }
+.rung .tag { font: 500 .7rem/1.2 var(--f-mono); color: var(--signal); min-height: 1.8em; }
+@media (max-width: 560px) { .ladder { grid-template-columns: repeat(3, 1fr); row-gap: var(--s2); } }
+
+/* chain */
+.chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; }
+.chain .step { flex: 1 1 9rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .7rem .8rem; display: grid; gap: .2rem; align-content: start; }
+.chain .who { font: 500 .68rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.chain .what { font: 600 .95rem/1.25 var(--f-display); }
+.chain .eg { font-size: .8rem; color: var(--ink-2); }
+.chain .step.gate { border-color: var(--signal); background: var(--signal-soft); }
+
+/* spectrum lab */
+.lab { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s3); display: grid; gap: var(--s2); }
+.lab svg { width: 100%; height: auto; display: block; }
+.controls { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: 500 .85rem/1 var(--f-body); background: var(--surface); color: var(--ink); border: 0; border-right: 1px solid var(--line); padding: .5rem .75rem; cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--signal); color: var(--surface); }
+.ctl { display: grid; gap: .3rem; }
+.ctl > span { font: 500 .72rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.readout { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); font: 500 .9rem/1.3 var(--f-mono); }
+.readout .pill { margin-left: auto; }
+
+/* verdict cards */
+.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: var(--s2); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s3); display: grid; gap: .9rem; align-content: start; }
+.card header { display: grid; gap: .4rem; }
+.pill { display: inline-flex; align-items: center; gap: .4rem; font: 600 .78rem/1 var(--f-mono); padding: .35rem .55rem; border-radius: 999px; width: fit-content; white-space: nowrap; }
+.pill::before { content: ""; width: .55rem; height: .55rem; border-radius: 50%; background: currentColor; }
+.pill.warn { color: var(--warn); background: var(--warn-bg); }
+.pill.fail { color: var(--fail); background: var(--fail-bg); }
+.pill.pass { color: var(--pass); background: var(--pass-bg); }
+.card .val { font: 500 .9rem/1.4 var(--f-mono); color: var(--ink-2); }
+.card dl { margin: 0; display: grid; gap: .65rem; }
+.card dt { font: 500 .7rem/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin-bottom: .2rem; }
+.card dd { margin: 0; font-size: .94rem; }
+.card ul { margin: .2rem 0 0; padding-left: 1.1rem; display: grid; gap: .2rem; }
+.card.trap { border-color: var(--warn-mark); }
+.owner { font: 500 .72rem/1 var(--f-mono); padding: .2rem .4rem; border: 1px solid var(--line); border-radius: 4px; white-space: nowrap; }
+
+/* chart */
+.figure { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s3); display: grid; gap: var(--s2); margin: 0; }
+.figure svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); font-size: .85rem; }
+.legend span { display: inline-flex; gap: .45rem; align-items: center; }
+.legend i { width: 1.4rem; height: 3px; border-radius: 2px; display: inline-block; }
+.twocol { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: var(--s3); }
+.stat { display: grid; gap: .15rem; }
+.stat b { font: 600 1.6rem/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+
+/* formulas */
+.formulas { display: grid; gap: var(--s1); }
+.formula { display: grid; grid-template-columns: minmax(12rem, 18rem) 1fr; gap: .3rem var(--s3); padding: .8rem 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.formula .eq { font: 500 1rem/1.4 var(--f-mono); color: var(--signal); }
+@media (max-width: 640px) { .formula { grid-template-columns: 1fr; } }
+
+/* tables */
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 46rem; }
+th, td { text-align: left; padding: .6rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font: 500 .72rem/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); position: sticky; top: 0; background: var(--surface); }
+td.sym { font: 600 1rem/1.3 var(--f-mono); color: var(--signal); white-space: nowrap; }
+td.v { font-family: var(--f-mono); white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.t { font-family: var(--f-mono); white-space: nowrap; color: var(--signal); }
+tr.group td { font: 600 .78rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); background: var(--paper); }
+
+/* black box */
+.bbox { display: grid; grid-template-columns: 1fr minmax(11rem, 14rem) 1fr; gap: var(--s2); align-items: center; }
+.bbox .col { display: grid; gap: .35rem; font-size: .9rem; }
+.bbox .col b { font: 500 .72rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.bbox .core { background: var(--ink); color: var(--paper); border-radius: 10px; padding: var(--s3) var(--s2); text-align: center; display: grid; gap: .4rem; }
+.bbox .core strong { font: 600 1.1rem/1.2 var(--f-display); }
+.bbox .good { color: var(--pass); }
+.bbox .bad { color: var(--fail); }
+@media (max-width: 720px) { .bbox { grid-template-columns: 1fr; } }
+
+/* timeline */
+.timeline { display: grid; border-left: 2px solid var(--line); margin-left: .5rem; }
+.tl { position: relative; padding: 0 0 var(--s3) var(--s3); display: grid; gap: .45rem; }
+.tl::before { content: ""; position: absolute; left: -.5rem; top: .3rem; width: .9rem; height: .9rem; border-radius: 50%; background: var(--paper); border: 2px solid var(--line); }
+.tl.done::before { background: var(--signal); border-color: var(--signal); }
+.tl.now::before { border-color: var(--signal); box-shadow: 0 0 0 4px var(--signal-soft); }
+.tl .when { font: 500 .78rem/1 var(--f-mono); color: var(--signal); }
+.tl ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .25rem; }
+
+/* checklist */
+.checks { display: grid; }
+.checks label { display: grid; grid-template-columns: 1.3rem 1fr auto; gap: .6rem; align-items: start; padding: .55rem .2rem; border-bottom: 1px solid var(--line); cursor: pointer; }
+.checks input { margin-top: .3rem; accent-color: var(--signal); width: 1rem; height: 1rem; }
+.checks input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.checks .st { font: 500 .72rem/1.4 var(--f-mono); color: var(--ink-2); white-space: nowrap; }
+.checks .st.have { color: var(--pass); }
+.checks input:checked + span { color: var(--ink-2); text-decoration: line-through; text-decoration-color: var(--line); }
+
+.rubric { display: grid; gap: .45rem; }
+.rubric div { display: grid; grid-template-columns: minmax(10rem, 14rem) 1fr 3rem; gap: var(--s2); align-items: center; font-size: .92rem; }
+.rubric .bar { height: .6rem; border-radius: 99px; background: var(--signal); }
+.rubric .w { font-family: var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .rubric div { grid-template-columns: 1fr 3rem; } .rubric .track { grid-column: 1 / -1; } }
+
+.gloss { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--s2) var(--s3); }
+.gloss div { display: grid; gap: .15rem; }
+.gloss b { font-family: var(--f-mono); font-weight: 500; font-size: .92rem; }
+footer { font-size: .82rem; color: var(--ink-2); border-top: 1px solid var(--line); padding-top: var(--s2); }
+</style>
+
+<main>
+
+<header class="hero">
+  <span class="eyebrow">InnovateU · NMR challenge · team briefing · updated for Dossier v1.6</span>
+  <h1>What we are doing, and why</h1>
+  <p class="lede">A shared read for the whole team, written so that a physicist, a programmer and a ten-year-old can all follow it. Read it together once, then come back to the parts you need.</p>
+  <p class="question">“Has the system changed since the last measurement, and how sure can we be?”</p>
+  <div class="facts"><span>StarterPack v0.3</span><span>Dossier v1.6 (20 Nov)</span><span>t0 = May 2026 · t1 = Nov 2026</span><span>synthetic data · no clinical meaning</span></div>
+  <nav class="toc" aria-label="Contents">
+    <a href="#goal">Our goal</a><a href="#twin">What is a twin?</a><a href="#noise">MRI noise</a><a href="#findings">Our results</a>
+    <a href="#symbols">Every symbol</a><a href="#scanner">A twin of the scanner?</a><a href="#systems">System thinking</a>
+    <a href="#new">New in v1.6</a><a href="#next">Next steps</a><a href="#pitch">Pitch</a>
+  </nav>
+</header>
+
+<!-- ===================== GOAL ===================== -->
+<section id="goal">
+  <div class="read stack">
+    <span class="eyebrow">Our goal</span>
+    <h2>Prove when a number is allowed to change, and by how much</h2>
+    <p>The organisers do not want a brain-scanner app, a pretty 3D model or an AI that “finds disease”. They want one honest chain: a measurement comes in, we decide whether to trust it, we update what we believe, and we say what to measure next. Every step must be explainable.</p>
+  </div>
+  <div class="kid"><span class="tag">Like a kid</span>
+    <p>You weigh your dog every month. One day the scale says 2 kg more. Did the dog get fat? Or was the scale on the carpet? Or did the dog have its collar on? Before you write the new weight in the dog’s notebook, you check. If you are unsure, you write it lightly in pencil. Next time you weigh it more carefully.</p>
+  </div>
+  <div class="answer">
+    <div><b>1 · Can we trust it?</b><span class="muted">The evidence gate gives PASS, WARN or FAIL, with a reason and an owner track for every finding.</span></div>
+    <div><b>2 · How much should we move?</b><span class="muted">The gain K says how far between “what we believed” and “what we just measured” we go. FAIL means we do not move.</span></div>
+    <div><b>3 · What next?</b><span class="muted">Pick the measurement that removes the most doubt per scanner minute, or that removes the cause of a WARN.</span></div>
+  </div>
+  <div class="stack">
+    <h3>What we are looking for in the data</h3>
+    <p class="read">The organisers hid one ambiguity in each follow-up packet. Our job is to find it and say which explanation is most likely. The dossier names four possible explanations for any change, and they can be mixed:</p>
+    <div class="grid3">
+      <div><b>True change</b><span class="muted small">The object itself really changed.</span></div>
+      <div><b>Measurement variation</b><span class="muted small">Noise, a worse shim, a slightly different position.</span></div>
+      <div><b>Processing variation</b><span class="muted small">Registration, segmentation or fitting software behaved differently.</span></div>
+      <div><b>Model discrepancy</b><span class="muted small">Our twin’s assumptions (for example the drift Q) are wrong.</span></div>
+    </div>
+  </div>
+  <p class="read muted small">Success criterion from the dossier: the team can defend why the twin changed, what did not change, and what should be measured next. The judges assess the explanation, not the amount of code.</p>
+</section>
+
+<!-- ===================== TWIN ===================== -->
+<section id="twin">
+  <div class="read stack">
+    <span class="eyebrow">What is a digital twin?</span>
+    <h2>A notebook of beliefs that updates itself from evidence</h2>
+    <p>A digital twin is a computer copy of what we know about a real thing. It is not a photo of it. It keeps a few important numbers about the thing, says how sure it is about each one, and updates them every time a new trustworthy measurement arrives. It can also predict and suggest what to do next.</p>
+  </div>
+  <div class="kid"><span class="tag">Like a kid</span>
+    <p>A weather forecast is a kind of twin of the sky. It never sees the whole sky. It gets measurements from thermometers and satellites, keeps a best guess with “70 % chance of rain”, updates every hour, and tells you to take an umbrella.</p>
+  </div>
+
+  <div class="stack">
+    <h3>So is the 3D brain our digital twin?</h3>
+    <p class="read"><b>No.</b> The 3D brain image is <em>evidence</em>: one of the photos the twin learns from. Our twin is much smaller. It is three numbers with their uncertainties, plus the rule that updates them.</p>
+    <div class="isnot">
+      <div class="no"><h3>Not a twin on its own</h3>
+        <ul class="plain"><li>a 3D model or MRI image</li><li>a dashboard of charts</li><li>a patient record or a folder of scans</li><li>an AI classifier that labels images</li></ul>
+        <p class="small muted">The dossier says this directly: none of these is automatically a twin.</p>
+      </div>
+      <div class="yes"><h3>Our twin</h3>
+        <ul class="plain">
+          <li><b>ROI volume</b> (size of one brain region): 22 190 ± 697 mm³</li>
+          <li><b>NAA/Cr</b> (a chemical ratio): 1.227 ± 0.058</li>
+          <li><b>Cho/Cr</b> (another chemical ratio): 0.741 ± 0.048</li>
+          <li>plus a gate, an update rule, a prediction and a next-measurement advisor</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h3>Why the 3D brain still matters</h3>
+    <div class="grid3">
+      <div><b>The chemistry comes from one small cube</b><span class="muted small">Cho/Cr is measured only inside a 20 × 20 × 20 mm cube in the frontal lobe at (−16, 45, 6) mm. The 3D view shows which tissue the cube covers. A different mix of grey matter, white matter and fluid changes the ratio without any real chemical change.</span></div>
+      <div><b>Position errors are 3D errors</b><span class="muted small">A 2 mm shift of the cube swaps about 10 % of the tissue inside it. Even in one scan, the Cho and NAA cubes sit 2.4 mm apart (chemical-shift displacement).</span></div>
+      <div><b>The volume is built from 3D masks</b><span class="muted small">The follow-up T1w image shows the same anatomy as the baseline, with only new noise. So the “+25 % growth” of the ROI is a processing artifact, and the images prove it.</span></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h3>The twin as a system (TU/e lecture, now in Dossier v1.6 §7.9)</h3>
+    <p class="read">Prof. Barosan’s lecture describes a twin as a <em>digital twin system</em> with connected parts. Here is how our project fills each part. We can put this on our architecture slide.</p>
+    <div class="dts">
+      <div><span class="ab">PT · physical twin</span><b>The brain and the scanner</b><span>The real thing, plus the machine that senses it. The measurement card says how accurate the sensing is.</span></div>
+      <div><span class="ab">DT · digital twin</span><b>State + update rule</b><span>Our three numbers with uncertainty, the observation model and the gated Kalman step (<code>twin.py</code>).</span></div>
+      <div><span class="ab">DD · twin data</span><b>Evidence packets</b><span>Packets, data dictionary, QC reports, provenance (the StarterPack).</span></div>
+      <div><span class="ab">CN · connections</span><b>The data contract</b><span>Unit, uncertainty and provenance travel with every number (schema v1.0, <code>validate.py</code>).</span></div>
+      <div><span class="ab">SS · services</span><b>Our app</b><span>Monitoring, the update decision and the uncertainty display (<code>app.py</code>).</span></div>
+      <div><span class="ab">CC · cognition</span><b>“Measure this next”</b><span>The recommendation, with clear limits: the twin advises, it never diagnoses.</span></div>
+    </div>
+    <p class="small muted read">The lecture also names four views for the architecture slide: domain, developer, application and user.</p>
+  </div>
+
+  <div class="stack">
+    <h3>How grown-up is our twin? (maturity ladder)</h3>
+    <div class="ladder" role="list">
+      <div class="rung" role="listitem"><span class="tag"></span><div class="bar" style="height:18px"></div><span class="lvl">L0</span><span class="nm">Shows images</span></div>
+      <div class="rung" role="listitem"><span class="tag"></span><div class="bar" style="height:30px"></div><span class="lvl">L1</span><span class="nm">Links sessions over time</span></div>
+      <div class="rung" role="listitem"><span class="tag">Explorer</span><div class="bar" style="height:42px"></div><span class="lvl">L2</span><span class="nm">Stores uncertainty and provenance</span></div>
+      <div class="rung" role="listitem"><span class="tag">minimum target</span><div class="bar" style="height:54px"></div><span class="lvl">L3</span><span class="nm">Updates a persistent state</span></div>
+      <div class="rung" role="listitem"><span class="tag">strong teams</span><div class="bar" style="height:66px"></div><span class="lvl">L4</span><span class="nm">Predicts an expected range</span></div>
+      <div class="rung" role="listitem"><span class="tag">stretch · ours</span><div class="bar" style="height:78px"></div><span class="lvl">L5</span><span class="nm">Recommends the next measurement</span></div>
+    </div>
+    <p class="small muted">Our code covers L3–L5 for the worked example already.</p>
+  </div>
+</section>
+
+<!-- ===================== NOISE ===================== -->
+<section id="noise">
+  <div class="read stack">
+    <span class="eyebrow">What is “noise” in an MRI machine?</span>
+    <h2>Trying to hear a whisper in a busy room</h2>
+    <p>An MRI scanner listens to tiny radio signals sent out by hydrogen nuclei in the body. The signal is extremely weak. In a 3 T magnet only about <b>10 out of every million</b> protons line up “extra” with the field. Those few make the whole signal. Metabolites like choline are also about 10 000 times rarer than water.</p>
+    <p>At the same time, everything warm jiggles: the salty water in the body and the electronics in the receiver coil. That random jiggling makes a random radio hiss. This hiss is the <b>noise</b>. It is different every time, like static on a radio.</p>
+  </div>
+  <div class="kid"><span class="tag">Like a kid</span>
+    <p>Imagine your friend whispers a number across a noisy classroom. You hear it wrong sometimes. If she whispers it 64 times and you take the average, the random mistakes cancel out. That is exactly why the scanner repeats the spectrum 64 times (“64 averages”). The noise shrinks by √64 = 8 times.</p>
+  </div>
+
+  <div class="lab" aria-labelledby="lab-title">
+    <div class="stack">
+      <h3 id="lab-title">Try it: a synthetic brain spectrum</h3>
+      <p class="small muted">Three peaks: NAA at 2.01 ppm, creatine (Cr) at 3.03 ppm, choline (Cho) at 3.20 ppm. Change the number of averages and the quality of the shim, and watch SNR and linewidth, the two checks that gave us WARN.</p>
+    </div>
+    <div class="controls">
+      <div class="ctl"><span>Averages</span>
+        <div class="seg" id="avg" role="group" aria-label="Number of averages">
+          <button type="button" data-v="1" aria-pressed="false">1</button><button type="button" data-v="4" aria-pressed="false">4</button><button type="button" data-v="16" aria-pressed="false">16</button><button type="button" data-v="64" aria-pressed="true">64</button>
+        </div></div>
+      <div class="ctl"><span>Shim (field uniformity)</span>
+        <div class="seg" id="shim" role="group" aria-label="Shim quality">
+          <button type="button" data-v="8.7" aria-pressed="false">good · baseline</button><button type="button" data-v="11.4" aria-pressed="true">poor · follow-up</button><button type="button" data-v="24" aria-pressed="false">bad · chobad</button>
+        </div></div>
+    </div>
+    <svg id="spec" viewBox="0 0 640 260" role="img" aria-label="Synthetic MR spectrum with NAA, creatine and choline peaks"></svg>
+    <div class="readout" aria-live="polite">
+      <span id="r-snr">SNR —</span><span id="r-lw">linewidth —</span><span id="r-st" class="pill">—</span>
+    </div>
+    <p class="small muted">Illustration only: the noise is drawn so that 64 averages give the SNR of the real packets. Broad lines also lower the peak height, so a bad shim hurts SNR too. That is why one poor shim produced two WARN findings.</p>
+  </div>
+
+  <div class="stack">
+    <h3>Noise is random. Bias is not.</h3>
+    <p class="read">Averaging fixes random noise. It does not fix errors that push every repeat the same way. Those are <b>biases</b>, and they are the trickier part of our challenge. From the dossier’s measurement chain (§5.2), in plain words:</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Source</th><th>What it means</th><th>What it does to our numbers</th><th>Kind</th></tr></thead>
+        <tbody>
+          <tr><td>Thermal noise</td><td>Random radio hiss from the warm body and the coil electronics</td><td>Lower SNR, bigger uncertainty</td><td>random</td></tr>
+          <tr><td>B0 inhomogeneity (poor shim)</td><td>The magnetic field is not equal everywhere in the cube</td><td>Peaks get broad and overlap (Cho and Cr blur together)</td><td>bias + noise</td></tr>
+          <tr><td>B0 drift</td><td>The magnet’s field slowly changes during the scan, for example as it warms</td><td>Peaks shift and smear across the 64 averages</td><td>bias</td></tr>
+          <tr><td>Positioning</td><td>The head or the cube is in a slightly different place</td><td>Different tissue in the cube, so a different ratio</td><td>bias</td></tr>
+          <tr><td>Chemical-shift displacement</td><td>Each metabolite’s cube is shifted a bit (2.4 mm here)</td><td>Cho and NAA are measured in slightly different places</td><td>bias</td></tr>
+          <tr><td>Gradient non-linearity</td><td>The fields that encode position are not perfectly straight</td><td>Geometric distortion, wrong volumes</td><td>bias</td></tr>
+          <tr><td>RF / coil variation</td><td>The radio pulses or the receiver coil differ from last time</td><td>Brightness changes that are not the tissue</td><td>bias</td></tr>
+          <tr><td>Motion</td><td>The person moves during the scan</td><td>Blurring, ghosting, contaminated spectra</td><td>both</td></tr>
+          <tr><td>Registration and software</td><td>Aligning scans or fitting peaks differently</td><td>The ROI “growth” in our data</td><td>bias</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="read small muted">Also useful to know: the label says 3.0 T, but the measured frequency 123.25 MHz means the real field is 2.895 T. The dossier wants both numbers kept, because “the nominal field is a label; the spectrometer frequency is a measurement”.</p>
+  </div>
+</section>
+
+<!-- ===================== FINDINGS ===================== -->
+<section id="findings">
+  <div class="read stack">
+    <span class="eyebrow">What the data show</span>
+    <h2>Four follow-up packets, four verdicts</h2>
+    <p>Nothing in the follow-up session is clean. That is on purpose.</p>
+  </div>
+  <div class="chain">
+    <div class="step"><span class="who">Quantum Eng.</span><span class="what">What was measured?</span><span class="eg">PRESS spectrum in a 20 mm cube → Cho/Cr</span></div>
+    <div class="step"><span class="who">Metrology</span><span class="what">How precise?</span><span class="eg">u = 0.06, linewidth, registration error</span></div>
+    <div class="step"><span class="who">Data Science</span><span class="what">Evidence packet</span><span class="eg">schema, units, SHA-256, provenance</span></div>
+    <div class="step gate"><span class="who">Our validator</span><span class="what">Gate: PASS / WARN / FAIL</span><span class="eg">re-checks every stored status</span></div>
+    <div class="step"><span class="who">Digital Twins</span><span class="what">Gated Kalman update</span><span class="eg">prior + evidence → posterior</span></div>
+    <div class="step"><span class="who">Everyone</span><span class="what">Next measurement</span><span class="eg">re-shim and repeat PRESS</span></div>
+  </div>
+
+  <div class="verdicts">
+    <article class="card">
+      <header><span class="pill warn">WARN · update_with_warning</span><h3>Cho/Cr: the headline number</h3>
+        <span class="val num">0.69 ± 0.05 → 0.85 ± 0.06 · twin 0.741 ± 0.048 · K = 0.32</span></header>
+      <dl>
+        <dt>Why WARN</dt>
+        <dd><ul>
+          <li><b>SNR 24.8</b>, limit 25 <span class="owner">QE</span>. Noisier than baseline (31.2).</li>
+          <li><b>Linewidth 11.4 Hz</b>, limit 10 Hz <span class="owner">Metrology</span>. Broader than baseline (8.7 Hz): a poor shim.</li>
+        </ul></dd>
+        <dt>Why it matters</dt>
+        <dd>Cho (3.20 ppm) and Cr (3.03 ppm) are close neighbours. Broad lines make them overlap, so the fit can mix them up. The fit’s own uncertainty (CRLB) is a best case and too optimistic here, so we double the variance in the gain. That is our declared team policy.</dd>
+        <dt>What it means</dt>
+        <dd>z = 2.05: the measurement changed a bit more than noise alone explains. d² = 3.66 &lt; 3.84: for the twin, which expects some drift over six months, it is not surprising. We move a third of the way and ask for a better measurement.</dd>
+      </dl>
+    </article>
+    <article class="card">
+      <header><span class="pill warn">WARN · update_with_warning</span><h3>NAA/Cr: no real change</h3>
+        <span class="val num">1.25 ± 0.06 → 1.16 ± 0.08 · twin 1.227 ± 0.058 · K = 0.26</span></header>
+      <dl>
+        <dt>Why WARN</dt><dd>It comes from the same spectrum, so it has the same two problems. One bad shim affects every ratio from that spectrum.</dd>
+        <dt>What it means</dt><dd>z = −0.90: well inside the noise. “No evidence of change” is a valid result.</dd>
+      </dl>
+    </article>
+    <article class="card trap">
+      <header><span class="pill warn">stored PASS → our WARN</span><h3>ROI volume: the trap</h3>
+        <span class="val num">22 140 → 27 810 mm³ (+25.6 %) · twin 22 190 ± 697 · K = 0.009</span></header>
+      <dl>
+        <dt>Why WARN</dt>
+        <dd>The packet calls itself PASS with 4 % uncertainty. But its mask was copied onto the new scan through a registration with <b>1.1 mm</b> error. For a region of radius about 17.4 mm that alone means about <b>3 × 1.1 / 17.4 ≈ 19 %</b>. Our rule <code>roi_u_consistency</code> <span class="owner">Metrology</span> catches it and carries the honest 19 % forward.</dd>
+        <dt>What it means</dt>
+        <dd>With 19 %, z = 1.07: no significant change. With the claimed 4 % it would have been z = 4.38, a fake discovery. The twin holds its value until the registration is audited.</dd>
+        <dt>Lesson</dt><dd>Never trust a stored status. Re-check it.</dd>
+      </dl>
+    </article>
+    <article class="card">
+      <header><span class="pill fail">FAIL · reject</span><h3>Cho/Cr “bad”: nothing usable</h3>
+        <span class="val num">value null · uncertainty null · twin unchanged</span></header>
+      <dl>
+        <dt>Why FAIL (five independent reasons)</dt>
+        <dd><ul>
+          <li>Value and uncertainty are missing <span class="owner">DS</span></li>
+          <li>Source file not in the SHA-256 manifest, so it cannot be traced <span class="owner">DS</span></li>
+          <li>SNR 9, below the fail limit of 10 <span class="owner">QE</span></li>
+          <li>Linewidth 24 Hz, above the fail limit of 20 Hz <span class="owner">Metrology</span></li>
+          <li>Registration error 3.8 mm, above the fail limit of 3 mm <span class="owner">Metrology</span></li>
+        </ul></dd>
+        <dt>What it means</dt><dd>The twin does not move. We never fill a missing value with 0 or a guess. The rejection is logged with all reasons. Recommendation: re-acquire.</dd>
+      </dl>
+    </article>
+  </div>
+
+  <div class="twocol">
+    <div class="stack">
+      <h3>Old belief → new measurement → new belief</h3>
+      <p>Each curve shows where we think the true Cho/Cr value is. Wide means unsure. The new belief lies between the other two and is narrower than both: we now know more than before.</p>
+      <div class="twocol">
+        <div class="stat"><span class="small muted">z: did the measurement change?</span><b>2.05</b><span class="small">just above 1.96</span></div>
+        <div class="stat"><span class="small muted">d²: is it surprising for the twin?</span><b>3.66</b><span class="small">below 3.84</span></div>
+      </div>
+      <p class="small muted">Without the WARN policy, K would be 0.486 and the twin would jump to 0.768.</p>
+    </div>
+    <figure class="figure">
+      <svg id="gauss" viewBox="0 0 520 300" role="img" aria-label="Prior, measurement and posterior distributions of Cho/Cr"></svg>
+      <div class="legend">
+        <span><i style="background:var(--prior)"></i>old belief 0.690 ± 0.058</span>
+        <span><i style="background:var(--evid)"></i>measurement 0.850 ± 0.060</span>
+        <span><i style="background:var(--post)"></i>new belief 0.741 ± 0.048</span>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== SYMBOLS ===================== -->
+<section id="symbols">
+  <div class="read stack">
+    <span class="eyebrow">Every symbol we use</span>
+    <h2>The formulas in plain words</h2>
+    <p>Our whole update is five short formulas. Here they are with a sentence each, then every letter explained with the real Cho/Cr numbers.</p>
+  </div>
+  <div class="formulas">
+    <div class="formula"><span class="eq">P⁻ = P + Q</span><span>Time passed, so we are a bit less sure than last time. Add the expected drift.</span></div>
+    <div class="formula"><span class="eq">z = (y₁ − y₀) / √(u₀² + u₁²)</span><span>Is the difference between the two measurements bigger than their combined noise?</span></div>
+    <div class="formula"><span class="eq">d² = (y − x⁻)² / (P⁻ + u²)</span><span>How surprised should the twin be by this measurement?</span></div>
+    <div class="formula"><span class="eq">K = P⁻ / (P⁻ + R)</span><span>How much to trust the new measurement compared with what we already believe (0 = ignore it, 1 = believe it fully).</span></div>
+    <div class="formula"><span class="eq">x⁺ = x⁻ + K (y − x⁻)</span><span>Move from the old belief toward the measurement by the fraction K.</span></div>
+    <div class="formula"><span class="eq">P⁺ = (1 − K) P⁻</span><span>After learning something, we are more sure than before.</span></div>
+    <div class="formula"><span class="eq">σ_next = √(P⁺ σₘ² / (P⁺ + σₘ²))</span><span>How sure would we be after one more measurement of quality σₘ? Used to choose what to measure next.</span></div>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Symbol</th><th>Name</th><th>In plain words</th><th>Cho/Cr value</th><th>Why we need it</th></tr></thead>
+      <tbody>
+        <tr class="group"><td colspan="5">What the twin believes</td></tr>
+        <tr><td class="sym">x</td><td>state</td><td>The twin’s best guess of the true value</td><td class="v">0.69 → 0.741</td><td>This is the number the twin keeps</td></tr>
+        <tr><td class="sym">P</td><td>variance of the state</td><td>How unsure the guess is (squared)</td><td class="v">0.0025 → 0.0023</td><td>Without it a guess has no honesty</td></tr>
+        <tr><td class="sym">σ</td><td>standard deviation</td><td>√P, the “±” you read: typical size of the error</td><td class="v">0.050 → 0.048</td><td>Easier to read than P</td></tr>
+        <tr><td class="sym">x⁻, P⁻</td><td>prior</td><td>The belief just before the new measurement, after adding drift</td><td class="v">0.69, 0.0034 (σ 0.058)</td><td>The starting point of the update</td></tr>
+        <tr><td class="sym">x⁺, P⁺</td><td>posterior</td><td>The belief just after the update</td><td class="v">0.741, 0.0023 (σ 0.048)</td><td>The result we show</td></tr>
+        <tr class="group"><td colspan="5">What was measured</td></tr>
+        <tr><td class="sym">y</td><td>measurement</td><td>The new number from the scanner</td><td class="v">0.85</td><td>The evidence</td></tr>
+        <tr><td class="sym">u</td><td>measurement uncertainty</td><td>How wrong this measurement could typically be</td><td class="v">0.06</td><td>Decides how much the measurement counts</td></tr>
+        <tr><td class="sym">y₀, u₀ / y₁, u₁</td><td>baseline / follow-up</td><td>The May and November measurements</td><td class="v">0.69 ± 0.05 / 0.85 ± 0.06</td><td>For the change test z</td></tr>
+        <tr><td class="sym">R</td><td>evidence variance</td><td>u², the measurement’s unsureness, squared</td><td class="v">0.0036</td><td>Goes into K and d²</td></tr>
+        <tr><td class="sym">R_gate</td><td>variance for the gate</td><td>Always the plain u²</td><td class="v">0.0036</td><td>So a bad packet can never look more consistent than it is</td></tr>
+        <tr><td class="sym">f, R_gain</td><td>WARN factor, variance for the gain</td><td>f × u². f = 1 for PASS, 2 for WARN (our team rule)</td><td class="v">f = 2 → 0.0072</td><td>Doubts about WARN data make it count less</td></tr>
+        <tr class="group"><td colspan="5">Time and drift</td></tr>
+        <tr><td class="sym">dt</td><td>time step</td><td>Time between the two sessions</td><td class="v">6 months</td><td>More time, more possible drift</td></tr>
+        <tr><td class="sym">q₆</td><td>drift per 6 months</td><td>How much the true value may wander by itself in half a year (teaching guess)</td><td class="v">0.03</td><td>Real things change slowly; the twin must allow it</td></tr>
+        <tr><td class="sym">Q</td><td>process noise</td><td>q₆² × dt / 6, the drift added to P</td><td class="v">0.0009</td><td>Makes the old belief a bit wider before the update</td></tr>
+        <tr class="group"><td colspan="5">Decision numbers</td></tr>
+        <tr><td class="sym">K</td><td>Kalman gain</td><td>From 0 to 1: how far we move toward the measurement</td><td class="v">0.32</td><td>The heart of the update</td></tr>
+        <tr><td class="sym">Δ, u(Δ)</td><td>change and its uncertainty</td><td>y₁ − y₀ and √(u₀² + u₁²)</td><td class="v">0.16, 0.078</td><td>To test if the measurement changed</td></tr>
+        <tr><td class="sym">z</td><td>standardized change</td><td>Δ / u(Δ): the change counted in “noise units”</td><td class="v">2.05</td><td>Above 1.96 = beyond noise with 95 % confidence</td></tr>
+        <tr><td class="sym">d²</td><td>normalized innovation</td><td>How surprising the measurement is for the twin</td><td class="v">3.66</td><td>Above 3.84 = the twin’s model may be wrong (flag)</td></tr>
+        <tr><td class="sym">1.96, 3.84</td><td>95 % limits</td><td>The lines for “surprising at 95 %”. 3.84 = 1.96²</td><td class="v">—</td><td>Fixed thresholds for z and d²</td></tr>
+        <tr class="group"><td colspan="5">Next measurement and geometry</td></tr>
+        <tr><td class="sym">σₘ</td><td>quality of the next measurement</td><td>Expected uncertainty of a repeat scan</td><td class="v">0.050 (after re-shim)</td><td>To compare options</td></tr>
+        <tr><td class="sym">σ_next</td><td>expected uncertainty after it</td><td>How sure we would be afterwards</td><td class="v">0.048 → 0.035</td><td>Picks the best next step</td></tr>
+        <tr><td class="sym">r_eq</td><td>equivalent radius</td><td>Radius of a ball with the same volume as the region</td><td class="v">17.4 mm (ROI)</td><td>For the ROI consistency rule</td></tr>
+        <tr><td class="sym">σ_b</td><td>boundary uncertainty</td><td>How far the region’s edge may be off (here the registration error)</td><td class="v">1.1 mm (ROI)</td><td>3σ_b / r_eq ≈ 19 % volume uncertainty</td></tr>
+        <tr><td class="sym">RC</td><td>repeatability coefficient</td><td>2.77 × σ_w: how far two scans of an unchanged person can differ</td><td class="v">needs test-retest data</td><td>A change smaller than RC is not a change (StarterPack v0.4)</td></tr>
+        <tr class="group"><td colspan="5">The general model (Dossier §2.9)</td></tr>
+        <tr><td class="sym">y = h(x, θ) + ε</td><td>observation model</td><td>What we measure = a function of the true state, the scanner conditions θ and noise ε</td><td class="v">h = 1 here</td><td>Says how the twin’s number connects to the scanner’s number</td></tr>
+        <tr><td class="sym">θ</td><td>conditions</td><td>Scanner, protocol, calibration, shim</td><td class="v">PRESS, TE 30 ms, 2.895 T</td><td>Why the context card exists</td></tr>
+        <tr><td class="sym">ε</td><td>error</td><td>Noise plus leftover error</td><td class="v">variance R</td><td>Everything we cannot control</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== SCANNER ===================== -->
+<section id="scanner">
+  <div class="read stack">
+    <span class="eyebrow">Can we make a twin of the MRI scanner itself?</span>
+    <h2>Yes. The dossier suggests it directly.</h2>
+    <p>The dossier says the challenge is about the “health” of any system over its lifetime, and names the scanner as an example: “the MRI scanner is itself such a device: its instrument checks and phantom calibrations form a longitudinal health record of the instrument” (§11.3, Appendix J.6). The intro slides list the same idea: phantom frequency and SNR week by week, a drift budget, and “service before the images degrade”.</p>
+  </div>
+  <div class="kid"><span class="tag">Like a kid</span>
+    <p>A doctor checks your health. But who checks the doctor’s thermometer? Every week the hospital puts a bottle with known liquid (a <b>phantom</b>) in the scanner and measures it. The bottle never changes. So if the numbers change, the machine changed. A twin of the scanner is the notebook of the machine’s health.</p>
+  </div>
+  <div class="twocol">
+    <div class="stack">
+      <h3>What its state would be</h3>
+      <ul class="plain">
+        <li><b>Center frequency ν₀</b>: is the magnet’s field drifting? (now 123.25 MHz)</li>
+        <li><b>Phantom SNR</b>: is the receiver chain getting noisier?</li>
+        <li><b>Phantom linewidth</b>: how well can the scanner be shimmed?</li>
+        <li><b>Geometric distortion</b>: are the gradients still accurate?</li>
+        <li>Context: room temperature, coil, software version</li>
+      </ul>
+      <p class="small muted">Same code: new observables in the packets, a new Q for each, and the same gate and Kalman step.</p>
+    </div>
+    <div class="stack">
+      <h3>How it would help the brain twin</h3>
+      <ul class="plain">
+        <li><b>Separates “brain changed” from “machine changed”.</b> If the scanner’s linewidth got worse between May and November, the Cho/Cr WARN is explained by the machine.</li>
+        <li><b>Feeds the gate.</b> Every packet already carries <code>system_qc_id</code>. A scanner twin in FAIL would block patient updates automatically.</li>
+        <li><b>Predicts service.</b> If drift trends upward, fix the machine before images get worse.</li>
+        <li><b>Shows federation.</b> Two twins exchanging only evidence under a data contract is exactly the “federated architecture” of the intro lecture.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="stack">
+    <h3>Limits to say out loud</h3>
+    <ul class="plain read">
+      <li>The StarterPack has <b>no phantom time series</b> yet (the dossier lists the phantom tier as open). We would generate one ourselves and label it <code>SIMULATED</code>.</li>
+      <li>We may not <b>certify</b> a device. Our scanner twin only advises (“calibrate soon”), like the brain twin.</li>
+      <li>Real values for drift and repeatability must come from the site’s QC records, not from us.</li>
+    </ul>
+    <p class="read"><b>Suggestion:</b> this is a strong option for Gate 2 (“a second system”). It is cheap with our code, it connects all four tracks, and it is the transfer case the pitch template asks for in the last 30 seconds.</p>
+  </div>
+</section>
+
+<!-- ===================== SYSTEMS ===================== -->
+<section id="systems">
+  <div class="read stack">
+    <span class="eyebrow">From the System Thinking slides (TU/e, 2IN70)</span>
+    <h2>Why → How → What, and the black box</h2>
+    <p>These slides are a way to think about any engineered system before building it. Main ideas, applied to our twin:</p>
+  </div>
+  <div class="grid3">
+    <div><b>Why (cause, need)</b><span class="muted small">Doctors and engineers need to know whether a change is real before acting on it. False alarms and missed changes both cost a lot.</span></div>
+    <div><b>How (idea, form)</b><span class="muted small">Evidence packets + quality gate + Kalman update + next-measurement advisor. Our architecture.</span></div>
+    <div><b>What (existence)</b><span class="muted small">The working code, tests, the Streamlit app and the pitch.</span></div>
+  </div>
+  <p class="read small muted">The slides follow Plato’s path from cause to idea to existence and use TRIZ, a method for inventive problem solving: understand the problem, model it, find the contradictions, generate ideas, select, build and operate. MBSE (model-based systems engineering) is the toolbox for doing it with models instead of documents.</p>
+
+  <div class="stack">
+    <h3>Our twin as a black box</h3>
+    <p class="read">A black box shows what goes in, what comes out, and what surrounds the system. It makes a good architecture slide.</p>
+    <div class="bbox">
+      <div class="col">
+        <b>Inputs</b>
+        <span><strong>Stakeholders:</strong> mentors, radiologists, patients, scanner engineers</span>
+        <span><strong>Users:</strong> the person deciding whether to re-scan</span>
+        <span><strong>Domains:</strong> NMR physics, metrology, data science, twins</span>
+        <span><strong>Resources:</strong> StarterPack, Explorer, 24 hours, 5 people</span>
+        <span><strong>Constraints:</strong> synthetic data only, no clinical claims</span>
+        <span><strong>Law and standards:</strong> privacy (GDPR), DICOM, NIfTI, BIDS, MRS-BIDS, JSON Schema</span>
+      </div>
+      <div class="core"><strong>Health digital twin</strong><span class="small">turns evidence packets into a defended update</span><span class="small mono">Go / No-Go = our gate</span></div>
+      <div class="col">
+        <b>Outputs</b>
+        <span class="good"><strong>Beneficial:</strong> a traceable update, honest uncertainty, the next best measurement, saved scanner time</span>
+        <span class="bad"><strong>Non-beneficial:</strong> a false “change detected”, overconfidence, a missed real change, privacy leaks, wasted scans</span>
+        <b>Environment and external systems</b>
+        <span>The scanner and its QC, the hospital IT, other twins in a federation</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h3>Contradictions we solved (TRIZ language)</h3>
+    <div class="grid3">
+      <div><b>Use WARN data or ignore it?</b><span class="muted small">Ignoring wastes information; trusting it fully is dangerous. Our solution: use it, with doubled variance and the reasons shown.</span></div>
+      <div><b>More averages or less scanner time?</b><span class="muted small">Doubling averages costs time and still keeps the broad line. Re-shimming first removes the cause.</span></div>
+      <div><b>Detect change early or avoid false alarms?</b><span class="muted small">Two separate tests: z for the measurement, d² for the twin. A borderline case gets “update with warning” plus a repeat.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== NEW IN v1.6 ===================== -->
+<section id="new">
+  <div class="read stack">
+    <span class="eyebrow">What changed in Dossier v1.6</span>
+    <h2>The lectures from this morning are now part of the dossier</h2>
+  </div>
+  <div class="grid3">
+    <div><b>CTU Data Science lecture (§6.10)</b><span class="muted small">Dr. Prokop followed our exact packet E-t1-cho from the CSV to the validated JSON. Two messages to remember: <em>valid JSON is not yet a correct scientific measurement</em>, and <em>a matching SHA-256 confirms the file bytes, not the physics</em>. A new dataset needs a field mapper.</span></div>
+    <div><b>TU/e Digital Twins lecture (§7.9)</b><span class="muted small">The twin as a system with PT, DT, DD, CN, SS and CC parts, four views, and federation of many twins (see the map above).</span></div>
+    <div><b>Open item</b><span class="muted small">“Named owners per interface are still open.” We should name one owner per track and one integrator on our canvas.</span></div>
+  </div>
+  <p class="read small muted">Everything else (numbers, thresholds, gates, rubric) is the same as v1.5, so our code and results stay valid.</p>
+
+  <div class="stack">
+    <h3>How we are scored</h3>
+    <div class="rubric">
+      <div><span>Scientific correctness</span><span class="track"><span class="bar" style="display:block;width:100%"></span></span><span class="w">20 %</span></div>
+      <div><span>Digital-twin logic</span><span class="track"><span class="bar" style="display:block;width:100%"></span></span><span class="w">20 %</span></div>
+      <div><span>Measurement trust</span><span class="track"><span class="bar" style="display:block;width:75%"></span></span><span class="w">15 %</span></div>
+      <div><span>Data integrity</span><span class="track"><span class="bar" style="display:block;width:75%"></span></span><span class="w">15 %</span></div>
+      <div><span>Cross-track integration</span><span class="track"><span class="bar" style="display:block;width:75%"></span></span><span class="w">15 %</span></div>
+      <div><span>Prototype and communication</span><span class="track"><span class="bar" style="display:block;width:50%"></span></span><span class="w">10 %</span></div>
+      <div><span>Ethics and limits</span><span class="track"><span class="bar" style="display:block;width:25%"></span></span><span class="w">5 %</span></div>
+    </div>
+    <p class="small muted">The prototype itself is only 10 %. The physics and twin logic together are 40 %.</p>
+  </div>
+</section>
+
+<!-- ===================== NEXT ===================== -->
+<section id="next">
+  <div class="read stack">
+    <span class="eyebrow">What we do next</span>
+    <h2>Reproduce, extend, defend</h2>
+    <p>The three mentor gates. Times are for Fri 20 – Sat 21 Nov at KICU Ulm.</p>
+  </div>
+  <div class="timeline">
+    <div class="tl done">
+      <span class="when">Gate 1 · Fri 17:00 · Reproduce</span>
+      <h3>Re-run and explain the worked update</h3>
+      <ul>
+        <li>Done in code: <code>reproduce.py</code> matches the dossier, 17 tests pass.</li>
+        <li><b>Still open:</b> every member traces one twin value back to its source file alone (Provenance tab in the app).</li>
+        <li>One-slide aim contract: system, modality, state variable (Cho/Cr), ambiguity (true change or poor shim?), output, one limitation.</li>
+      </ul>
+    </div>
+    <div class="tl now">
+      <span class="when">Tonight → Gate 2 · Sat 10:30 · Extend</span>
+      <h3>Solve one case the prototype does not handle yet</h3>
+      <ul>
+        <li><b>Pick one:</b> a scanner (phantom) twin as a second system <em>(our suggestion)</em>; a cohort data layer from the CTU homework; or perturbed follow-up sessions.</li>
+        <li>Mentors check: QC, uncertainty, provenance and an alternative explanation are visible. The app shows all four.</li>
+      </ul>
+    </div>
+    <div class="tl">
+      <span class="when">Gate 3 · Sat 13:30 · Defend</span>
+      <h3>Judge unseen packets live</h3>
+      <ul>
+        <li>Load new packets in the app sidebar and explain update, update_with_warning or reject, with reasons.</li>
+        <li>Bring the regression tests and a limitation card. Rehearse the pitch once.</li>
+      </ul>
+    </div>
+    <div class="tl"><span class="when">Sat 15:00 · Pitch</span><h3>Five minutes, then mentor questions</h3></div>
+  </div>
+
+  <div class="stack">
+    <h3>Deliverables by Saturday 15:00</h3>
+    <p class="small muted">Ticks are saved only in your own browser.</p>
+    <div class="checks read" id="checks">
+      <label><input type="checkbox" id="d1"><span>Prototype with at least one baseline → follow-up update</span><span class="st have">have: app.py</span></label>
+      <label><input type="checkbox" id="d2"><span>Provenance view from twin variable back to the source file</span><span class="st have">have: app tab ③</span></label>
+      <label><input type="checkbox" id="d3"><span>Uncertainty and competing-explanations view</span><span class="st have">have: app tabs ① ②</span></label>
+      <label><input type="checkbox" id="d4"><span>Next-evidence proposal</span><span class="st have">have: app tab ②</span></label>
+      <label><input type="checkbox" id="d5"><span>Evidence packet example (schema v1.0) and data dictionary</span><span class="st have">in StarterPack; explain it</span></label>
+      <label><input type="checkbox" id="d6"><span>Challenge canvas and architecture (PT/DT/DD/CN/SS/CC + black box)</span><span class="st">to do</span></label>
+      <label><input type="checkbox" id="d7"><span>Measurement card (what Cho/Cr physically means)</span><span class="st">to do · QE</span></label>
+      <label><input type="checkbox" id="d8"><span>Uncertainty card (fit, lineshape, placement, shift, calibration)</span><span class="st">to do · Metrology</span></label>
+      <label><input type="checkbox" id="d9"><span>Named owner for each track interface</span><span class="st">to do</span></label>
+      <label><input type="checkbox" id="d10"><span>Limitations statement and limitation card</span><span class="st">to do</span></label>
+      <label><input type="checkbox" id="d11"><span>Gate 2 extension chosen and working</span><span class="st">to do</span></label>
+      <label><input type="checkbox" id="d12"><span>Five-minute pitch, with AI use declared</span><span class="st">to do</span></label>
+      <label><input type="checkbox" id="d13"><span>Each member: individual reflection for course credit</span><span class="st">to do · everyone</span></label>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PITCH ===================== -->
+<section id="pitch">
+  <div class="read stack">
+    <span class="eyebrow">Pitch plan</span>
+    <h2>Five minutes, from the dossier template</h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Time</th><th>Content</th><th>What we say or show</th></tr></thead>
+      <tbody>
+        <tr><td class="t">0:00–0:30</td><td>Problem</td><td>Cho/Cr went from 0.69 to 0.85 in six months. Real chemistry or a poorly shimmed scan?</td></tr>
+        <tr><td class="t">0:30–1:15</td><td>Evidence</td><td>PRESS spectrum from a 20 mm frontal cube (Explorer 3D view), plus anatomy and ROI volume.</td></tr>
+        <tr><td class="t">1:15–2:00</td><td>Trust</td><td>SNR and linewidth gave WARN. ROI trap: the stated 4 % is really 19 %. Main uncertainty: the spectral fit, driven by the shim.</td></tr>
+        <tr><td class="t">2:00–3:00</td><td>Prototype</td><td>Live: the gate, the three curves, K = 0.32, the provenance chain. Reject the bad packet live.</td></tr>
+        <tr><td class="t">3:00–3:45</td><td>Interpretation</td><td>Cho/Cr borderline (z 2.05, d² 3.66). NAA/Cr and volume: no change. Competing explanations: peak overlap, cube position, tissue mix.</td></tr>
+        <tr><td class="t">3:45–4:30</td><td>Next evidence</td><td>Re-shim and repeat PRESS: σ 0.048 → 0.035 and the WARN cause disappears. Audit the ROI registration.</td></tr>
+        <tr><td class="t">4:30–5:00</td><td>Limits and transfer</td><td>Synthetic data, no clinical meaning, the WARN factor is our choice. The same chain runs a twin of the scanner itself.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="read stack"><span class="eyebrow">Other words we will hear</span><h2>Glossary</h2></div>
+  <div class="gloss">
+    <div><b>MRI / MRS</b><span class="muted">Pictures from magnetic resonance / a chemical “fingerprint” of one small region.</span></div>
+    <div><b>PRESS</b><span class="muted">The scan recipe that picks the 20 mm cube and records its spectrum.</span></div>
+    <div><b>ppm</b><span class="muted">Position on the spectrum axis. Each molecule sings at its own ppm.</span></div>
+    <div><b>NAA, Cr, Cho</b><span class="muted">Three molecules in the brain. Cr is used as the stable reference.</span></div>
+    <div><b>SNR</b><span class="muted">Signal-to-noise ratio: peak height divided by noise. Higher is better.</span></div>
+    <div><b>Linewidth (FWHM)</b><span class="muted">Peak width in Hz. Broad peaks overlap.</span></div>
+    <div><b>Shim</b><span class="muted">Tuning the magnetic field to be uniform before measuring.</span></div>
+    <div><b>Phantom</b><span class="muted">A test object with known contents, scanned to check the machine.</span></div>
+    <div><b>CRLB</b><span class="muted">The smallest error a fit can have in theory. Real errors are usually bigger.</span></div>
+    <div><b>VOI / ROI</b><span class="muted">The spectroscopy cube / a region drawn on the brain image.</span></div>
+    <div><b>Registration</b><span class="muted">Aligning one scan onto another.</span></div>
+    <div><b>Provenance / SHA-256</b><span class="muted">Where a number came from / a fingerprint proving a file is unchanged.</span></div>
+    <div><b>SIMULATED / MEASURED</b><span class="muted">Labels that say whether a number came from a computer or a real instrument. Never mix them.</span></div>
+  </div>
+</section>
+
+<footer>Built from Hackathon Dossier v1.6 (§2.9, §3, §4.2, §5, §6.10, §7, §9, §11.3, App. J), the challenge and lecture slides, the TU/e System Thinking slides and our <span class="mono">twin-evidence</span> code. Synthetic, educational data. AI-assisted, reviewed by the team.</footer>
+</main>
+
+<script>
+(function () {
+  var NS = "http://www.w3.org/2000/svg";
+  function mk(svg, n, attrs, style) {
+    var e = document.createElementNS(NS, n);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    for (var s in (style || {})) e.style[s] = style[s];
+    svg.appendChild(e); return e;
+  }
+  function txt(svg, x, y, s, anchor, color) {
+    var t = mk(svg, "text", { x: x, y: y, "text-anchor": anchor || "middle", "font-size": 12 }, { fill: color || "var(--ink-2)", fontFamily: "IBM Plex Mono, monospace" });
+    t.textContent = s; return t;
+  }
+
+  /* ---- Cho/Cr update, drawn to scale (Dossier §7.5) ---- */
+  (function () {
+    var svg = document.getElementById("gauss");
+    var W = 520, H = 300, L = 20, R = 20, T = 16, B = 44, x0 = 0.45, x1 = 1.05;
+    var curves = [
+      { mu: 0.69, sd: Math.sqrt(0.0034), c: "var(--prior)", fill: true },
+      { mu: 0.85, sd: 0.06, c: "var(--evid)", fill: false },
+      { mu: 0.7413, sd: 0.0481, c: "var(--post)", fill: true }
+    ];
+    var pk = 1 / (0.0481 * Math.sqrt(2 * Math.PI));
+    function sx(x) { return L + (x - x0) / (x1 - x0) * (W - L - R); }
+    function sy(y) { return H - B - y / (pk * 1.08) * (H - T - B); }
+    for (var t = 0.5; t <= 1.0001; t += 0.1) {
+      mk(svg, "line", { x1: sx(t), x2: sx(t), y1: T, y2: H - B }, { stroke: "var(--line)" });
+      txt(svg, sx(t), H - B + 18, t.toFixed(1));
+    }
+    mk(svg, "line", { x1: L, x2: W - R, y1: H - B, y2: H - B }, { stroke: "var(--ink-2)" });
+    txt(svg, (L + W - R) / 2, H - 6, "Cho/Cr");
+    curves.forEach(function (g) {
+      var d = "";
+      for (var i = 0; i <= 160; i++) {
+        var x = x0 + (x1 - x0) * i / 160, y = Math.exp(-0.5 * Math.pow((x - g.mu) / g.sd, 2)) / (g.sd * Math.sqrt(2 * Math.PI));
+        d += (i ? "L" : "M") + sx(x).toFixed(1) + " " + sy(y).toFixed(1);
+      }
+      if (g.fill) mk(svg, "path", { d: d + "L" + sx(x1) + " " + sy(0) + "L" + sx(x0) + " " + sy(0) + "Z" }, { fill: g.c, fillOpacity: 0.12, stroke: "none" });
+      mk(svg, "path", { d: d }, { fill: "none", stroke: g.c, strokeWidth: 2.5 });
+      mk(svg, "line", { x1: sx(g.mu), x2: sx(g.mu), y1: T, y2: H - B }, { stroke: g.c, strokeDasharray: "3 4" });
+    });
+  })();
+
+  /* ---- spectrum lab ---- */
+  (function () {
+    var svg = document.getElementById("spec");
+    var W = 640, H = 260, L = 16, R = 16, T = 14, B = 40, p0 = 4.0, p1 = 1.5, N = 500;
+    var nu0 = 123.25; // MHz -> 1 ppm = 123.25 Hz
+    var peaks = [{ ppm: 2.01, a: 1.0, n: "NAA" }, { ppm: 3.03, a: 0.80, n: "Cr" }, { ppm: 3.20, a: 0.68, n: "Cho" }];
+    // fixed pseudo-random white noise so the picture is stable
+    var seed = 7, base = [];
+    function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    for (var i = 0; i <= N; i++) { var u1 = rnd() || 1e-9, u2 = rnd(); base.push(Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)); }
+    var refLW = 8.7, refSNR64 = 31.2;        // baseline packet values
+    var sigma1 = 8 / refSNR64;               // noise SD for one average; /sqrt(64) gives SNR 31.2 at 8.7 Hz
+    var state = { avg: 64, lw: 11.4 };
+    function sx(p) { return L + (p0 - p) / (p0 - p1) * (W - L - R); }
+    function lor(p, c, lwHz) { var g = (lwHz / nu0) / 2; return (g * g) / ((p - c) * (p - c) + g * g); }
+    function draw() {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      var hScale = refLW / state.lw;          // same area, broader line -> lower peak
+      var sig = sigma1 / Math.sqrt(state.avg);
+      var top = 1.25, bot = -0.18;
+      function sy(v) { return T + (top - v) / (top - bot) * (H - T - B); }
+      for (var t = 4.0; t >= 1.49; t -= 0.5) { mk(svg, "line", { x1: sx(t), x2: sx(t), y1: T, y2: H - B }, { stroke: "var(--line)" }); txt(svg, sx(t), H - B + 18, t.toFixed(1)); }
+      txt(svg, (L + W - R) / 2, H - 4, "chemical shift / ppm (decreasing to the right, as on a scanner)");
+      var d = "", dc = "";
+      for (var i = 0; i <= N; i++) {
+        var p = p0 - (p0 - p1) * i / N, s = 0;
+        peaks.forEach(function (k) { s += k.a * hScale * lor(p, k.ppm, state.lw); });
+        d += (i ? "L" : "M") + sx(p).toFixed(1) + " " + sy(s + sig * base[i]).toFixed(1);
+        dc += (i ? "L" : "M") + sx(p).toFixed(1) + " " + sy(s).toFixed(1);
+      }
+      mk(svg, "path", { d: dc }, { fill: "none", stroke: "var(--line)", strokeWidth: 4, strokeLinejoin: "round" });
+      mk(svg, "path", { d: d }, { fill: "none", stroke: "var(--signal)", strokeWidth: 1.4 });
+      peaks.forEach(function (k) {
+        var y = sy(k.a * hScale) - 8;
+        var lab = txt(svg, sx(k.ppm) + (k.n === "Cho" ? -10 : k.n === "Cr" ? 10 : 0), Math.max(T + 10, y), k.n, "middle", "var(--ink)");
+        lab.style.fontWeight = "600";
+      });
+      var snr = hScale / sig;
+      var lwSt = state.lw > 20 ? "FAIL" : state.lw > 10 ? "WARN" : "PASS";
+      var snrSt = snr < 10 ? "FAIL" : snr < 25 ? "WARN" : "PASS";
+      var rank = { PASS: 0, WARN: 1, FAIL: 2 }, st = rank[lwSt] >= rank[snrSt] ? lwSt : snrSt;
+      document.getElementById("r-snr").textContent = "SNR " + snr.toFixed(1) + " (" + snrSt + ")";
+      document.getElementById("r-lw").textContent = "linewidth " + state.lw + " Hz (" + lwSt + ")";
+      var pill = document.getElementById("r-st");
+      pill.className = "pill " + st.toLowerCase(); pill.textContent = "gate: " + st;
+    }
+    function bind(id, key) {
+      var btns = document.querySelectorAll("#" + id + " button");
+      btns.forEach(function (b) {
+        b.addEventListener("click", function () {
+          btns.forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+          state[key] = parseFloat(b.dataset.v); draw();
+        });
+      });
+    }
+    bind("avg", "avg"); bind("shim", "lw"); draw();
+  })();
+
+  /* ---- per-viewer checklist memory ---- */
+  var KEY = "twin-briefing-checks", saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { saved = {}; }
+  document.querySelectorAll("#checks input").forEach(function (cb) {
+    cb.checked = !!saved[cb.id];
+    cb.addEventListener("change", function () {
+      saved[cb.id] = cb.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+    });
+  });
+})();
+</script>

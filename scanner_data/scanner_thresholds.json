@@ -1,0 +1,111 @@
+{
+  "phantom_gates_team_proposal": {
+    "phantom_linewidth_Hz": {
+      "label": "Phantom linewidth (shim quality)",
+      "unit": "Hz",
+      "per_scan_sd": 0.35,
+      "drift_sd_per_6_months": 1.2,
+      "warn_above": 8.0,
+      "fail_above": 10.0
+    },
+    "phantom_snr": {
+      "label": "Phantom SNR (receive chain)",
+      "unit": "1",
+      "per_scan_sd": 4.0,
+      "drift_sd_per_6_months": 6.0,
+      "warn_below": 180.0,
+      "fail_below": 150.0
+    },
+    "freq_offset_Hz": {
+      "label": "Centre-frequency drift (B0)",
+      "unit": "Hz",
+      "per_scan_sd": 2.0,
+      "drift_sd_per_6_months": 15.0,
+      "warn_above": 40.0,
+      "fail_above": 80.0
+    }
+  },
+  "phantom_note": "PROPOSAL for a spherical water phantom at 3 T, chosen by the team. Please replace with site values.",
+  "starterpack_thresholds_v1_0_scanner_related": [
+    {
+      "name": "registration_rms_mm",
+      "unit": "mm",
+      "owner": "PM",
+      "warn_above": 2.0,
+      "fail_above": 3.0,
+      "applies_to": [
+        "MRI",
+        "MRS"
+      ],
+      "note": "FAIL limit is a proposal"
+    },
+    {
+      "name": "mrs_linewidth_Hz",
+      "unit": "Hz",
+      "owner": "PM",
+      "warn_above": 10.0,
+      "fail_above": 20.0,
+      "applies_to": [
+        "MRS"
+      ],
+      "context": "3 T, 1H, FWHM of NAA",
+      "note": "FAIL limit is a proposal"
+    },
+    {
+      "name": "mrs_snr",
+      "unit": "1",
+      "owner": "QE",
+      "warn_below": 25.0,
+      "fail_below": 10.0,
+      "applies_to": [
+        "MRS"
+      ],
+      "definition": "SNR = height of the NAA peak in the real (absorption) spectrum, 1.9-2.1 ppm, divided by the SD of the real spectrum in the signal-free window -3.0 to 0.0 ppm (peak height / noise SD; LCModel's S/N uses 2 x RMS residual and gives about half)"
+    },
+    {
+      "name": "roi_u_consistency",
+      "unit": "1",
+      "owner": "PM",
+      "applies_to": [
+        "MRI"
+      ],
+      "rule": "for a mask propagated through a registration: stated_u_rel >= implied_u_rel = 3 * registration_rms_mm / r_eq, r_eq = equivalent-sphere radius of the reference ROI (dossier section 3.10)",
+      "status_if_violated": "WARN",
+      "action_if_violated": "carry the implied uncertainty forward"
+    },
+    {
+      "name": "protocol_match",
+      "owner": "PM",
+      "rule": "same sequence family, TE, TR and field as the baseline",
+      "status_if_violated": "WARN",
+      "applies_to": [
+        "MRI",
+        "MRS"
+      ]
+    },
+    {
+      "name": "system_qc",
+      "owner": "PM",
+      "rule": "system_qc_id present",
+      "status_if_violated": "FAIL",
+      "applies_to": [
+        "MRI",
+        "MRS"
+      ]
+    }
+  ],
+  "twin_policy": {
+    "PASS": {
+      "action": "update",
+      "R_factor": 1.0
+    },
+    "WARN": {
+      "action": "update_with_warning",
+      "R_factor": 2.0
+    },
+    "FAIL": {
+      "action": "reject"
+    },
+    "note": "R_factor is a declared team policy, not a physical constant (dossier section 7.5)"
+  }
+}

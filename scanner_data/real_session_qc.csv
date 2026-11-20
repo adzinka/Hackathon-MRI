@@ -1,0 +1,4 @@
+session,date,origin,mrs_snr_packet,mrs_snr_from_raw,mrs_linewidth_Hz_packet,mrs_linewidth_Hz_from_raw,naa_peak_ppm_from_raw,mrs_registration_rms_mm,roi_registration_rms_mm,system_qc_id,calibration_id,protocol_match,csde_mm_NAA_Cho,qc_status_packet,registration_rms_mm_packet,missing_values_packet
+baseline,2026-05-20,SIMULATED,31.2,31.28,8.7,8.92,2.01,0.7,0.7,sysqc-synthetic-20260520,phantom-2026-05,True,2.4,PASS,,
+followup,2026-11-20,SIMULATED,24.8,24.87,11.4,11.12,2.011,1.1,1.1,sysqc-synthetic-20261120,phantom-2026-11,True,2.4,WARN,,
+followup (rejected packet E-t1-chobad),2026-11-20,SIMULATED,9.0,,24.0,,,,,sysqc-synthetic,,,,FAIL,3.8,1

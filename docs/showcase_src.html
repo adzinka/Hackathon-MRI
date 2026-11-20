@@ -1,0 +1,816 @@
+<title>Twin Evidence</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a dark "scanner console" stage for the hero and the live demos, cool clinical paper between them; one 72rem column. */
+:root {
+  --paper: #eef2f5;
+  --surface: #ffffff;
+  --ink: #0f1b24;
+  --ink-2: #4a5a67;
+  --line: #d3dce3;
+  --accent: #2f4bd8;          /* cobalt: the twin */
+  --accent-soft: #e3e8fd;
+  --stage: #0c141c;           /* the console bands stay dark in both themes */
+  --stage-2: #131e29;
+  --stage-ink: #e8eef3;
+  --stage-ink-2: #93a4b3;
+  --stage-line: #24323f;
+  --stage-accent: #8ea0ff;
+  --pass: #1f8a4c; --pass-soft: #def3e6;
+  --warn: #b77800; --warn-soft: #fbefd2; --warn-glow: #f5b13d;
+  --fail: #c23b35; --fail-soft: #f9e0de;
+  --raw: #e0662f;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f161d; --surface: #16212b; --ink: #e6edf2; --ink-2: #a3b2be; --line: #273643;
+    --accent: #8ea0ff; --accent-soft: #1f2a55;
+    --stage: #080e14; --stage-2: #101922; --stage-line: #1f2b37;
+    --pass: #6fd398; --pass-soft: #12321f; --warn: #f2bf55; --warn-soft: #3a2c0e; --fail: #f08b84; --fail-soft: #3c1b19;
+    --raw: #f0905f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f161d; --surface: #16212b; --ink: #e6edf2; --ink-2: #a3b2be; --line: #273643;
+  --accent: #8ea0ff; --accent-soft: #1f2a55;
+  --stage: #080e14; --stage-2: #101922; --stage-line: #1f2b37;
+  --pass: #6fd398; --pass-soft: #12321f; --warn: #f2bf55; --warn-soft: #3a2c0e; --fail: #f08b84; --fail-soft: #3c1b19;
+  --raw: #f0905f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before { animation: none !important; transition: none !important; } }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.02rem/1.6 var(--f-body); }
+.wrap { max-width: 72rem; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; line-height: 1.05; }
+h1 { font-size: clamp(2.5rem, 6.2vw, 4.6rem); font-weight: 800; letter-spacing: -.025em; }
+h2 { font-size: clamp(1.9rem, 4vw, 2.9rem); font-weight: 700; letter-spacing: -.02em; }
+h3 { font-size: 1.2rem; font-weight: 700; line-height: 1.2; }
+p { margin: 0; }
+.eyebrow { font: 500 .74rem/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.lede { font-size: 1.18rem; color: var(--ink-2); max-width: 40rem; }
+.mono { font-family: var(--f-mono); }
+.num { font-variant-numeric: tabular-nums; }
+.sim { display: inline-flex; align-items: center; gap: .35rem; font: 500 .68rem/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; padding: .35rem .5rem; border-radius: 4px; border: 1px dashed currentColor; color: var(--ink-2); }
+section.band { padding-block: clamp(3.5rem, 8vw, 6.5rem); }
+.sec-head { display: grid; gap: 1rem; max-width: 46rem; margin-bottom: 2.4rem; }
+button { font: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ---------- stage (dark console) ---------- */
+.stage { background: var(--stage); color: var(--stage-ink); }
+.stage .eyebrow { color: var(--stage-accent); }
+.stage .lede { color: var(--stage-ink-2); }
+.stage .sim { color: var(--stage-ink-2); }
+
+/* hero */
+.hero { padding-block: 2.4rem 3.5rem; position: relative; overflow: hidden; }
+.hero::before { content: ""; position: absolute; inset: 0; background:
+  radial-gradient(60rem 30rem at 78% 40%, rgba(142,160,255,.13), transparent 60%),
+  repeating-linear-gradient(90deg, transparent 0 79px, rgba(255,255,255,.025) 79px 80px); pointer-events: none; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; position: relative; }
+.brand { display: flex; align-items: center; gap: .6rem; font: 700 1.05rem/1 var(--f-display); letter-spacing: -.01em; }
+.brand-mark { width: 1.6rem; height: 1.6rem; border-radius: 50%; border: 2px solid var(--stage-accent); position: relative; }
+.brand-mark::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--warn-glow); }
+.topbar nav { display: flex; gap: 1.2rem; flex-wrap: wrap; font-size: .88rem; }
+.topbar nav a { color: var(--stage-ink-2); text-decoration: none; }
+.topbar nav a:hover { color: var(--stage-ink); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 2rem; align-items: center; margin-top: 2.6rem; position: relative; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+.hero-copy { display: grid; gap: 1.4rem; align-content: start; }
+.hero h1 em { font-style: normal; color: var(--warn-glow); }
+.ctas { display: flex; gap: .8rem; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: .5rem; padding: .8rem 1.15rem; border-radius: 999px; font-weight: 600; font-size: .95rem; text-decoration: none; border: 1px solid transparent; cursor: pointer; }
+.btn-primary { background: var(--stage-accent); color: var(--stage); }
+.btn-ghost { border-color: var(--stage-line); color: var(--stage-ink); background: transparent; }
+.btn-ghost:hover { border-color: var(--stage-ink-2); }
+.hero-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; padding-top: 1.4rem; border-top: 1px solid var(--stage-line); }
+.hero-stats b { display: block; white-space: nowrap; font: 700 clamp(1.25rem, 2.3vw, 1.75rem)/1 var(--f-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.hero-stats span { font-size: .82rem; color: var(--stage-ink-2); line-height: 1.35; display: block; margin-top: .4rem; }
+@media (max-width: 520px) { .hero-stats { grid-template-columns: 1fr; } }
+
+/* 3D viewport */
+.viewport { position: relative; aspect-ratio: 5 / 4; max-width: 100%; border: 1px solid var(--stage-line); border-radius: 14px; background: radial-gradient(circle at 50% 45%, #18263a, #0a1118 70%); overflow: hidden; }
+.viewport canvas { display: block; width: 100%; height: 100%; }
+.vp-fallback { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 2rem; color: var(--stage-ink-2); font-size: .9rem; }
+.hotspot { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: .45rem; padding: .35rem .6rem .35rem .4rem; border-radius: 999px; background: rgba(12,20,28,.82); border: 1px solid var(--stage-line); color: var(--stage-ink); font: 500 .74rem/1 var(--f-body); white-space: nowrap; cursor: pointer; backdrop-filter: blur(4px); }
+.hotspot i { width: .7rem; height: .7rem; border-radius: 50%; background: var(--warn-glow); box-shadow: 0 0 0 0 rgba(245,177,61,.6); animation: ping 2s infinite; }
+.hotspot[data-st="PASS"] i { background: #3ccf7f; box-shadow: none; animation: none; }
+.hotspot[data-st="FAIL"] i { background: #ff6b63; }
+.hotspot[aria-pressed="true"] { border-color: var(--stage-accent); }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(245,177,61,.55); } 70% { box-shadow: 0 0 0 10px rgba(245,177,61,0); } 100% { box-shadow: 0 0 0 0 rgba(245,177,61,0); } }
+.vp-bar { position: absolute; left: .8rem; right: .8rem; bottom: .8rem; display: flex; justify-content: space-between; align-items: end; gap: .8rem; flex-wrap: wrap; pointer-events: none; }
+.vp-bar > * { pointer-events: auto; }
+.seg { display: inline-flex; border: 1px solid var(--stage-line); border-radius: 999px; overflow: hidden; background: rgba(12,20,28,.85); }
+.seg button { border: 0; background: transparent; color: var(--stage-ink-2); padding: .45rem .75rem; font-size: .76rem; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--stage-accent); color: var(--stage); font-weight: 600; }
+.vp-note { font: 400 .68rem/1.3 var(--f-mono); color: var(--stage-ink-2); background: rgba(12,20,28,.85); padding: .35rem .5rem; border-radius: 6px; max-width: 15rem; }
+.explain { margin-top: 1rem; min-height: 6.5rem; padding: 1rem 1.2rem; border-radius: 12px; background: var(--stage-2); border: 1px solid var(--stage-line); display: grid; gap: .35rem; }
+.explain h3 { font-size: 1.02rem; display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.explain p { color: var(--stage-ink-2); font-size: .93rem; }
+.tag { font: 600 .68rem/1 var(--f-mono); letter-spacing: .06em; padding: .3rem .45rem; border-radius: 4px; }
+.tag.WARN { background: #4a3608; color: #f5c66a; } .tag.PASS { background: #12391f; color: #79dca2; } .tag.FAIL { background: #4a1714; color: #ff9a93; }
+
+/* ---------- problem ---------- */
+.versus { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+@media (max-width: 760px) { .versus { grid-template-columns: 1fr; } }
+.vs-card { padding: 1.8rem; border-radius: 16px; display: grid; gap: 1.1rem; align-content: start; }
+.vs-raw { background: var(--surface); border: 1px solid var(--line); }
+.vs-twin { background: var(--accent); color: #fff; }
+:root[data-theme="dark"] .vs-twin { color: #0c141c; }
+.vs-card .who { font: 500 .72rem/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; opacity: .75; }
+.vs-card .big { font: 800 clamp(2.4rem, 6vw, 3.6rem)/1 var(--f-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.vs-raw .big { color: var(--raw); }
+.vs-card .quote { font: 500 1.12rem/1.45 var(--f-display); }
+.vs-card ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .35rem; font-size: .95rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .vs-twin { color: #0c141c; } }
+
+/* ---------- steps ---------- */
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+@media (max-width: 860px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .steps { grid-template-columns: 1fr; } }
+.step { padding: 1.5rem 1.3rem 1.6rem 0; display: grid; gap: .6rem; align-content: start; border-bottom: 1px solid var(--line); }
+.step .n { font: 500 .74rem/1 var(--f-mono); color: var(--accent); }
+.step p { color: var(--ink-2); font-size: .94rem; }
+.step svg { width: 2.6rem; height: 2.6rem; }
+.step svg * { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.step svg .hl { stroke: var(--accent); }
+
+/* ---------- demo ---------- */
+.demo { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 1.6rem; align-items: start; }
+@media (max-width: 860px) { .demo { grid-template-columns: 1fr; } }
+.panel { background: var(--stage-2); border: 1px solid var(--stage-line); border-radius: 14px; padding: 1.3rem; display: grid; gap: 1.2rem; }
+.field { display: grid; gap: .5rem; }
+.field > label, .field > span { font: 500 .72rem/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--stage-ink-2); }
+.field output { font: 700 1.6rem/1 var(--f-display); font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--stage-accent); }
+.quality { display: grid; gap: .4rem; }
+.quality button { display: grid; grid-template-columns: auto 1fr; gap: .1rem .6rem; text-align: left; padding: .65rem .75rem; border-radius: 10px; border: 1px solid var(--stage-line); background: transparent; color: var(--stage-ink); cursor: pointer; }
+.quality button small { grid-column: 2; color: var(--stage-ink-2); font-size: .78rem; }
+.quality button i { width: .7rem; height: .7rem; border-radius: 50%; margin-top: .35rem; grid-row: span 2; }
+.quality button[aria-pressed="true"] { border-color: var(--stage-accent); background: rgba(142,160,255,.1); }
+.chartbox { background: var(--stage-2); border: 1px solid var(--stage-line); border-radius: 14px; padding: 1.2rem 1.2rem 1rem; display: grid; gap: 1rem; }
+.chartbox svg { width: 100%; height: auto; display: block; }
+.verdict { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; }
+.verdict .pill { font: 600 .8rem/1 var(--f-mono); padding: .5rem .7rem; border-radius: 999px; white-space: nowrap; }
+.pill.PASS { background: #12391f; color: #79dca2; } .pill.WARN { background: #4a3608; color: #f5c66a; } .pill.FAIL { background: #4a1714; color: #ff9a93; }
+.verdict p { color: var(--stage-ink); font-size: 1rem; }
+.kbar { display: grid; grid-template-columns: auto 1fr auto; gap: .8rem; align-items: center; font: 500 .8rem/1 var(--f-mono); color: var(--stage-ink-2); }
+.kbar .track { height: .55rem; border-radius: 99px; background: var(--stage-line); overflow: hidden; }
+.kbar .fill { height: 100%; width: 0; background: var(--stage-accent); transition: width .5s ease; }
+.legend { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; font-size: .8rem; color: var(--stage-ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: .4rem; }
+.legend i { width: 1.2rem; height: 3px; border-radius: 2px; display: inline-block; }
+
+/* chart text in both stage + paper */
+svg text { font-family: var(--f-mono); font-size: 11px; }
+.stage svg text { fill: var(--stage-ink-2); }
+.stage svg .grid { stroke: var(--stage-line); }
+.paperchart svg text { fill: var(--ink-2); }
+.paperchart svg .grid { stroke: var(--line); }
+
+/* ---------- longitudinal ---------- */
+.longi { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 17rem); gap: 1.6rem; align-items: start; }
+@media (max-width: 900px) { .longi { grid-template-columns: 1fr; } }
+.paperchart { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.2rem; display: grid; gap: .9rem; }
+.paperchart svg { width: 100%; height: auto; display: block; }
+.paperchart .legend { color: var(--ink-2); }
+.toggle { display: inline-flex; align-items: center; gap: .55rem; font-size: .88rem; cursor: pointer; color: var(--ink); }
+.toggle input { accent-color: var(--accent); width: 1rem; height: 1rem; }
+.scoreboard { display: grid; gap: 1rem; }
+.score { padding: 1.1rem 1.2rem; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; gap: .3rem; }
+.score b { font: 800 2.3rem/1 var(--f-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.score span { color: var(--ink-2); font-size: .9rem; }
+.score.good b { color: var(--pass); } .score.bad b { color: var(--raw); } .score.twin b { color: var(--accent); }
+.events { display: grid; gap: .1rem; font-size: .88rem; margin-top: .3rem; }
+.events div { display: grid; grid-template-columns: 3.4rem auto 1fr; gap: .6rem; padding: .45rem 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.events .m { font-family: var(--f-mono); color: var(--ink-2); font-size: .8rem; }
+.chip { font: 600 .66rem/1 var(--f-mono); padding: .25rem .4rem; border-radius: 4px; }
+.chip.PASS { background: var(--pass-soft); color: var(--pass); } .chip.WARN { background: var(--warn-soft); color: var(--warn); } .chip.FAIL { background: var(--fail-soft); color: var(--fail); }
+
+/* ---------- fleet ---------- */
+.fleet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+@media (max-width: 760px) { .fleet { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 440px) { .fleet { grid-template-columns: 1fr; } }
+.unit { text-align: left; padding: 1rem; border-radius: 12px; border: 1px solid var(--stage-line); background: var(--stage-2); color: var(--stage-ink); cursor: pointer; display: grid; gap: .55rem; }
+.unit[aria-pressed="true"] { border-color: var(--stage-accent); box-shadow: inset 0 0 0 1px var(--stage-accent); }
+.unit .top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.unit .nm { font: 700 1rem/1 var(--f-display); }
+.unit .meta { font: 400 .76rem/1.35 var(--f-mono); color: var(--stage-ink-2); }
+.unit svg { width: 100%; height: 2.6rem; }
+.fleet-detail { margin-top: 1.2rem; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 18rem); gap: 1.4rem; align-items: start; }
+@media (max-width: 860px) { .fleet-detail { grid-template-columns: 1fr; } }
+.advice { display: grid; gap: .7rem; padding: 1.2rem; border-radius: 12px; background: var(--stage-2); border: 1px solid var(--stage-line); }
+.advice h3 { font-size: 1.05rem; }
+.advice p { color: var(--stage-ink-2); font-size: .92rem; }
+.advice .big { font: 800 2.4rem/1 var(--f-display); color: var(--stage-ink); font-variant-numeric: tabular-nums; }
+
+/* ---------- transfer + trust ---------- */
+.cards3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+@media (max-width: 820px) { .cards3 { grid-template-columns: 1fr; } }
+.tcard { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; display: grid; gap: .7rem; align-content: start; }
+.tcard .kv { display: grid; grid-template-columns: 6.2rem 1fr; gap: .3rem .6rem; font-size: .88rem; }
+.tcard .kv dt { font: 500 .7rem/1.5 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.tcard .kv dd { margin: 0; }
+.tcard svg { width: 2.4rem; height: 2.4rem; }
+.tcard svg * { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.trust { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.6rem; }
+@media (max-width: 860px) { .trust { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .trust { grid-template-columns: 1fr; } }
+.trust div { display: grid; gap: .45rem; align-content: start; border-top: 2px solid var(--ink); padding-top: 1rem; }
+.trust p { color: var(--ink-2); font-size: .93rem; }
+
+/* ---------- closing ---------- */
+.closing { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2.4rem; align-items: start; }
+@media (max-width: 820px) { .closing { grid-template-columns: 1fr; } }
+.roadmap { display: grid; gap: 0; }
+.roadmap div { display: grid; grid-template-columns: 6rem 1fr; gap: 1rem; padding: .9rem 0; border-bottom: 1px solid var(--stage-line); }
+.roadmap .when { font: 500 .76rem/1.5 var(--f-mono); color: var(--stage-accent); }
+.roadmap p { color: var(--stage-ink-2); font-size: .93rem; }
+.roadmap b { color: var(--stage-ink); font-weight: 600; }
+footer.fine { padding-block: 1.6rem 2.4rem; font-size: .8rem; color: var(--stage-ink-2); border-top: 1px solid var(--stage-line); display: grid; gap: .4rem; }
+</style>
+
+<!-- ================= HERO ================= -->
+<header class="stage hero">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Twin Evidence</div>
+      <nav aria-label="Sections"><a href="#problem">Problem</a><a href="#how">How it works</a><a href="#demo">Try it</a><a href="#story">Two years</a><a href="#fleet">Scanner twin</a><a href="#beyond">Beyond MRI</a></nav>
+    </div>
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow">Digital twin · MRI &amp; spectroscopy · InnovateU Ulm 2026</span>
+        <h1>A digital twin that knows when <em>not</em> to believe a scan.</h1>
+        <p class="lede">Scans change for many reasons: the body, the machine, the software. Twin Evidence updates what we believe only as far as the evidence allows. It shows why, and it tells you which scan to take next.</p>
+        <div class="ctas"><a class="btn btn-primary" href="#demo">Send the twin a scan</a><a class="btn btn-ghost" href="#story">See two years in 20 seconds</a></div>
+        <div class="hero-stats">
+          <div><b>+23 % → +7 %</b><span>raw jump vs the change the evidence supports</span></div>
+          <div><b>4 / 4</b><span>follow-up results flagged, each with its reason</span></div>
+          <div><b>~5 weeks</b><span>early warning of a scanner fault <span class="mono">(simulated)</span></span></div>
+        </div>
+      </div>
+      <div>
+        <div class="viewport" id="vp">
+          <canvas id="three" aria-label="3D view: brain inside an MRI scanner with the spectroscopy voxel and the measured region"></canvas>
+          <div class="vp-fallback" id="vp-fallback" hidden>The 3D view needs WebGL. Everything else on the page works without it.</div>
+          <button class="hotspot" type="button" data-k="voxel" data-st="WARN" aria-pressed="true"><i></i>Chemistry voxel · WARN</button>
+          <button class="hotspot" type="button" data-k="roi" data-st="WARN" aria-pressed="false"><i></i>Measured region · WARN</button>
+          <button class="hotspot" type="button" data-k="scanner" data-st="WARN" aria-pressed="false"><i></i>Scanner · WARN</button>
+          <div class="vp-bar">
+            <div class="seg" role="group" aria-label="Scanner condition (simulated)">
+              <button type="button" data-sc="stable" aria-pressed="false">Scanner healthy</button>
+              <button type="button" data-sc="degrading" aria-pressed="true">Shim degrading</button>
+            </div>
+            <span class="vp-note">Brain and region meshes: StarterPack v0.3 NIfTI files. Drag to rotate.</span>
+          </div>
+        </div>
+        <div class="explain" id="explain" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ================= PROBLEM ================= -->
+<section class="band" id="problem">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">The problem</span>
+      <h2>One number went up 23 %. Should anyone act on it?</h2>
+      <p class="lede">A brain chemistry ratio (choline to creatine) was 0.69 in May and 0.85 in November. Raw data shout. Our twin reads the evidence first.</p>
+    </div>
+    <div class="versus">
+      <div class="vs-card vs-raw">
+        <span class="who">Raw data says</span>
+        <span class="big">+23 %</span>
+        <p class="quote">“Something changed. Raise the alarm.”</p>
+        <ul><li>Treats a noisy scan like a clean one</li><li>Cannot tell the body from the machine</li><li>No idea what to do next</li></ul>
+      </div>
+      <div class="vs-card vs-twin">
+        <span class="who">Twin Evidence says</span>
+        <span class="big">+7 % ± 7 %</span>
+        <p class="quote">“The scan was taken with a poorly tuned magnet. I counted it at one third weight. No proven change yet. Re-tune and repeat: 4 minutes.”</p>
+        <ul><li>Quality checked before trusting</li><li>Every reason traceable to a file</li><li>Recommends the cheapest next scan</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HOW ================= -->
+<section class="band" id="how" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">How it works</span>
+      <h2>Four steps, every time a scan arrives</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="14"/><circle class="hl" cx="20" cy="20" r="6"/><path d="M20 2v6M20 32v6M2 20h6M32 20h6"/></svg><span class="n">1 · Measure</span><h3>The scanner sends evidence</h3><p>Every number arrives as a packet with its unit, its uncertainty and the file it came from.</p></div>
+      <div class="step"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 6h24v28H8z"/><path class="hl" d="M13 20l5 5 9-11"/></svg><span class="n">2 · Check</span><h3>A quality gate decides</h3><p>Pass, warn or fail. Signal quality, positioning, file integrity. The gate never trusts a label it can re-check.</p></div>
+      <div class="step"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M4 30c6 0 8-20 16-20s10 20 16 20"/><path class="hl" d="M20 6v28"/></svg><span class="n">3 · Update</span><h3>The twin moves, by the right amount</h3><p>Good evidence moves the belief a lot, weak evidence a little, broken evidence not at all.</p></div>
+      <div class="step"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 20h22"/><path class="hl" d="M22 12l8 8-8 8"/><circle cx="6" cy="20" r="2"/></svg><span class="n">4 · Advise</span><h3>It says what to scan next</h3><p>The scan that removes the most doubt per scanner minute. It advises; it never diagnoses.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DEMO ================= -->
+<section class="band stage" id="demo">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Try it</span>
+      <h2>Send the twin a new scan</h2>
+      <p class="lede">The twin currently believes the ratio is 0.69 ± 0.06. Pick a new measurement and its quality. Watch how far the twin is willing to move.</p>
+    </div>
+    <div class="demo">
+      <div class="panel">
+        <div class="field"><label for="d-y">New measurement</label><output id="d-yv" for="d-y">0.85</output>
+          <input type="range" id="d-y" min="0.55" max="1.05" step="0.01" value="0.85"></div>
+        <div class="field"><span>Scan quality</span>
+          <div class="quality" id="d-q" role="group" aria-label="Scan quality">
+            <button type="button" data-q="PASS" aria-pressed="false"><i style="background:#3ccf7f"></i>Clean scan<small>sharp peaks, strong signal · ± 0.05</small></button>
+            <button type="button" data-q="WARN" aria-pressed="true"><i style="background:#f5b13d"></i>Noisy scan<small>poor magnet tuning · ± 0.06, counted at half weight</small></button>
+            <button type="button" data-q="FAIL" aria-pressed="false"><i style="background:#ff6b63"></i>Broken scan<small>patient moved, file missing · rejected</small></button>
+          </div></div>
+      </div>
+      <div class="chartbox">
+        <svg id="d-chart" viewBox="0 0 640 280" role="img" aria-label="Old belief, new measurement and new belief as probability curves"></svg>
+        <div class="legend"><span><i style="background:#93a4b3"></i>what the twin believed</span><span><i style="background:#f0905f"></i>the new scan</span><span><i style="background:#8ea0ff"></i>what the twin believes now</span></div>
+        <div class="kbar"><span>moved</span><div class="track"><div class="fill" id="d-k"></div></div><span id="d-kv">32 %</span></div>
+        <div class="verdict"><span class="pill WARN" id="d-pill">WARN</span><p id="d-text">…</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STORY ================= -->
+<section class="band" id="story">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Two years, one patient <span class="sim">simulated</span></span>
+      <h2>No false alarms. The real change, confirmed.</h2>
+      <p class="lede">Eight scans over 24 months. Two are bad: one with a poorly tuned magnet, one ruined by motion. Then a real change starts. A simple “alarm above +15 %” rule and our twin watch the same scans.</p>
+    </div>
+    <div class="longi">
+      <div class="paperchart">
+        <svg id="l-chart" viewBox="0 0 720 340" role="img" aria-label="Two-year chart of measurements, the twin estimate with its band and alarm markers"></svg>
+        <div class="legend">
+          <span><i style="background:var(--raw)"></i>scan (colour = quality)</span><span><i style="background:var(--accent)"></i>twin belief ± 95 %</span>
+          <span><i style="background:var(--fail)"></i>simple-rule alarm</span><span id="truth-leg" hidden><i style="background:var(--ink)"></i>hidden truth</span>
+        </div>
+        <label class="toggle"><input type="checkbox" id="l-truth">Reveal the hidden truth (we built the data, so we know it)</label>
+      </div>
+      <div class="scoreboard">
+        <div class="score bad"><b id="s-naive">5</b><span>alarms from the simple rule, <strong id="s-false">2</strong> of them false</span></div>
+        <div class="score good"><b id="s-avoid">2</b><span>false alarms the twin avoided</span></div>
+        <div class="score twin"><b id="s-conf">month 20</b><span>real change confirmed with 95 % confidence, after two clean scans</span></div>
+        <div class="events" id="l-events"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FLEET ================= -->
+<section class="band stage" id="fleet">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">A twin for the scanner too <span class="sim">simulated</span></span>
+      <h2>Fix the machine before it fools the doctor</h2>
+      <p class="lede">Every week each scanner measures a bottle of known liquid. The bottle never changes, so any drift is the machine. The same engine turns those checks into a health twin for each scanner, and warns weeks before images degrade.</p>
+    </div>
+    <div class="fleet" id="fleet-grid"></div>
+    <div class="fleet-detail">
+      <div class="chartbox"><svg id="f-chart" viewBox="0 0 640 260" role="img" aria-label="Weekly phantom linewidth of the selected scanner with twin estimate and forecast"></svg>
+        <div class="legend"><span><i style="background:#93a4b3"></i>weekly check</span><span><i style="background:#8ea0ff"></i>scanner twin ± 95 %</span><span><i style="background:#8ea0ff;opacity:.5"></i>forecast</span><span><i style="background:#ff6b63"></i>fail limit</span></div></div>
+      <div class="advice" id="f-advice"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BEYOND ================= -->
+<section class="band" id="beyond">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Beyond the brain</span>
+      <h2>Same engine. Any system that ages.</h2>
+      <p class="lede">The evidence packet, the quality gate and the update rule do not care what is being measured. Swap the sensor and the state, keep everything else.</p>
+    </div>
+    <div class="cards3">
+      <div class="tcard"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="9" width="24" height="26" rx="3"/><path d="M15 5h10M20 15l-4 7h8l-4 7"/></svg><h3>Battery cells</h3>
+        <dl class="kv"><dt>Sensor</dt><dd>⁷Li MRI, field just outside the cell</dd><dt>State</dt><dd>lithium build-up, state of charge</dd><dt>Value</dt><dd>safe fast charging, earlier replacement</dd></dl></div>
+      <div class="tcard"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="14"/><circle cx="20" cy="20" r="8"/></svg><h3>Rubber seals</h3>
+        <dl class="kv"><dt>Sensor</dt><dd>single-sided NMR</dd><dt>State</dt><dd>crosslink density, ageing</dd><dt>Value</dt><dd>replace before it leaks</dd></dl></div>
+      <div class="tcard"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15"/><circle cx="20" cy="20" r="7"/><path d="M20 5v4M20 31v4"/></svg><h3>MRI scanners</h3>
+        <dl class="kv"><dt>Sensor</dt><dd>weekly phantom check</dd><dt>State</dt><dd>field drift, signal, distortion</dd><dt>Value</dt><dd>service before images degrade</dd></dl></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow">Why people can trust it</span><h2>Built to be questioned</h2></div>
+    <div class="trust">
+      <div><h3>Every number has a source</h3><p>Each update traces back to a file and its SHA-256 fingerprint. Click any result and see where it came from.</p></div>
+      <div><h3>Uncertainty is never hidden</h3><p>Every value carries its ± . “Not enough evidence yet” is an honest, valid answer.</p></div>
+      <div><h3>It re-checks the physics</h3><p>The twin recomputes signal-to-noise from the raw spectrum instead of trusting the label.</p></div>
+      <div><h3>It advises, never diagnoses</h3><p>Output is the next best measurement, not a medical decision. Clinical use stays with clinicians.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CLOSING ================= -->
+<section class="band stage">
+  <div class="wrap closing">
+    <div class="sec-head" style="margin:0">
+      <span class="eyebrow">What exists today</span>
+      <h2>Working code, tested against the reference numbers</h2>
+      <p class="lede">Built in 24 hours at the InnovateU hackathon in Ulm. A quality gate, a gated Kalman twin, a scanner twin and an interactive app, all reproducing the challenge’s worked example to three decimals, with 17 automated tests.</p>
+    </div>
+    <div class="roadmap">
+      <div><span class="when">Now</span><p><b>Brain + scanner twin prototype.</b> Synthetic StarterPack data, open formats (DICOM, NIfTI, BIDS).</p></div>
+      <div><span class="when">Next</span><p><b>Real repeat-scan data.</b> Replace teaching assumptions with measured repeatability.</p></div>
+      <div><span class="when">Then</span><p><b>Real phantom records.</b> Connect a site’s weekly QC to the scanner twin.</p></div>
+      <div><span class="when">Later</span><p><b>Federation.</b> Twins of people, devices and machines that exchange evidence, not raw data.</p></div>
+    </div>
+  </div>
+  <div class="wrap"><footer class="fine">
+    <span>Synthetic, educational data. The brain case uses the challenge’s StarterPack v0.3. The two-year patient story and the scanner fleet are simulated by our team to illustrate the method and are labelled as such. No clinical claims.</span>
+    <span>Twin Evidence · InnovateU NMR challenge 2026 · AI-assisted, reviewed by the team.</span>
+  </footer></div>
+</section>
+</main>
+
+<script type="application/json" id="meshes">__MESHES__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function el(svg, n, a, s) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (s) for (var q in s) e.style[q] = s[q]; svg.appendChild(e); return e; }
+  function clear(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+  function txt(svg, x, y, s, anchor, cls) { var t = el(svg, "text", { x: x, y: y, "text-anchor": anchor || "middle" }); if (cls) t.setAttribute("class", cls); t.textContent = s; return t; }
+  function gauss(x, m, s) { return Math.exp(-0.5 * Math.pow((x - m) / s, 2)) / (s * Math.sqrt(2 * Math.PI)); }
+  var COL = { PASS: "#3ccf7f", WARN: "#f5b13d", FAIL: "#ff6b63", prior: "#93a4b3", evid: "#f0905f", post: "#8ea0ff" };
+
+  /* ===================== 1 · 3D HERO ===================== */
+  var scState = "degrading";
+  var EXPLAIN = {
+    voxel: function () { return { t: "Chemistry voxel", st: "WARN", p: "The 2 cm cube where the spectrum is measured. In November the signal was weaker (SNR 24.8 vs 31.2) and the peaks broader (11.4 vs 8.7 Hz). Choline and creatine sit close together, so broad peaks blur them. The twin counts this scan at half weight. The dotted cubes show that each molecule is measured 2.4 mm apart." }; },
+    roi: function () { return { t: "Measured region", st: "WARN", p: "The region looks 25 % bigger in November. But the outline was copied onto the new scan with a 1.1 mm alignment error, which alone means about 19 % uncertainty. The images show the same anatomy. Verdict: a processing artefact, not growth. Blue = May outline, amber shell = November outline." }; },
+    scanner: function () {
+      return scState === "degrading"
+        ? { t: "Scanner (simulated record)", st: "WARN", p: "The scanner’s weekly bottle check shows its magnet tuning getting worse since September. That explains part of the broad peaks in the brain scan. Advice: re-tune the scanner first, then repeat the 4-minute scan. Without a scanner twin, this would look like a change in the patient." }
+        : { t: "Scanner (simulated record)", st: "PASS", p: "The weekly bottle checks are flat: the machine is healthy. So the broad peaks come from this session (head position, motion, local tuning), not from the scanner. Advice: repeat the scan with careful re-tuning." };
+    }
+  };
+  var explainBox = document.getElementById("explain");
+  var current = "voxel";
+  function showExplain(k) {
+    current = k;
+    var e = EXPLAIN[k]();
+    explainBox.innerHTML = "";
+    var h = document.createElement("h3"); h.textContent = e.t + " ";
+    var tg = document.createElement("span"); tg.className = "tag " + e.st; tg.textContent = e.st; h.appendChild(tg);
+    var p = document.createElement("p"); p.textContent = e.p;
+    explainBox.appendChild(h); explainBox.appendChild(p);
+    document.querySelectorAll(".hotspot").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.k === k ? "true" : "false"); });
+  }
+  document.querySelectorAll(".hotspot").forEach(function (b) { b.addEventListener("click", function () { showExplain(b.dataset.k); }); });
+  showExplain("voxel");
+
+  var setScannerLook = function () {};
+  document.querySelectorAll("[data-sc]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      scState = b.dataset.sc;
+      document.querySelectorAll("[data-sc]").forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+      var hs = document.querySelector('.hotspot[data-k="scanner"]');
+      hs.dataset.st = scState === "degrading" ? "WARN" : "PASS";
+      hs.lastChild.textContent = scState === "degrading" ? "Scanner · WARN" : "Scanner · healthy";
+      setScannerLook(scState);
+      showExplain(current === "scanner" ? "scanner" : current);
+    });
+  });
+
+  (function initThree() {
+    var canvas = document.getElementById("three"), vp = document.getElementById("vp");
+    if (!window.THREE) { document.getElementById("vp-fallback").hidden = false; return; }
+    var renderer;
+    try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true }); }
+    catch (e) { document.getElementById("vp-fallback").hidden = false; return; }
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(36, 1.25, 1, 4000);
+    camera.position.set(330, 250, 420);
+    var controls = THREE.OrbitControls ? new THREE.OrbitControls(camera, canvas) : null;
+    if (controls) { controls.enableDamping = true; controls.enablePan = false; controls.minDistance = 220; controls.maxDistance = 900; controls.autoRotate = !reduce; controls.autoRotateSpeed = 0.55; controls.target.set(0, 0, -20); }
+    scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x101820, 0.9));
+    var dl = new THREE.DirectionalLight(0xffffff, 0.8); dl.position.set(200, 400, 300); scene.add(dl);
+
+    var data = JSON.parse(document.getElementById("meshes").textContent);
+    // RAS (mm) -> three: x' = -x, y' = y (anterior up: supine), z' = -z (head into the bore)
+    function geo(m) {
+      var g = new THREE.BufferGeometry(), v = m.v, out = new Float32Array(v.length);
+      for (var i = 0; i < v.length; i += 3) { out[i] = -v[i]; out[i + 1] = v[i + 1]; out[i + 2] = -v[i + 2]; }
+      g.setAttribute("position", new THREE.BufferAttribute(out, 3));
+      g.setIndex(m.f); g.computeVertexNormals(); return g;
+    }
+    var head = new THREE.Group(); scene.add(head);
+    var brain = new THREE.Mesh(geo(data.brain), new THREE.MeshStandardMaterial({ color: 0xdfe7f0, roughness: .55, metalness: 0, transparent: true, opacity: .22, depthWrite: false, side: THREE.DoubleSide }));
+    head.add(brain);
+    var brainEdges = new THREE.LineSegments(new THREE.EdgesGeometry(geo(data.brain), 35), new THREE.LineBasicMaterial({ color: 0x9fb4cc, transparent: true, opacity: .25 }));
+    head.add(brainEdges);
+    head.add(new THREE.Mesh(geo(data.csf), new THREE.MeshStandardMaterial({ color: 0x4f6b8a, roughness: .6, transparent: true, opacity: .55 })));
+    head.add(new THREE.Mesh(geo(data.roi0), new THREE.MeshStandardMaterial({ color: 0x4d6bff, roughness: .4, emissive: 0x1a2a80, emissiveIntensity: .4 })));
+    head.add(new THREE.Mesh(geo(data.roi1), new THREE.MeshStandardMaterial({ color: 0xf5b13d, roughness: .5, transparent: true, opacity: .28, depthWrite: false })));
+
+    // spectroscopy voxel (RAS centre -16, 45, 6; 20 mm) + chemical-shift displaced NAA / Cho cubes
+    function rasVec(x, y, z) { return new THREE.Vector3(-x, y, -z); }
+    var voxMat = new THREE.MeshStandardMaterial({ color: 0xf5b13d, emissive: 0xf5b13d, emissiveIntensity: .35, transparent: true, opacity: .55 });
+    var voxel = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 20), voxMat); voxel.position.copy(rasVec(-16, 45, 6)); head.add(voxel);
+    [[-1.2, 0xb79cff], [1.2, 0xff9a6a]].forEach(function (s) {
+      var e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(20, 20, 20)), new THREE.LineDashedMaterial({ color: s[1], dashSize: 2, gapSize: 1.5 }));
+      e.position.copy(rasVec(-16 + s[0], 45 + s[0], 6 + s[0])); e.computeLineDistances(); head.add(e);
+    });
+
+    // scanner: housing ring + bore + table
+    var scanner = new THREE.Group(); scene.add(scanner);
+    var housingMat = new THREE.MeshStandardMaterial({ color: 0xe9eef3, roughness: .35, metalness: .1, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide });
+    var outer = new THREE.Mesh(new THREE.CylinderGeometry(330, 330, 300, 96, 1, true), housingMat); outer.rotation.x = Math.PI / 2; scanner.add(outer);
+    var bore = new THREE.Mesh(new THREE.CylinderGeometry(215, 215, 300, 96, 1, true), housingMat); bore.rotation.x = Math.PI / 2; scanner.add(bore);
+    var rings = [];
+    [-150, 150].forEach(function (z) {
+      var face = new THREE.Mesh(new THREE.RingGeometry(215, 330, 96), new THREE.MeshStandardMaterial({ color: 0xdfe6ee, transparent: true, opacity: .22, side: THREE.DoubleSide, depthWrite: false }));
+      face.position.z = z; scanner.add(face);
+      var r = new THREE.Mesh(new THREE.TorusGeometry(215, 2.2, 8, 128), new THREE.MeshBasicMaterial({ color: 0xf5b13d })); r.position.z = z; scanner.add(r); rings.push(r);
+    });
+    for (var gz = -100; gz <= 100; gz += 50) { var gr = new THREE.Mesh(new THREE.TorusGeometry(222, 1, 6, 128), new THREE.MeshBasicMaterial({ color: 0xf5b13d, transparent: true, opacity: .35 })); gr.position.z = gz; scanner.add(gr); rings.push(gr); }
+    var table = new THREE.Mesh(new THREE.BoxGeometry(170, 10, 700), new THREE.MeshStandardMaterial({ color: 0x2b3a4a, roughness: .7 })); table.position.set(0, -125, 120); scanner.add(table);
+    setScannerLook = function (s) {
+      var c = s === "degrading" ? 0xf5b13d : 0x3ccf7f;
+      rings.forEach(function (r) { r.material.color.setHex(c); });
+    };
+
+    // hotspots follow 3D anchors
+    var anchors = { voxel: rasVec(-16, 45, 18), roi: rasVec(32, -16, 14), scanner: new THREE.Vector3(-250, 230, 150) };
+    var hs = {}; document.querySelectorAll(".hotspot").forEach(function (b) { hs[b.dataset.k] = b; });
+    function resize() {
+      var w = vp.clientWidth, h = vp.clientHeight;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", resize); resize();
+    var t0 = performance.now();
+    function frame(now) {
+      var t = (now - t0) / 1000;
+      if (!reduce) voxMat.emissiveIntensity = .25 + .2 * (0.5 + 0.5 * Math.sin(t * 2.2));
+      if (controls) controls.update();
+      renderer.render(scene, camera);
+      var w = vp.clientWidth, h = vp.clientHeight;
+      for (var k in anchors) {
+        var p = anchors[k].clone().project(camera);
+        var b = hs[k]; if (!b) continue;
+        var x = (p.x * .5 + .5) * w, y = (-p.y * .5 + .5) * h;
+        b.style.left = Math.max(70, Math.min(w - 70, x)) + "px"; b.style.top = Math.max(20, Math.min(h - 70, y)) + "px";
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  /* ===================== 2 · DEMO ===================== */
+  (function demo() {
+    var svg = document.getElementById("d-chart"), yIn = document.getElementById("d-y"), yOut = document.getElementById("d-yv");
+    var q = "WARN";
+    var PRIOR = { x: 0.69, P: 0.0034 };
+    var U = { PASS: 0.05, WARN: 0.06, FAIL: 0.10 }, F = { PASS: 1, WARN: 2 };
+    var W = 640, H = 280, L = 16, R = 16, T = 14, B = 34, x0 = 0.45, x1 = 1.15;
+    function sx(x) { return L + (x - x0) / (x1 - x0) * (W - L - R); }
+    function draw() {
+      var y = parseFloat(yIn.value); yOut.textContent = y.toFixed(2);
+      var u = U[q], post, K = 0;
+      if (q === "FAIL") post = { x: PRIOR.x, sd: Math.sqrt(PRIOR.P) };
+      else { var Rg = F[q] * u * u; K = PRIOR.P / (PRIOR.P + Rg); post = { x: PRIOR.x + K * (y - PRIOR.x), sd: Math.sqrt((1 - K) * PRIOR.P) }; }
+      var d2 = (y - PRIOR.x) * (y - PRIOR.x) / (PRIOR.P + u * u);
+      clear(svg);
+      var peak = gauss(0, 0, Math.min(post.sd, u)) * 1.1;
+      function sy(v) { return H - B - v / peak * (H - T - B); }
+      for (var t = 0.5; t <= 1.101; t += 0.1) { el(svg, "line", { x1: sx(t), x2: sx(t), y1: T, y2: H - B, "class": "grid" }); txt(svg, sx(t), H - 12, t.toFixed(1)); }
+      [[PRIOR.x, Math.sqrt(PRIOR.P), COL.prior, true, false], [y, u, q === "FAIL" ? "#55606b" : COL.evid, false, q === "FAIL"], [post.x, post.sd, COL.post, true, false]].forEach(function (c, i) {
+        if (i === 2 && q === "FAIL") return;
+        var d = "";
+        for (var j = 0; j <= 200; j++) { var x = x0 + (x1 - x0) * j / 200; d += (j ? "L" : "M") + sx(x).toFixed(1) + " " + sy(gauss(x, c[0], c[1])).toFixed(1); }
+        if (c[3]) el(svg, "path", { d: d + "L" + sx(x1) + " " + sy(0) + "L" + sx(x0) + " " + sy(0) + "Z" }, { fill: c[2], fillOpacity: .14 });
+        el(svg, "path", { d: d }, { fill: "none", stroke: c[2], strokeWidth: i === 2 ? 3 : 2, strokeDasharray: c[4] ? "5 5" : "" });
+      });
+      el(svg, "line", { x1: sx(PRIOR.x), x2: sx(post.x), y1: T + 8, y2: T + 8 }, { stroke: COL.post, strokeWidth: 2 });
+      el(svg, "circle", { cx: sx(post.x), cy: T + 8, r: 4 }, { fill: COL.post });
+      var pill = document.getElementById("d-pill"); pill.className = "pill " + q; pill.textContent = q === "PASS" ? "PASS · update" : q === "WARN" ? "WARN · update with warning" : "FAIL · rejected";
+      document.getElementById("d-k").style.width = (K * 100).toFixed(0) + "%";
+      document.getElementById("d-kv").textContent = (K * 100).toFixed(0) + " %";
+      var msg;
+      if (q === "FAIL") msg = "Rejected. The twin stays at 0.69 and logs why. A broken scan never changes what we believe.";
+      else {
+        var surprise = d2 > 3.84 ? " This value is surprising for the twin, so it also raises a model-check flag." : "";
+        msg = "The twin moves from 0.69 to " + post.x.toFixed(3) + " ± " + post.sd.toFixed(3) + " (" + (K * 100).toFixed(0) + " % of the way)." + (q === "WARN" ? " A noisy scan counts at half weight." : " A clean scan counts in full.") + surprise;
+      }
+      document.getElementById("d-text").textContent = msg;
+    }
+    yIn.addEventListener("input", draw);
+    document.querySelectorAll("#d-q button").forEach(function (b) {
+      b.addEventListener("click", function () { q = b.dataset.q; document.querySelectorAll("#d-q button").forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); }); draw(); });
+    });
+    draw();
+  })();
+
+  /* ===================== 3 · TWO-YEAR STORY (SIMULATED) ===================== */
+  (function story() {
+    var scans = [
+      { m: 0, y: 0.69, u: 0.05, q: "PASS", n: "Baseline scan" },
+      { m: 6, y: 0.85, u: 0.06, q: "WARN", n: "Poorly tuned magnet (the real StarterPack value)" },
+      { m: 7, y: 0.71, u: 0.05, q: "PASS", n: "Repeat after re-tuning, as the twin advised" },
+      { m: 12, y: 0.72, u: 0.05, q: "PASS", n: "Routine scan" },
+      { m: 14, y: 0.98, u: 0.10, q: "FAIL", n: "Patient moved, spectrum unusable" },
+      { m: 17, y: 0.83, u: 0.05, q: "PASS", n: "Clean scan, value higher" },
+      { m: 20, y: 0.88, u: 0.05, q: "PASS", n: "Clean scan confirms the rise" },
+      { m: 23, y: 0.90, u: 0.05, q: "PASS", n: "Follow-up" }
+    ];
+    function truth(m) { return m < 13 ? 0.70 : m > 20 ? 0.89 : 0.70 + (0.19 * (m - 13) / 7); }
+    // same gated Kalman step as twin.py: Q = q6^2 dt / 6, WARN x2 in the gain, FAIL rejected
+    var x, P, t, x0, s0, track = [], naive = 0, naiveFalse = 0, confirmed = null;
+    scans.forEach(function (s) {
+      s.alarm = Math.abs(s.y - 0.69) / 0.69 > 0.15;
+      if (s.alarm) { naive++; if (Math.abs(truth(s.m) - 0.70) < 0.03) { naiveFalse++; s.falseAlarm = true; } }
+      if (x === undefined) { x = s.y; P = s.u * s.u; t = s.m; x0 = x; s0 = s.u; track.push({ m: s.m, x: x, sd: Math.sqrt(P) }); return; }
+      var steps = 8, Pp = P;
+      for (var i = 1; i <= steps; i++) { var mm = t + (s.m - t) * i / steps; Pp = P + 0.0009 * (mm - t) / 6; if (i < steps) track.push({ m: mm, x: x, sd: Math.sqrt(Pp) }); }
+      if (s.q !== "FAIL") {
+        var K = Pp / (Pp + (s.q === "WARN" ? 2 : 1) * s.u * s.u);
+        x = x + K * (s.y - x); P = (1 - K) * Pp; s.K = K;
+      } else P = Pp;
+      t = s.m; track.push({ m: s.m, x: x, sd: Math.sqrt(P) });
+      if (confirmed === null && s.q === "PASS" && (x - x0) / Math.sqrt(s0 * s0 + P) > 1.96) { confirmed = s.m; s.confirm = true; }
+    });
+    document.getElementById("s-naive").textContent = naive;
+    document.getElementById("s-false").textContent = naiveFalse;
+    document.getElementById("s-avoid").textContent = naiveFalse;
+    document.getElementById("s-conf").textContent = confirmed === null ? "not yet" : "month " + confirmed;
+
+    var ev = document.getElementById("l-events");
+    scans.forEach(function (s) {
+      var row = document.createElement("div");
+      var m = document.createElement("span"); m.className = "m"; m.textContent = "m " + s.m;
+      var c = document.createElement("span"); c.className = "chip " + s.q; c.textContent = s.q;
+      var n = document.createElement("span"); n.textContent = s.n + (s.confirm ? " · change confirmed" : s.falseAlarm ? " · simple rule: false alarm" : "");
+      row.appendChild(m); row.appendChild(c); row.appendChild(n); ev.appendChild(row);
+    });
+
+    var svg = document.getElementById("l-chart"), showTruth = false;
+    var W = 720, H = 340, L = 44, R = 16, T = 18, B = 36, y0 = 0.55, y1 = 1.05;
+    function sx(m) { return L + m / 24 * (W - L - R); }
+    function sy(v) { return T + (y1 - v) / (y1 - y0) * (H - T - B); }
+    var css = getComputedStyle(document.documentElement);
+    function tok(n) { return css.getPropertyValue(n).trim(); }
+    function draw() {
+      clear(svg);
+      for (var v = 0.6; v <= 1.0001; v += 0.1) { el(svg, "line", { x1: L, x2: W - R, y1: sy(v), y2: sy(v), "class": "grid" }); txt(svg, L - 8, sy(v) + 4, v.toFixed(1), "end"); }
+      for (var m = 0; m <= 24; m += 6) txt(svg, sx(m), H - 12, m === 0 ? "month 0" : String(m));
+      // alarm threshold
+      el(svg, "line", { x1: L, x2: W - R, y1: sy(0.69 * 1.15), y2: sy(0.69 * 1.15) }, { stroke: "var(--fail)", strokeDasharray: "4 5", strokeWidth: 1 });
+      txt(svg, L + 6, sy(0.69 * 1.15) - 6, "simple rule: alarm above +15 %", "start");
+      // band + line
+      var up = "", dn = "", ln = "";
+      track.forEach(function (p, i) { up += (i ? "L" : "M") + sx(p.m).toFixed(1) + " " + sy(p.x + 1.96 * p.sd).toFixed(1); ln += (i ? "L" : "M") + sx(p.m).toFixed(1) + " " + sy(p.x).toFixed(1); });
+      for (var i = track.length - 1; i >= 0; i--) dn += "L" + sx(track[i].m).toFixed(1) + " " + sy(track[i].x - 1.96 * track[i].sd).toFixed(1);
+      el(svg, "path", { d: up + dn + "Z" }, { fill: "var(--accent)", fillOpacity: .14 });
+      el(svg, "path", { d: ln }, { fill: "none", stroke: "var(--accent)", strokeWidth: 3, strokeLinejoin: "round" });
+      if (showTruth) {
+        var tp = ""; for (var mm = 0; mm <= 24; mm += .25) tp += (mm ? "L" : "M") + sx(mm).toFixed(1) + " " + sy(truth(mm)).toFixed(1);
+        el(svg, "path", { d: tp }, { fill: "none", stroke: "var(--ink)", strokeWidth: 1.6, strokeDasharray: "2 4" });
+      }
+      scans.forEach(function (s) {
+        var c = s.q === "PASS" ? "var(--pass)" : s.q === "WARN" ? "var(--warn)" : "var(--fail)";
+        el(svg, "line", { x1: sx(s.m), x2: sx(s.m), y1: sy(s.y - 1.96 * s.u), y2: sy(s.y + 1.96 * s.u) }, { stroke: c, strokeWidth: 1.5, strokeOpacity: .6 });
+        if (s.q === "FAIL") {
+          el(svg, "path", { d: "M" + (sx(s.m) - 6) + " " + (sy(s.y) - 6) + "l12 12M" + (sx(s.m) + 6) + " " + (sy(s.y) - 6) + "l-12 12" }, { stroke: c, strokeWidth: 2.5, fill: "none" });
+        } else el(svg, "circle", { cx: sx(s.m), cy: sy(s.y), r: 6 }, { fill: c, stroke: "var(--surface)", strokeWidth: 2 });
+        if (s.alarm) {
+          el(svg, "path", { d: "M" + sx(s.m) + " " + (sy(s.y + 1.96 * s.u) - 6) + "l-6 -10h12z" }, { fill: "var(--fail)" });
+        }
+        if (s.confirm) {
+          el(svg, "circle", { cx: sx(s.m), cy: sy(track.filter(function (p) { return p.m === s.m; }).pop().x), r: 9 }, { fill: "none", stroke: "var(--accent)", strokeWidth: 2.5 });
+          txt(svg, sx(s.m), sy(0.6), "twin confirms change", "middle").style.fill = "var(--accent)";
+          el(svg, "line", { x1: sx(s.m), x2: sx(s.m), y1: sy(0.62), y2: H - B }, { stroke: "var(--accent)", strokeDasharray: "2 3" });
+        }
+      });
+    }
+    document.getElementById("l-truth").addEventListener("change", function (e) { showTruth = e.target.checked; document.getElementById("truth-leg").hidden = !showTruth; draw(); });
+    draw();
+  })();
+
+  /* ===================== 4 · SCANNER FLEET (SIMULATED) ===================== */
+  (function fleet() {
+    var WEEKS = 26, FAIL = 10, WARN = 8;
+    function rng(seed) { return function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; }
+    function gaussR(r) { var a = r() || 1e-9, b = r(); return Math.sqrt(-2 * Math.log(a)) * Math.cos(2 * Math.PI * b); }
+    var defs = [
+      { id: "Scanner A", site: "Neuro wing · 3 T", base: 6.6, kind: "stable", seed: 11 },
+      { id: "Scanner B", site: "Outpatient · 3 T", base: 7.0, kind: "stable", seed: 23 },
+      { id: "Scanner C", site: "Research · 3 T", base: 6.8, kind: "degrading", seed: 37 },
+      { id: "Scanner D", site: "Emergency · 1.5 T", base: 7.3, kind: "stable", seed: 41 },
+      { id: "Scanner E", site: "Paediatrics · 3 T", base: 6.9, kind: "slow", seed: 53 },
+      { id: "Scanner F", site: "Mobile unit · 0.55 T", base: 7.6, kind: "stable", seed: 67 }
+    ];
+    var units = defs.map(function (d) {
+      var r = rng(d.seed), obs = [];
+      for (var w = 0; w <= WEEKS; w++) {
+        var v = d.base + 0.32 * gaussR(r);
+        if (d.kind === "degrading" && w > 17) v += 0.14 * Math.pow(w - 17, 1.25);
+        if (d.kind === "slow") v += 0.052 * w;
+        obs.push(v);
+      }
+      // scanner twin: same gated Kalman step (R = 0.35^2, WARN x2, drift 1.2 Hz per 26 weeks)
+      var x = obs[0], P = 0.35 * 0.35, track = [{ x: x, sd: Math.sqrt(P) }];
+      for (var i = 1; i < obs.length; i++) {
+        var Pp = P + 1.44 / 26, st = obs[i] > FAIL ? "FAIL" : obs[i] > WARN ? "WARN" : "PASS";
+        if (st !== "FAIL") { var K = Pp / (Pp + (st === "WARN" ? 2 : 1) * 0.1225); x += K * (obs[i] - x); P = (1 - K) * Pp; } else P = Pp;
+        track.push({ x: x, sd: Math.sqrt(P) });
+      }
+      var n = track.length, xs = [], ys = [];
+      for (var j = n - 8; j < n; j++) { xs.push(j); ys.push(track[j].x); }
+      var mx = xs.reduce(function (a, b) { return a + b; }) / 8, my = ys.reduce(function (a, b) { return a + b; }) / 8, sxx = 0, sxy = 0;
+      for (j = 0; j < 8; j++) { sxx += (xs[j] - mx) * (xs[j] - mx); sxy += (xs[j] - mx) * (ys[j] - my); }
+      var slope = sxy / sxx, last = track[n - 1].x;
+      var weeks = slope > 0.035 ? Math.max(0, (FAIL - last) / slope) : null;
+      if (weeks !== null && weeks > 52 && d.kind === "stable") weeks = null;
+      var status = last > FAIL ? "FAIL" : last > WARN || (weeks !== null && weeks < 8) ? "WARN" : "PASS";
+      return { d: d, obs: obs, track: track, slope: slope, weeks: weeks, status: status, last: last };
+    });
+    var grid = document.getElementById("fleet-grid"), sel = 2;
+    function spark(svg, u) {
+      var W = 200, H = 42, lo = 5.5, hi = 10.5;
+      svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("preserveAspectRatio", "none");
+      var d = "";
+      u.track.forEach(function (p, i) { d += (i ? "L" : "M") + (i / WEEKS * W).toFixed(1) + " " + (H - (p.x - lo) / (hi - lo) * H).toFixed(1); });
+      el(svg, "line", { x1: 0, x2: W, y1: H - (FAIL - lo) / (hi - lo) * H, y2: H - (FAIL - lo) / (hi - lo) * H }, { stroke: COL.FAIL, strokeDasharray: "3 3", strokeWidth: 1 });
+      el(svg, "path", { d: d + "L" + W + " " + H + "L0 " + H + "Z" }, { fill: COL[u.status], fillOpacity: .12 });
+      el(svg, "path", { d: d }, { fill: "none", stroke: COL[u.status], strokeWidth: 2 });
+    }
+    units.forEach(function (u, i) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "unit"; b.setAttribute("aria-pressed", i === sel ? "true" : "false");
+      var top = document.createElement("div"); top.className = "top";
+      var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = u.d.id;
+      var pl = document.createElement("span"); pl.className = "tag " + u.status; pl.textContent = u.status === "PASS" ? "HEALTHY" : u.status === "WARN" ? "SERVICE SOON" : "FAIL";
+      top.appendChild(nm); top.appendChild(pl);
+      var meta = document.createElement("span"); meta.className = "meta";
+      meta.textContent = u.d.site + " · " + u.last.toFixed(1) + " Hz" + (u.weeks !== null ? " · limit in ~" + Math.round(u.weeks) + " wk" : "");
+      var sv = document.createElementNS(NS, "svg"); sv.setAttribute("aria-hidden", "true");
+      b.appendChild(top); b.appendChild(meta); b.appendChild(sv); spark(sv, u);
+      b.addEventListener("click", function () { sel = i; grid.querySelectorAll(".unit").forEach(function (o, k) { o.setAttribute("aria-pressed", k === i ? "true" : "false"); }); detail(); });
+      grid.appendChild(b);
+    });
+    function detail() {
+      var u = units[sel], svg = document.getElementById("f-chart"); clear(svg);
+      var W = 640, H = 260, L = 40, R = 16, T = 14, B = 34, lo = 5.5, hi = 11, horizon = 36;
+      function sx(w) { return L + w / horizon * (W - L - R); }
+      function sy(v) { return T + (hi - v) / (hi - lo) * (H - T - B); }
+      for (var v = 6; v <= 11; v += 1) { el(svg, "line", { x1: L, x2: W - R, y1: sy(v), y2: sy(v), "class": "grid" }); txt(svg, L - 8, sy(v) + 4, v + "", "end"); }
+      for (var w = 0; w <= horizon; w += 6) txt(svg, sx(w), H - 12, w === 0 ? "week 0" : String(w));
+      el(svg, "line", { x1: L, x2: W - R, y1: sy(FAIL), y2: sy(FAIL) }, { stroke: COL.FAIL, strokeDasharray: "5 4" });
+      el(svg, "line", { x1: L, x2: W - R, y1: sy(WARN), y2: sy(WARN) }, { stroke: COL.WARN, strokeDasharray: "2 5", strokeOpacity: .7 });
+      el(svg, "rect", { x: sx(WEEKS), y: T, width: sx(horizon) - sx(WEEKS), height: H - T - B }, { fill: "#8ea0ff", fillOpacity: .05 });
+      txt(svg, (sx(WEEKS) + sx(horizon)) / 2, T + 12, "forecast");
+      var up = "", dn = "", ln = "";
+      u.track.forEach(function (p, i) { up += (i ? "L" : "M") + sx(i) + " " + sy(p.x + 1.96 * p.sd); ln += (i ? "L" : "M") + sx(i) + " " + sy(p.x); });
+      for (var i = u.track.length - 1; i >= 0; i--) dn += "L" + sx(i) + " " + sy(u.track[i].x - 1.96 * u.track[i].sd);
+      el(svg, "path", { d: up + dn + "Z" }, { fill: COL.post, fillOpacity: .16 });
+      el(svg, "path", { d: ln }, { fill: "none", stroke: COL.post, strokeWidth: 2.5 });
+      if (u.weeks !== null) {
+        var endW = Math.min(horizon, WEEKS + u.weeks + 2);
+        el(svg, "path", { d: "M" + sx(WEEKS) + " " + sy(u.last) + "L" + sx(endW) + " " + sy(u.last + u.slope * (endW - WEEKS)) }, { stroke: COL.post, strokeOpacity: .6, strokeWidth: 2, strokeDasharray: "6 5", fill: "none" });
+        var fw = WEEKS + u.weeks;
+        if (fw <= horizon) { el(svg, "circle", { cx: sx(fw), cy: sy(FAIL), r: 6 }, { fill: COL.FAIL }); txt(svg, sx(fw), sy(FAIL) - 12, "limit reached").style.fill = COL.FAIL; }
+      }
+      u.obs.forEach(function (v, i) { var st = v > FAIL ? "FAIL" : v > WARN ? "WARN" : "PASS"; el(svg, "circle", { cx: sx(i), cy: sy(v), r: 3.2 }, { fill: st === "PASS" ? "#93a4b3" : COL[st] }); });
+      var a = document.getElementById("f-advice"); a.innerHTML = "";
+      var h = document.createElement("h3"); h.textContent = u.d.id + " · " + u.d.site;
+      var big = document.createElement("span"); big.className = "big"; big.textContent = u.weeks !== null ? "~" + Math.round(u.weeks) + " weeks" : "Stable";
+      var p1 = document.createElement("p");
+      var p2 = document.createElement("p");
+      if (u.d.kind === "degrading") { p1.textContent = "Magnet tuning (shim) is getting worse since week 17. Peaks in patient spectra broaden with it, which can look like a chemistry change."; p2.textContent = "Advice: book shim service now. Hold spectroscopy follow-ups or flag them until the next clean check."; }
+      else if (u.d.kind === "slow") { p1.textContent = "A slow, steady creep. Still inside limits, but the trend is real and the twin has noticed it."; p2.textContent = "Advice: plan service at the next maintenance window."; }
+      else { p1.textContent = "Weekly checks stay flat inside their normal scatter. Changes seen in patients scanned here are not the machine."; p2.textContent = "Advice: none. Keep the weekly check."; }
+      a.appendChild(h); a.appendChild(big); a.appendChild(p1); a.appendChild(p2);
+    }
+    detail();
+  })();
+})();
+</script>
