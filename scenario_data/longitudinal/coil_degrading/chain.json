@@ -13,10 +13,10 @@
     },
     "z": {
       "ph_fwhm_hz": 0.23841717362325443,
-      "ph_snr": -4.067566522222851,
+      "ph_snr_pct": -4.283727707115879,
       "ph_freq_hz": 0.0,
       "ph_water_ratio": -0.021771471457664865,
-      "ph_distortion_pct": 0.8627846827257059
+      "ph_geometry_mm": -0.18363958233880448
     }
   },
   "expected_class": "receive_coil",
@@ -58,16 +58,16 @@
   "verdict": "MACHINE: the brain WARN matches a scanner fault (receive_coil). Fix the scanner, then repeat.",
   "z": {
     "ph_fwhm_hz": 0.23841717362325443,
-    "ph_snr": -4.067566522222851,
+    "ph_snr_pct": -4.283727707115879,
     "ph_freq_hz": 0.0,
     "ph_water_ratio": -0.021771471457664865,
-    "ph_distortion_pct": 0.8627846827257059
+    "ph_geometry_mm": -0.18363958233880448
   },
   "weeks_to_fail": {
     "ph_fwhm_hz": null,
-    "ph_snr": 7.836054290407011,
+    "ph_snr_pct": 5.794082501919734,
     "ph_freq_hz": null,
     "ph_water_ratio": null,
-    "ph_distortion_pct": null
+    "ph_geometry_mm": null
   }
 }

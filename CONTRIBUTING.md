@@ -6,7 +6,7 @@ git clone <repo-url> twin-evidence && cd twin-evidence
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 # the StarterPack is NOT in the repo: unzip MRI_Hackathon_DataScience_StarterPack_v0.3 next to this folder
-STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 39 tests must pass
+STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 50 tests must pass
 streamlit run app.py
 ```
 
@@ -23,6 +23,8 @@ streamlit run app.py
 | `twin_evidence/mrs_sim.py` | physics simulator of PRESS transients with injected faults (SIMULATED, known truth) | QE / Metrology |
 | `twin_evidence/mrs_fit.py` | time-domain fit (Cho/Cr with CRLB) + SNR / FWHM / residual-water QC | QE / DS |
 | `twin_evidence/scenarios.py` | 11 fault scenarios, gate, naive-Bayes fault model | all |
+| `twin_evidence/scanner_link.py` | the two twins talk: scanner-twin state on the scan date → gate finding F11 on every subject packet; patient-or-machine attribution | Metrology / DT |
+| `twin_evidence/gates.py` | ScanTwin catalogue v1.1 gates with IDs, scan-context advice | all |
 | `twin_evidence/longitudinal.py` | weekly phantom + brain sessions on a failing scanner: the full chain | Metrology / DT |
 | `scripts/generate_scenarios.py` | builds `scenario_data/` (≈ 7 min) | all |
 | `scripts/export_scanner_data.py` | builds `scanner_data/` for the scanner experts | Metrology |

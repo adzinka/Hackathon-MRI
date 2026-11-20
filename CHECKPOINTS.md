@@ -66,8 +66,8 @@ Owners: **P1** = programmer 1, **P2** = programmer 2, **SC** = scanner / metrolo
       geometric-distortion observable
 - [ ] P2: `attribute()` maps the pattern of scanner-twin changes between two dates to a fault class (the signature
       table), with tests for each scenario
-- [ ] P1: the scanner-twin status on a packet's scan date becomes a `system_qc` finding in `validate.evaluate`
-      (FAIL blocks the brain update, WARN downgrades it); regression tests
+- [x] P1: the scanner-twin status on a packet's scan date becomes finding F11 in `validate.evaluate`
+      (FAIL blocks the brain update, WARN downgrades it); 11 regression tests (`tests/test_scanner_link.py`)
 - **DoD:** `pytest` covers 5 scenarios × attribution; switching the scenario in the app changes the brain decision
   for E-t1-cho in a way SC agree with.
 

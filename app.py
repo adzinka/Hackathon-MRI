@@ -17,7 +17,6 @@ import streamlit as st
 
 from twin_evidence.twin import Twin, CHI2_95_1DOF
 from twin_evidence.validate import evaluate, load_json, load_manifest, to_months
-from twin_evidence import scanner as scn
 from twin_evidence import views
 
 st.set_page_config(page_title="ScanTwin", page_icon="🧠", layout="wide")
@@ -51,10 +50,10 @@ def load_pack(root: str):
             {n: load_json(tw / "packets" / f"{n}.json") for n in BASELINE + FOLLOWUP})
 
 
-def run_twin(packets, thresholds, schema, manifest, root):
+def run_twin(packets, thresholds, schema, manifest, root, scanner=None):
     twin, rows = Twin(), []
     for p in packets:
-        ev = evaluate(p, thresholds, schema, manifest, Path(root))
+        ev = evaluate(p, thresholds, schema, manifest, Path(root), scanner=scanner)
         rows.append((p, ev, twin.ingest(p, ev)))
     return twin, rows
 
@@ -92,10 +91,20 @@ st.sidebar.markdown("**Declared team policy**")
 warn_factor = st.sidebar.slider("WARN variance factor (R = f·u² in the gain)", 1.0, 4.0,
                                 float(thresholds["twin_policy"]["WARN"]["R_factor"]), 0.5)
 show_alt = st.sidebar.checkbox("Show result without WARN policy (f = 1)", True)
-st.sidebar.markdown("**Scanner twin** (SIMULATED phantom record)")
-scenario = st.sidebar.radio("Scenario", list(scn.SCENARIOS), index=1,
-                            format_func=lambda k: {"stable": "scanner stable", "shim_degrading": "shim degrading",
-                                                   "b0_drift": "B0 drift"}[k])
+st.sidebar.markdown("**Scanner twin** (SIMULATED weekly phantom record)")
+from twin_evidence import longitudinal as LNG
+from twin_evidence.scanner_link import ScannerRecord, attribution, CLASS_TEXT
+SCANNER_CHOICES = ["none"] + list(LNG.FAULTS)
+scanner_choice = st.sidebar.radio("State of the scanner from week 14 to 26", SCANNER_CHOICES, index=1,
+                                  format_func=lambda k: "no scanner twin (Gate 1 reference)" if k == "none" else LNG.FAULTS[k]["title"])
+
+
+@st.cache_resource(show_spinner="Simulating 27 weekly phantom scans …")
+def _record(fault: str):
+    return ScannerRecord.simulate(fault)
+
+
+rec = None if scanner_choice == "none" else _record(scanner_choice)
 st.sidebar.caption("Synthetic, educational data (SIMULATED origin). No clinical meaning. Drafted with Claude, reviewed by the team.")
 
 th = copy.deepcopy(thresholds)
@@ -104,12 +113,13 @@ th_alt = copy.deepcopy(thresholds)
 th_alt["twin_policy"]["WARN"]["R_factor"] = 1.0
 
 seq = [PK[n] for n in BASELINE] + [packet]
-scanner_rep = scn.run(scenario, warn_factor)
-twin, rows = run_twin(seq, th, schema, manifest, root)
+twin, rows = run_twin(seq, th, schema, manifest, root, rec)
 p, ev, e = rows[-1]
 obs = p.get("observable")
 base = next(((bp, bev, be) for bp, bev, be in rows[:-1] if bp.get("observable") == obs), None)
-alt = run_twin(seq, th_alt, schema, manifest, root)[1][-1][2] if show_alt else None
+alt = run_twin(seq, th_alt, schema, manifest, root, rec)[1][-1][2] if show_alt else None
+scan_f = next((f for f in ev.findings if f.rule == "F11_scanner_twin"), None)
+who = attribution(ev.status, scan_f, rec)
 
 # ---------- header ----------
 st.title("ScanTwin")
@@ -128,6 +138,12 @@ if e.kind == "update":
                 f"{e.posterior['x'] - e.prior['x']:+.3g} vs prior", delta_color="off")
 elif base:
     c[3].metric("Twin variable", f"{fmt(twin.state[obs].x, obs)} ± {fmt(twin.state[obs].sd, obs)}", "unchanged", delta_color="off")
+
+WHO_ICON = {"machine": "🛠", "patient": "🧑", "session": "🎯", "unknown": "❔"}
+WHO_BOX = {"machine": st.warning, "patient": st.success, "session": st.info, "unknown": st.info}
+sc_line = f"Scanner twin on the scan date: **{STATUS_ICON[scan_f.status]} {scan_f.status}**" if scan_f else "Scanner twin: not attached"
+WHO_BOX[who["who"]](f"### {WHO_ICON[who['who']]} Patient or machine?  \n{who['text']}  \n{sc_line}"
+                    + (f" · scanner state: {rec.label} (SIMULATED)" if rec else ""))
 
 tab_upd, tab_dec, tab_prov, tab_time, tab_3d, tab_scan, tab_sc = st.tabs(
     ["① Prior → evidence → posterior", "② Decision", "③ Provenance", "④ Timeline (all packets)",
@@ -275,12 +291,12 @@ with tab_dec:
                              "minutes": minutes, "σ now": fmt(s.sd, obs), "σ after": fmt(new_sd, obs),
                              "variance gain / min": f"{(s.P - new_sd ** 2) / minutes:.2e}"})
             st.dataframe(opts, width="stretch", hide_index=True)
-            rec = {"Cho_Cr": "**Repeat PRESS after re-shim** — not mainly for the variance gain, but because it removes the cause "
+            rec_text = {"Cho_Cr": "**Repeat PRESS after re-shim** — not mainly for the variance gain, but because it removes the cause "
                              "of the WARN (broad line, low SNR) and a possible Cho–Cr overlap bias.",
                    "NAA_Cr": "**Repeat PRESS after re-shim** — removes the linewidth/SNR WARN; NAA/Cr shows no significant change.",
                    "roi_volume": "**Registration and segmentation audit** — a +25 % volume change in six months is implausible; "
                                  "the stated 4 % uncertainty is inconsistent with the 1.1 mm registration RMS."}
-            st.success(rec.get(obs, "Repeat with a PASS-quality protocol."))
+            st.success(rec_text.get(obs, "Repeat with a PASS-quality protocol."))
         st.markdown("#### Competing explanations")
         expl = {"Cho_Cr": ["true chemistry change", "broad line / low SNR → fit bias (CRLB is a lower bound)",
                            "voxel shift or chemical-shift displacement", "tissue-fraction change in the VOI"],
@@ -289,8 +305,16 @@ with tab_dec:
                                "geometric distortion", "true morphology (implausible: +25 % in 6 months)"]}
         for x in expl.get(obs, ["true change", "measurement variation", "processing variation", "model discrepancy"]):
             st.markdown(f"- {x}")
-        if obs in ("Cho_Cr", "NAA_Cr"):
-            st.info(("🛠 " if scanner_rep.machine_explains_mrs else "✅ ") + scanner_rep.verdict + "  \n*(scanner twin, SIMULATED scenario)*")
+        st.markdown("#### The scanner on the scan date")
+        if rec is None:
+            st.caption("No scanner twin attached (sidebar). The machine can be neither blamed nor ruled out.")
+        else:
+            wk = rec.week_of(p)
+            stt = rec.state(wk, p.get("modality", "MRS")) if wk is not None else None
+            if stt:
+                st.dataframe([{"": STATUS_ICON[q["status"]], "scanner part": q["label"], "twin estimate": f"{q['x']:.2f} ± {q['sd']:.2f} {q['unit']}",
+                               "limit source": LNG.PHANTOM_SOURCE[q["obs"]]} for q in stt["parts"]], width="stretch", hide_index=True)
+            st.caption(scan_f.reason if scan_f else "")
         st.caption(f"Limit: {p.get('interpretation_limit', 'educational synthetic data')}")
 
 # ---------- ③ provenance ----------
@@ -351,7 +375,7 @@ with tab_prov:
 with tab_time:
     st.markdown("All StarterPack packets, judged in order (baseline first). The selected packet is shown in the other tabs.")
     full = [PK[n] for n in BASELINE + FOLLOWUP]
-    _, frows = run_twin(full, th, schema, manifest, root)
+    _, frows = run_twin(full, th, schema, manifest, root, rec)
     st.dataframe([{"": STATUS_ICON[fev.status], "packet": fp["packet_id"], "t [months]": to_months(fp.get("relative_time")),
                    "observable": fp["observable"], "value": fp.get("value"), "u": (fp.get("uncertainty") or {}).get("value"),
                    "stored": fp.get("qc_status"), "re-evaluated": fev.status, "action": fe.action,
@@ -374,7 +398,14 @@ with tab_3d:
     except ImportError as err:
         st.error(str(err))
         st.stop()
-    status_of = {fp["observable"]: fev.status for fp, fev, _ in run_twin([PK[n] for n in BASELINE + FOLLOWUP[:3]], th, schema, manifest, root)[1][3:]}
+    status_of = {fp["observable"]: fev.status for fp, fev, _ in run_twin([PK[n] for n in BASELINE + FOLLOWUP[:3]], th, schema, manifest, root, rec)[1][3:]}
+    from types import SimpleNamespace
+    if rec is not None:
+        st26 = rec.state(LNG.WEEKS, "MRS")
+        bad = "; ".join(f"{q['label']} {q['x']:.1f} {q['unit']}" for q in st26["bad"]) or "all parts healthy"
+        bore = SimpleNamespace(status_now=st26["status"], label_text=f"{rec.label} · {bad}")
+    else:
+        bore = None
     st.markdown("**Where does each number come from, and what could have gone wrong?** Everything below is drawn from the "
                 "StarterPack files the packets point to. Colours are the gate status. The bore colour is the scanner twin.")
     o1, o2 = st.columns(2)
@@ -383,14 +414,14 @@ with tab_3d:
     left, right = st.columns([3, 2])
     with left:
         st.plotly_chart(views.brain_3d(vol, status_of.get("Cho_Cr", "WARN"), status_of.get("roi_volume", "WARN"),
-                                       scanner_rep, show_bore, show_fu), width="stretch")
+                                       bore, show_bore and bore is not None, show_fu), width="stretch")
     sl_fig, sl = views.slices(vol, 0.0)
     with right:
         st.markdown("#### Possible causes, judged by the evidence")
-        mrs_machine = scanner_rep.machine_explains_mrs
+        mrs_machine = who["who"] == "machine"
         causes = [
-            ("MRS", "Scanner shim / B0 got worse", "supported" if mrs_machine else "excluded",
-             "scanner twin: phantom linewidth rose" if mrs_machine else "scanner twin: phantom stable (SIMULATED)"),
+            ("MRS", "The scanner itself", "supported" if mrs_machine else "excluded" if rec else "open",
+             (f"scanner twin: {CLASS_TEXT.get(rec.diagnosis['fault_class'])} (SIMULATED)" if rec else "no scanner twin attached")),
             ("MRS", "Local shim, voxel position or motion in this session", "open" if mrs_machine else "most likely",
              "linewidth 8.7 → 11.4 Hz in the subject"),
             ("MRS", "Chemical-shift displacement (NAA vs Cho voxel 2.4 mm)", "minor",
@@ -422,29 +453,38 @@ with tab_3d:
 
 # ---------- ⑥ scanner twin ----------
 with tab_scan:
-    st.warning("SIMULATED: the StarterPack has no phantom record yet. These weekly phantom scans are generated for the "
-               "chosen scenario to show how a scanner twin would work. Thresholds are our team proposal.")
-    st.markdown(f"**Scenario:** {scn.SCENARIOS[scenario]}")
-    st.plotly_chart(views.scanner_trends(scanner_rep, warn_factor), width="stretch")
-    cols = st.columns(3)
-    for col, o in zip(cols, scn.OBS):
-        x0, s0 = scanner_rep.state_t0[o]
-        x1, s1 = scanner_rep.state_t1[o]
-        wtf = scanner_rep.weeks_to_fail[o]
-        col.metric(scn.OBS[o][0], f"{x1:.1f} ± {s1:.1f} {scn.OBS[o][1]}", f"z = {scanner_rep.z[o]:+.1f} since May", delta_color="off")
-        col.caption(f"forecast: FAIL limit in ≈ {wtf:.0f} weeks" if wtf is not None else "no trend toward the FAIL limit")
-    box = st.warning if scanner_rep.machine_explains_mrs else st.success
-    box(scanner_rep.verdict)
-    st.markdown("""
-**Why a scanner twin helps the brain twin**
-- It separates *the subject changed* from *the instrument changed*. A phantom never changes, so a trend in the phantom is the machine.
-- It feeds the gate: every brain packet carries `system_qc_id`. A scanner twin in FAIL can block brain updates automatically.
-- It predicts service: the forecast says when the phantom will cross the FAIL limit, so the shim can be fixed before patient data degrade.
-- It shows federation: two twins exchange only evidence under a data contract (Dossier §1.4).
-
-Same code as the brain twin: the same gate, the same gated Kalman step, only new observables and their drift (`twin_evidence/scanner.py`).
+    from twin_evidence import scenario_views as SVW
+    if rec is None:
+        st.info("Pick a scanner state in the sidebar to attach the scanner twin. With 'no scanner twin' the app reproduces the "
+                "Gate 1 reference numbers exactly.")
+    else:
+        st.warning("SIMULATED weekly phantom record (the StarterPack has none). Every week a phantom spectrum is simulated "
+                   "on this scanner and measured like real data; the same Kalman step follows each part of the machine.")
+        st.markdown(f"**Scanner state:** {rec.label} · fault class found by the scanner twin: "
+                    f"**{CLASS_TEXT.get(rec.diagnosis['fault_class'])}** ({rec.diagnosis['why']})")
+        st.plotly_chart(SVW.phantom_chart(rec.weekly_rows(), {o: v[4] for o, v in LNG.PHANTOM_OBS.items()}), width="stretch")
+        cols = st.columns(len(LNG.PHANTOM_OBS))
+        for col, o in zip(cols, LNG.PHANTOM_OBS):
+            x1 = rec.series[o][-1]
+            col.metric(LNG.PHANTOM_OBS[o][0], f"{x1['x']:.2f} {LNG.PHANTOM_OBS[o][1]}", f"z = {rec.z[o]:+.1f} since May",
+                       delta_color="off")
+            w = rec.weeks_to_fail.get(o)
+            col.caption((f"FAIL limit in ≈ {w:.0f} weeks · " if w is not None and w > 0 else "") + LNG.PHANTOM_SOURCE[o])
+        st.markdown("#### What the scanner twin does to the subject's evidence")
+        full = [PK[n] for n in BASELINE + FOLLOWUP]
+        _, without = run_twin(full, th, schema, manifest, root, None)
+        _, with_ = run_twin(full, th, schema, manifest, root, rec)
+        st.dataframe([{"packet": a[0]["packet_id"], "observable": a[0]["observable"],
+                       "without scanner twin": f"{STATUS_ICON[a[1].status]} {a[2].action}",
+                       "with scanner twin": f"{STATUS_ICON[b[1].status]} {b[2].action}",
+                       "scanner finding": next((f"{f.status}: {f.reason[:90]}…" for f in b[1].findings if f.rule == "F11_scanner_twin"), "")}
+                      for a, b in zip(without, with_)], width="stretch", hide_index=True)
+        st.markdown("""
+- **A phantom never changes**, so a trend in the phantom is the machine. That separates *the subject changed* from *the instrument changed*.
+- **The twins talk**: the scanner twin's state on the scan date is a gate finding (F11) on every subject packet. FAIL blocks the
+  update, WARN down-weights it. Only the parts the scan depends on count (geometry and SNR for volumes; all parts for spectroscopy).
+- **Service before images degrade**: the forecast says when each part will cross its FAIL limit.
 """)
-
 
 # ---------- ⑦ fault scenarios (SIMULATED, known truth) ----------
 @st.cache_data(show_spinner=False)

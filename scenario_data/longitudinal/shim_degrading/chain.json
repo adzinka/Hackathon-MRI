@@ -13,10 +13,10 @@
     },
     "z": {
       "ph_fwhm_hz": 21.67750681040648,
-      "ph_snr": -4.984421558773422,
+      "ph_snr_pct": -5.26920376630212,
       "ph_freq_hz": -0.6677446284506571,
       "ph_water_ratio": 0.8609952537469887,
-      "ph_distortion_pct": 0.8627846827257059
+      "ph_geometry_mm": -0.18363958233880448
     }
   },
   "expected_class": "shim",
@@ -59,16 +59,16 @@
   "verdict": "MACHINE: the brain WARN matches a scanner fault (shim). Fix the scanner, then repeat.",
   "z": {
     "ph_fwhm_hz": 21.67750681040648,
-    "ph_snr": -4.984421558773422,
+    "ph_snr_pct": -5.26920376630212,
     "ph_freq_hz": -0.6677446284506571,
     "ph_water_ratio": 0.8609952537469887,
-    "ph_distortion_pct": 0.8627846827257059
+    "ph_geometry_mm": -0.18363958233880448
   },
   "weeks_to_fail": {
     "ph_fwhm_hz": 0.0,
-    "ph_snr": 3.476716784345837,
+    "ph_snr_pct": 2.1332917868833974,
     "ph_freq_hz": null,
-    "ph_water_ratio": 256.79443008696745,
-    "ph_distortion_pct": null
+    "ph_water_ratio": 395.9311325696499,
+    "ph_geometry_mm": null
   }
 }

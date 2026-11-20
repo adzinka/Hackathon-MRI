@@ -6,17 +6,17 @@
     "why": "residual water rose (water suppression depends on flip angle)",
     "signature": {
       "fwhm_up": false,
-      "snr_down": false,
+      "snr_down": true,
       "freq_moved": false,
       "water_up": true,
       "geometry_up": false
     },
     "z": {
       "ph_fwhm_hz": 0.20291951227286914,
-      "ph_snr": -1.8716520982293807,
+      "ph_snr_pct": -1.988906418730275,
       "ph_freq_hz": 0.0,
       "ph_water_ratio": 29.80752151279572,
-      "ph_distortion_pct": 0.8627846827257059
+      "ph_geometry_mm": -0.18363958233880448
     }
   },
   "expected_class": "b1_transmit",
@@ -56,16 +56,16 @@
   "verdict": "MACHINE: the brain FAIL matches a scanner fault (b1_transmit). Fix the scanner, then repeat.",
   "z": {
     "ph_fwhm_hz": 0.20291951227286914,
-    "ph_snr": -1.8716520982293807,
+    "ph_snr_pct": -1.988906418730275,
     "ph_freq_hz": 0.0,
     "ph_water_ratio": 29.80752151279572,
-    "ph_distortion_pct": 0.8627846827257059
+    "ph_geometry_mm": -0.18363958233880448
   },
   "weeks_to_fail": {
     "ph_fwhm_hz": null,
-    "ph_snr": 19.471666582660458,
+    "ph_snr_pct": 16.2554468436128,
     "ph_freq_hz": null,
-    "ph_water_ratio": 3.122105636743889,
-    "ph_distortion_pct": null
+    "ph_water_ratio": 9.580515239830069,
+    "ph_geometry_mm": null
   }
 }

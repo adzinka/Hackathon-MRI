@@ -13,10 +13,10 @@
     },
     "z": {
       "ph_fwhm_hz": 25.585222663431246,
-      "ph_snr": -5.952463755106206,
+      "ph_snr_pct": -6.330252190791629,
       "ph_freq_hz": 35.00369649003716,
       "ph_water_ratio": 1.7750896265499563,
-      "ph_distortion_pct": 0.8627846827257059
+      "ph_geometry_mm": -0.18363958233880448
     }
   },
   "expected_class": "b0_drift",
@@ -60,16 +60,16 @@
   "verdict": "MACHINE: the brain WARN matches a scanner fault (b0_drift). Fix the scanner, then repeat.",
   "z": {
     "ph_fwhm_hz": 25.585222663431246,
-    "ph_snr": -5.952463755106206,
+    "ph_snr_pct": -6.330252190791629,
     "ph_freq_hz": 35.00369649003716,
     "ph_water_ratio": 1.7750896265499563,
-    "ph_distortion_pct": 0.8627846827257059
+    "ph_geometry_mm": -0.18363958233880448
   },
   "weeks_to_fail": {
     "ph_fwhm_hz": 0.0,
-    "ph_snr": 1.300434440595556,
+    "ph_snr_pct": 0.35122705692965633,
     "ph_freq_hz": 0.0,
-    "ph_water_ratio": 138.2676513947252,
-    "ph_distortion_pct": null
+    "ph_water_ratio": 214.9717932499926,
+    "ph_geometry_mm": null
   }
 }

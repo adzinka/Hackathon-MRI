@@ -38,15 +38,21 @@ FAULTS = {
     "gradient_drift": {"title": "Gradient scale drift", "end": {"gradient_error": 0.025}},
 }
 
-# phantom observables: (label, unit, per-scan SD, drift SD per 6 months, gates). Gates are a team PROPOSAL,
-# set from the stable simulated phantom (mean +- several SD); a site physicist must replace them.
+# phantom observables: (label, unit, per-scan SD, drift SD per 6 months, gates, catalogue row).
+# Where the ScanTwin catalogue has a phantom limit we use it; the others are team proposals set from the stable
+# simulated phantom. A site physicist must confirm all of them.
+PHANTOM_SNR_REF = 120.0           # commissioning SNR of the simulated phantom ("coil baseline" of F09)
+PHANTOM_DIAMETER_MM = 190.0       # ACR phantom length used by F01
 PHANTOM_OBS = {
     "ph_fwhm_hz": ("Phantom linewidth", "Hz", 0.15, 0.3, {"warn_above": 4.5, "fail_above": 6.0}),
-    "ph_snr": ("Phantom SNR", "1", 5.0, 6.0, {"warn_below": 95.0, "fail_below": 80.0}),
+    "ph_snr_pct": ("Phantom SNR vs coil baseline", "%", 4.0, 5.0, {"warn_below": 90.0, "fail_below": 70.0}),
     "ph_freq_hz": ("Centre-frequency offset", "Hz", 0.3, 1.0, {"warn_above": 6.0, "fail_above": 12.0}),
-    "ph_water_ratio": ("Residual water", "1", 0.02, 0.05, {"warn_above": 0.4, "fail_above": 1.0}),
-    "ph_distortion_pct": ("Geometric distortion", "%", 0.15, 0.2, {"warn_above": 1.0, "fail_above": 2.0}),
+    "ph_water_ratio": ("Residual water / NAA", "1", 0.02, 0.05, {"warn_above": 0.5, "fail_above": 1.5}),
+    "ph_geometry_mm": ("Geometric error (190 mm phantom)", "mm", 0.3, 0.4, {"warn_above": 1.0, "fail_above": 2.0}),
 }
+PHANTOM_SOURCE = {"ph_fwhm_hz": "team proposal", "ph_snr_pct": "catalogue F09 (% of coil baseline)",
+                  "ph_freq_hz": "team proposal", "ph_water_ratio": "catalogue F15 v1.1",
+                  "ph_geometry_mm": "catalogue F01 (ACR phantom)"}
 
 
 def hw_state(fault: str, week: int) -> dict:
@@ -64,9 +70,10 @@ def phantom_week(fault: str, week: int, seed: int) -> dict:
     sim = S.simulate(acq, None, seed)
     q = F.qc_metrics(sim.average())
     rng = np.random.default_rng(seed + 7)
-    return {"week": week, "ph_fwhm_hz": q["fwhm_hz"], "ph_snr": q["snr"],
+    return {"week": week, "ph_fwhm_hz": q["fwhm_hz"], "ph_snr_pct": 100 * q["snr"] / PHANTOM_SNR_REF,
             "ph_freq_hz": (q["naa_ppm"] - F.METABOLITES["NAA"]) * F.NU0_MHZ, "ph_water_ratio": q["water_ratio"],
-            "ph_distortion_pct": 100 * hw["gradient_error"] + rng.normal(0, 0.15), **{f"hw_{k}": v for k, v in hw.items()}}
+            "ph_geometry_mm": abs(PHANTOM_DIAMETER_MM * hw["gradient_error"] + rng.normal(0, 0.3)),
+            **{f"hw_{k}": v for k, v in hw.items()}}
 
 
 def brain_session(fault: str, week: int, seed: int, root: Path, biology: dict | None = None):
@@ -126,8 +133,8 @@ def sha256(path: Path) -> str:
 def diagnose(trk: dict) -> dict:
     """Fault class from the pattern of scanner-twin changes between week 0 and week 26 (transparent rules)."""
     z = trk["z"]
-    sig = {"fwhm_up": z["ph_fwhm_hz"] > 1.96, "snr_down": z["ph_snr"] < -1.96, "freq_moved": abs(z["ph_freq_hz"]) > 1.96,
-           "water_up": z["ph_water_ratio"] > 1.96, "geometry_up": z["ph_distortion_pct"] > 1.96}
+    sig = {"fwhm_up": z["ph_fwhm_hz"] > 1.96, "snr_down": z["ph_snr_pct"] < -1.96, "freq_moved": abs(z["ph_freq_hz"]) > 1.96,
+           "water_up": z["ph_water_ratio"] > 1.96, "geometry_up": z["ph_geometry_mm"] > 1.96}
     if sig["geometry_up"]:
         cls, why = "gradient", "phantom geometry changed; spectra unaffected"
     elif sig["freq_moved"]:

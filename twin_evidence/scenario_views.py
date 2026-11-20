@@ -84,8 +84,8 @@ def bias_chart(summary: list[dict]) -> go.Figure:
     return fig
 
 
-PH_OBS = [("ph_fwhm_hz", "Phantom linewidth / Hz"), ("ph_snr", "Phantom SNR"), ("ph_freq_hz", "Centre frequency / Hz"),
-          ("ph_water_ratio", "Residual water"), ("ph_distortion_pct", "Geometry / %")]
+PH_OBS = [("ph_fwhm_hz", "Phantom linewidth / Hz"), ("ph_snr_pct", "Phantom SNR / % of baseline"), ("ph_freq_hz", "Centre frequency / Hz"),
+          ("ph_water_ratio", "Residual water"), ("ph_geometry_mm", "Geometric error / mm")]
 
 
 def phantom_chart(weekly: list[dict], gates: dict) -> go.Figure:

@@ -88,11 +88,13 @@ Pick a follow-up packet in the sidebar (or upload an unseen one). Tabs:
    displacement) and the scanner bore, all drawn from the StarterPack NIfTI files, coloured by gate status. Next to it, a
    table of possible causes judged by the evidence; a T1w slice with the difference map (the anatomy did not change); and
    both spectra recomputed from the raw NIfTI-MRS files (SNR and FWHM checked against the packets).
-6. **Scanner twin** (`twin_evidence/scanner.py`, **SIMULATED**): a weekly phantom record of linewidth, SNR and centre
-   frequency, run through the same gate and Kalman step. Three scenarios (stable, shim degrading, B0 drift). Its verdict
-   feeds the competing explanations of the brain twin and the bore colour in the 3D map, and it forecasts when the phantom
-   will cross the FAIL limit. The StarterPack has no phantom data yet; the series and its thresholds are our assumptions.
-7. **Fault scenarios** (`scenario_data/`, **SIMULATED with known truth**): pick one of 11 faults (the seven error sources
+6. **Scanner twin** (`twin_evidence/scanner_link.py`, **SIMULATED** weekly phantom record): pick the scanner's state in
+   the sidebar (stable, shim, coil, B0 drift, B1, gradient, or none). The scanner twin's state **on the scan date** becomes
+   gate finding F11 on every subject packet: FAIL blocks the update, WARN down-weights it, and only the parts of the machine
+   a scan depends on count (geometry and SNR for volumes, all parts for spectroscopy). The header answers
+   **"Patient or machine?"** for the selected packet. Phantom limits follow the ScanTwin catalogue (F01 geometry, F09 coil,
+   F15 water) where it has one. With "no scanner twin" or a stable scanner the Gate 1 reference numbers are unchanged.
+7. **ScanTwin: fault scenarios** (`scenario_data/`, **SIMULATED with known truth**): pick one of 11 faults (the seven error sources
    of `scanner_data/MRI_MRS_Essential_Errors_Explained.md` plus coil, B1, gradient and a true change) and see the
    simulated spectrum next to a clean one, every quality check, the measured vs true Cho/Cr and the fault model's
    diagnosis with who is to blame. Further sub-tabs: what each fault does to Cho/Cr (60 scans each), the fault model

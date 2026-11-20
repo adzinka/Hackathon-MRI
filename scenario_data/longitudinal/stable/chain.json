@@ -13,10 +13,10 @@
     },
     "z": {
       "ph_fwhm_hz": 0.2158752612598589,
-      "ph_snr": 1.2603345606623693,
+      "ph_snr_pct": 1.330021397050544,
       "ph_freq_hz": 0.0,
       "ph_water_ratio": -0.26711983801890404,
-      "ph_distortion_pct": 0.8627846827257059
+      "ph_geometry_mm": -0.18363958233880448
     }
   },
   "expected_class": "stable",
@@ -56,16 +56,16 @@
   "verdict": "CLEAN: scanner stable and brain evidence PASS; a change in the value is attributed to the patient.",
   "z": {
     "ph_fwhm_hz": 0.2158752612598589,
-    "ph_snr": 1.2603345606623693,
+    "ph_snr_pct": 1.330021397050544,
     "ph_freq_hz": 0.0,
     "ph_water_ratio": -0.26711983801890404,
-    "ph_distortion_pct": 0.8627846827257059
+    "ph_geometry_mm": -0.18363958233880448
   },
   "weeks_to_fail": {
     "ph_fwhm_hz": null,
-    "ph_snr": null,
+    "ph_snr_pct": null,
     "ph_freq_hz": null,
     "ph_water_ratio": null,
-    "ph_distortion_pct": null
+    "ph_geometry_mm": null
   }
 }

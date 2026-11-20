@@ -125,7 +125,7 @@ def _identifying_keys(obj, prefix="") -> list[str]:
 
 
 def evaluate(packet: dict, thresholds: dict, schema: dict | None = None, manifest: dict[str, str] | None = None,
-             root: Path | None = None) -> Evaluation:
+             root: Path | None = None, scanner=None) -> Evaluation:
     """Re-evaluate one evidence packet. Returns status, twin action and every finding with its reason."""
     gates = {g["name"]: g for g in thresholds.get("gates", [])}
     F: list[Finding] = []
@@ -183,6 +183,13 @@ def evaluate(packet: dict, thresholds: dict, schema: dict | None = None, manifes
                          "a SIMULATED origin is never labelled MEASURED"))
     if "system_qc" in gates and packet.get("modality") in ("MRI", "MRS") and not packet.get("system_qc_id"):
         F.append(Finding("system_qc", "FAIL", "PM", "system_qc_id", None, "system_qc_id present", "no system QC reference"))
+    # F11 + scanner twin: the scanner's state on the scan date (twin_evidence.scanner_link.ScannerRecord)
+    if scanner is not None:
+        sf = scanner.finding(packet)
+        if sf is not None:
+            F.append(sf)
+            if sf.status != "PASS":
+                notes.append(f"scanner twin: {sf.status} on the scan date")
     # F57 (ScanTwin catalogue): nominal field and spectrometer frequency both recorded
     acq = packet.get("acquisition_context") if isinstance(packet.get("acquisition_context"), dict) else {}
     has_b0, has_nu = isinstance(acq.get("field_strength_T"), (int, float)), isinstance(acq.get("spectrometer_frequency_MHz"), (int, float))

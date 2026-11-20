@@ -78,8 +78,12 @@ def brain_3d(vol: dict, mrs_status: str, roi_status: str, scanner: ScannerReport
         fig.add_trace(go.Cone(x=[0], y=[-120], z=[75], u=[0], v=[0], w=[30], sizemode="absolute", sizeref=14,
                               colorscale=[[0, "#142029"], [1, "#142029"]], showscale=False, name="B0 (along the bore)", hoverinfo="name"))
         if scanner:
-            lw = scanner.state_t1["phantom_linewidth_Hz"]
-            ann.append(dict(x=-120, y=0, z=-70, text=f"<b>Scanner twin {sc_status}</b><br>phantom linewidth {lw[0]:.1f} ± {lw[1]:.1f} Hz",
+            if hasattr(scanner, "label_text"):
+                txt = scanner.label_text
+            else:
+                lw = scanner.state_t1["phantom_linewidth_Hz"]
+                txt = f"phantom linewidth {lw[0]:.1f} ± {lw[1]:.1f} Hz"
+            ann.append(dict(x=-120, y=0, z=-70, text=f"<b>Scanner twin {sc_status}</b><br>{txt}",
                             showarrow=False, bgcolor="rgba(255,255,255,.85)", bordercolor=STATUS_COLOR[sc_status],
                             font=dict(size=11, color="#142029")))
     fig.update_layout(height=640, margin=dict(l=0, r=0, t=10, b=0), legend=dict(orientation="h", y=-0.02, font=dict(size=11)),
