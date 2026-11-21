@@ -1,0 +1,3 @@
+# real samples are published files: keep their bytes exact (checksums in dataset_manifest.json)
+external_data/real_samples/MRS/** -text
+external_data/real_samples/T1w/** -text
