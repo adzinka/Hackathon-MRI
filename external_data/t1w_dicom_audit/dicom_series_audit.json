@@ -1,0 +1,686 @@
+[
+ {
+  "folder": "vs_1",
+  "files": 17,
+  "unreadable": [
+   "LICENSE: InvalidDicomError"
+  ],
+  "sop_class": "MR Image Storage",
+  "frames_per_file": [
+   1
+  ],
+  "uids": {
+   "StudyInstanceUID": 1,
+   "SeriesInstanceUID": 1,
+   "SOPInstanceUID_unique": true
+  },
+  "protocol": {
+   "MagneticFieldStrength": 1.5,
+   "ImagingFrequency": 63.643734,
+   "RepetitionTime": 476.0,
+   "EchoTime": 9.7,
+   "InversionTime": null,
+   "FlipAngle": 90.0,
+   "ScanningSequence": "SE",
+   "SequenceVariant": [
+    "SP",
+    "OSP"
+   ],
+   "MRAcquisitionType": "2D",
+   "PixelBandwidth": 100.0,
+   "Manufacturer": "SIEMENS",
+   "ManufacturerModelName": "Avanto",
+   "SoftwareVersions": "syngo MR B17",
+   "SeriesDescription": "_T1_t1_se_tra_3mm_gad",
+   "ContrastBolusAgent": "post gad"
+  },
+  "protocol_varies_within_series": [],
+  "dates": {
+   "StudyDate": [
+    "19930913"
+   ],
+   "SeriesDate": [
+    "19930913"
+   ],
+   "AcquisitionDate": [
+    "19930913"
+   ],
+   "ContentDate": [
+    "19930913"
+   ]
+  },
+  "identifying_present": {
+   "PatientName": "<value present>",
+   "PatientID": "<value present>",
+   "PatientBirthDate": "<empty>",
+   "PatientSex": "<value present>",
+   "PatientAge": "<value present>",
+   "PatientWeight": "<value present>",
+   "ReferringPhysicianName": "<empty>",
+   "DeviceSerialNumber": "<empty>",
+   "AccessionNumber": "<empty>",
+   "StudyID": "<empty>"
+  },
+  "deid_markers": {
+   "PatientIdentityRemoved": "YES",
+   "DeidentificationMethod": "Per DICOM PS 3.15 AnnexE. Details in 0012,0064"
+  },
+  "iop_unique": 1,
+  "iop_orthonormal": true,
+  "slices": 16,
+  "slice_gap_mm": {
+   "median": 2.9997982056612145,
+   "min": 2.999796853082117,
+   "max": 2.9997991328995894
+  },
+  "duplicate_positions": 0,
+  "missing_slices_est": 0,
+  "SliceThickness": 3.0,
+  "SpacingBetweenSlices": 3.0,
+  "PixelSpacing": [
+   0.625,
+   0.625
+  ],
+  "instance_numbers": {
+   "min": 1,
+   "max": 16,
+   "n": 16,
+   "gaps": 0
+  },
+  "rows_cols_match_pixels": true,
+  "pixel": {
+   "Rows": 256,
+   "Columns": 256,
+   "BitsStored": 12,
+   "RescaleSlope": null,
+   "RescaleIntercept": null
+  }
+ },
+ {
+  "folder": "vs_2",
+  "files": 117,
+  "unreadable": [
+   "LICENSE: InvalidDicomError"
+  ],
+  "sop_class": "MR Image Storage",
+  "frames_per_file": [
+   1
+  ],
+  "uids": {
+   "StudyInstanceUID": 1,
+   "SeriesInstanceUID": 1,
+   "SOPInstanceUID_unique": true
+  },
+  "protocol": {
+   "MagneticFieldStrength": 1.5,
+   "ImagingFrequency": 63.876031,
+   "RepetitionTime": 7.06,
+   "EchoTime": 3.128,
+   "InversionTime": 450.0,
+   "FlipAngle": 11.0,
+   "ScanningSequence": "GR",
+   "SequenceVariant": [
+    "SS",
+    "SP",
+    "SK"
+   ],
+   "MRAcquisitionType": "3D",
+   "PixelBandwidth": 244.141,
+   "Manufacturer": "GE MEDICAL SYSTEMS",
+   "ManufacturerModelName": "DISCOVERY MR450",
+   "SoftwareVersions": [
+    "24",
+    "LX",
+    "MR Software release:DV24.0_R01_1344.a"
+   ],
+   "SeriesDescription": "_T1_Ax FSPGR T1 +C",
+   "ContrastBolusAgent": "10    dot"
+  },
+  "protocol_varies_within_series": [],
+  "dates": {
+   "StudyDate": [
+    "19960511"
+   ],
+   "SeriesDate": [
+    "19960511"
+   ],
+   "AcquisitionDate": [
+    "19960511"
+   ],
+   "ContentDate": [
+    "19960511"
+   ]
+  },
+  "identifying_present": {
+   "PatientName": "<value present>",
+   "PatientID": "<value present>",
+   "PatientBirthDate": "<empty>",
+   "PatientSex": "<value present>",
+   "PatientAge": "<value present>",
+   "PatientWeight": "<value present>",
+   "ReferringPhysicianName": "<empty>",
+   "DeviceSerialNumber": "<empty>",
+   "AccessionNumber": "<empty>",
+   "StudyID": "<empty>"
+  },
+  "deid_markers": {
+   "PatientIdentityRemoved": "YES",
+   "DeidentificationMethod": "Per DICOM PS 3.15 AnnexE. Details in 0012,0064"
+  },
+  "iop_unique": 1,
+  "iop_orthonormal": true,
+  "slices": 116,
+  "slice_gap_mm": {
+   "median": 1.5,
+   "min": 1.4998999999999967,
+   "max": 1.500020000000001
+  },
+  "duplicate_positions": 0,
+  "missing_slices_est": 0,
+  "SliceThickness": 1.5,
+  "SpacingBetweenSlices": 1.5,
+  "PixelSpacing": [
+   0.8203,
+   0.8203
+  ],
+  "instance_numbers": {
+   "min": 1,
+   "max": 116,
+   "n": 116,
+   "gaps": 0
+  },
+  "rows_cols_match_pixels": true,
+  "pixel": {
+   "Rows": 256,
+   "Columns": 256,
+   "BitsStored": 16,
+   "RescaleSlope": null,
+   "RescaleIntercept": null
+  }
+ },
+ {
+  "folder": "vs_3",
+  "files": 117,
+  "unreadable": [
+   "LICENSE: InvalidDicomError"
+  ],
+  "sop_class": "MR Image Storage",
+  "frames_per_file": [
+   1
+  ],
+  "uids": {
+   "StudyInstanceUID": 1,
+   "SeriesInstanceUID": 1,
+   "SOPInstanceUID_unique": true
+  },
+  "protocol": {
+   "MagneticFieldStrength": 1.5,
+   "ImagingFrequency": 63.876943,
+   "RepetitionTime": 7.06,
+   "EchoTime": 3.128,
+   "InversionTime": 450.0,
+   "FlipAngle": 11.0,
+   "ScanningSequence": "GR",
+   "SequenceVariant": [
+    "SS",
+    "SP",
+    "SK"
+   ],
+   "MRAcquisitionType": "3D",
+   "PixelBandwidth": 244.141,
+   "Manufacturer": "GE MEDICAL SYSTEMS",
+   "ManufacturerModelName": "DISCOVERY MR450",
+   "SoftwareVersions": [
+    "24",
+    "LX",
+    "MR Software release:DV24.0_R01_1344.a"
+   ],
+   "SeriesDescription": "_T1_Ax FSPGR T1 +C",
+   "ContrastBolusAgent": "10    dot"
+  },
+  "protocol_varies_within_series": [],
+  "dates": {
+   "StudyDate": [
+    "19990529"
+   ],
+   "SeriesDate": [
+    "19990529"
+   ],
+   "AcquisitionDate": [
+    "19990529"
+   ],
+   "ContentDate": [
+    "19990529"
+   ]
+  },
+  "identifying_present": {
+   "PatientName": "<value present>",
+   "PatientID": "<value present>",
+   "PatientBirthDate": "<empty>",
+   "PatientSex": "<value present>",
+   "PatientAge": "<value present>",
+   "PatientWeight": "<value present>",
+   "ReferringPhysicianName": "<empty>",
+   "DeviceSerialNumber": "<empty>",
+   "AccessionNumber": "<empty>",
+   "StudyID": "<empty>"
+  },
+  "deid_markers": {
+   "PatientIdentityRemoved": "YES",
+   "DeidentificationMethod": "Per DICOM PS 3.15 AnnexE. Details in 0012,0064"
+  },
+  "iop_unique": 1,
+  "iop_orthonormal": true,
+  "slices": 116,
+  "slice_gap_mm": {
+   "median": 1.5,
+   "min": 1.4999599999999997,
+   "max": 1.5001000000000033
+  },
+  "duplicate_positions": 0,
+  "missing_slices_est": 0,
+  "SliceThickness": 1.5,
+  "SpacingBetweenSlices": 1.5,
+  "PixelSpacing": [
+   0.8203,
+   0.8203
+  ],
+  "instance_numbers": {
+   "min": 1,
+   "max": 116,
+   "n": 116,
+   "gaps": 0
+  },
+  "rows_cols_match_pixels": true,
+  "pixel": {
+   "Rows": 256,
+   "Columns": 256,
+   "BitsStored": 16,
+   "RescaleSlope": null,
+   "RescaleIntercept": null
+  }
+ },
+ {
+  "folder": "upenn_4",
+  "files": 193,
+  "unreadable": [
+   "LICENSE: InvalidDicomError"
+  ],
+  "sop_class": "MR Image Storage",
+  "frames_per_file": [
+   1
+  ],
+  "uids": {
+   "StudyInstanceUID": 1,
+   "SeriesInstanceUID": 1,
+   "SOPInstanceUID_unique": true
+  },
+  "protocol": {
+   "MagneticFieldStrength": 3.0,
+   "ImagingFrequency": 123.257167,
+   "RepetitionTime": 1760.0,
+   "EchoTime": 3.11,
+   "InversionTime": 950.0,
+   "FlipAngle": 15.0,
+   "ScanningSequence": [
+    "GR",
+    "IR"
+   ],
+   "SequenceVariant": [
+    "SP",
+    "MP"
+   ],
+   "MRAcquisitionType": "3D",
+   "PixelBandwidth": 150.0,
+   "Manufacturer": "SIEMENS",
+   "ManufacturerModelName": "TrioTim",
+   "SoftwareVersions": "syngo MR B17",
+   "SeriesDescription": "t1 axial: Processed_CaPTk",
+   "ContrastBolusAgent": null
+  },
+  "protocol_varies_within_series": [],
+  "dates": {
+   "StudyDate": [
+    "20080920"
+   ],
+   "SeriesDate": [
+    "20080920"
+   ],
+   "AcquisitionDate": [
+    "20080920"
+   ],
+   "ContentDate": [
+    "20080920"
+   ]
+  },
+  "identifying_present": {
+   "PatientName": "<value present>",
+   "PatientID": "<value present>",
+   "PatientBirthDate": "<empty>",
+   "PatientSex": "<value present>",
+   "PatientAge": "<value present>",
+   "PatientWeight": "<value present>",
+   "ReferringPhysicianName": "<empty>",
+   "AccessionNumber": "<empty>",
+   "StudyID": "<empty>"
+  },
+  "deid_markers": {
+   "PatientIdentityRemoved": "YES",
+   "DeidentificationMethod": "Per DICOM PS 3.15 AnnexE. Details in 0012,0064"
+  },
+  "iop_unique": 1,
+  "iop_orthonormal": true,
+  "slices": 192,
+  "slice_gap_mm": {
+   "median": 1.0000028900000004,
+   "min": 1.0000028899997009,
+   "max": 1.0000028900002995
+  },
+  "duplicate_positions": 0,
+  "missing_slices_est": 0,
+  "SliceThickness": 1.0,
+  "SpacingBetweenSlices": 1.0,
+  "PixelSpacing": [
+   0.9765625,
+   0.9765625
+  ],
+  "instance_numbers": {
+   "min": 1,
+   "max": 192,
+   "n": 192,
+   "gaps": 0
+  },
+  "rows_cols_match_pixels": true,
+  "pixel": {
+   "Rows": 256,
+   "Columns": 192,
+   "BitsStored": 16,
+   "RescaleSlope": 1.0,
+   "RescaleIntercept": 0.0
+  }
+ },
+ {
+  "folder": "remind_5",
+  "files": 152,
+  "unreadable": [
+   "LICENSE: InvalidDicomError"
+  ],
+  "sop_class": "MR Image Storage",
+  "frames_per_file": [
+   1
+  ],
+  "uids": {
+   "StudyInstanceUID": 1,
+   "SeriesInstanceUID": 1,
+   "SOPInstanceUID_unique": true
+  },
+  "protocol": {
+   "MagneticFieldStrength": null,
+   "ImagingFrequency": null,
+   "RepetitionTime": null,
+   "EchoTime": null,
+   "InversionTime": null,
+   "FlipAngle": null,
+   "ScanningSequence": "RM",
+   "SequenceVariant": "NONE",
+   "MRAcquisitionType": "",
+   "PixelBandwidth": null,
+   "Manufacturer": "Unknown manufacturer",
+   "ManufacturerModelName": "Unknown model",
+   "SoftwareVersions": null,
+   "SeriesDescription": "3D_AX_T1_postcontrast",
+   "ContrastBolusAgent": null
+  },
+  "protocol_varies_within_series": [],
+  "dates": {
+   "StudyDate": [
+    "19821225"
+   ],
+   "SeriesDate": [
+    "20070308"
+   ],
+   "AcquisitionDate": [
+    "None"
+   ],
+   "ContentDate": [
+    "20070308"
+   ]
+  },
+  "identifying_present": {
+   "PatientName": "<value present>",
+   "PatientID": "<value present>",
+   "PatientBirthDate": "<empty>",
+   "PatientSex": "<empty>",
+   "ReferringPhysicianName": "<empty>",
+   "AccessionNumber": "<empty>",
+   "StudyID": "<empty>"
+  },
+  "deid_markers": {
+   "PatientIdentityRemoved": "YES",
+   "DeidentificationMethod": [
+    "PyDeface-NiftyReg",
+    "Per DICOM PS 3.15 AnnexE. Details in 0012,0064"
+   ]
+  },
+  "iop_unique": 1,
+  "iop_orthonormal": true,
+  "slices": 151,
+  "slice_gap_mm": {
+   "median": 1.049998646356002,
+   "min": 1.0499836323859952,
+   "max": 1.0500986426500134
+  },
+  "duplicate_positions": 0,
+  "missing_slices_est": 0,
+  "SliceThickness": 1.05,
+  "SpacingBetweenSlices": 1.0,
+  "PixelSpacing": [
+   0.976562512837229,
+   0.976562558675465
+  ],
+  "instance_numbers": {
+   "min": 1,
+   "max": 151,
+   "n": 151,
+   "gaps": 0
+  },
+  "rows_cols_match_pixels": true,
+  "pixel": {
+   "Rows": 256,
+   "Columns": 216,
+   "BitsStored": 16,
+   "RescaleSlope": null,
+   "RescaleIntercept": null
+  }
+ },
+ {
+  "folder": "baseline",
+  "files": 16,
+  "unreadable": [],
+  "sop_class": "MR Image Storage",
+  "frames_per_file": [
+   1
+  ],
+  "uids": {
+   "StudyInstanceUID": 1,
+   "SeriesInstanceUID": 1,
+   "SOPInstanceUID_unique": true
+  },
+  "protocol": {
+   "MagneticFieldStrength": 3.0,
+   "ImagingFrequency": 123.25,
+   "RepetitionTime": 2300.0,
+   "EchoTime": 3.0,
+   "InversionTime": 900.0,
+   "FlipAngle": 9.0,
+   "ScanningSequence": [
+    "GR",
+    "IR"
+   ],
+   "SequenceVariant": [
+    "SK",
+    "SP",
+    "MP"
+   ],
+   "MRAcquisitionType": "3D",
+   "PixelBandwidth": null,
+   "Manufacturer": "SYNTHETIC",
+   "ManufacturerModelName": "Synthetic MR Simulator",
+   "SoftwareVersions": "nmrqe-synth 0.3",
+   "SeriesDescription": "Synthetic T1w baseline",
+   "ContrastBolusAgent": null
+  },
+  "protocol_varies_within_series": [],
+  "dates": {
+   "StudyDate": [
+    "20260520"
+   ],
+   "SeriesDate": [
+    "20260520"
+   ],
+   "AcquisitionDate": [
+    "20260520"
+   ],
+   "ContentDate": [
+    "None"
+   ]
+  },
+  "identifying_present": {
+   "PatientName": "<value present>",
+   "PatientID": "<value present>",
+   "PatientBirthDate": "<empty>",
+   "PatientSex": "<value present>",
+   "InstitutionName": "<value present>",
+   "StudyID": "<value present>"
+  },
+  "deid_markers": {
+   "PatientIdentityRemoved": "YES",
+   "DeidentificationMethod": "Synthetic generated data; no real patient"
+  },
+  "iop_unique": 1,
+  "iop_orthonormal": true,
+  "slices": 16,
+  "slice_gap_mm": {
+   "median": 4.0,
+   "min": 4.0,
+   "max": 4.0
+  },
+  "duplicate_positions": 0,
+  "missing_slices_est": 0,
+  "SliceThickness": 4.0,
+  "SpacingBetweenSlices": 4.0,
+  "PixelSpacing": [
+   3.0,
+   3.0
+  ],
+  "instance_numbers": {
+   "min": 1,
+   "max": 16,
+   "n": 16,
+   "gaps": 0
+  },
+  "rows_cols_match_pixels": true,
+  "pixel": {
+   "Rows": 64,
+   "Columns": 64,
+   "BitsStored": 12,
+   "RescaleSlope": 1.0,
+   "RescaleIntercept": 0.0
+  }
+ },
+ {
+  "folder": "followup",
+  "files": 16,
+  "unreadable": [],
+  "sop_class": "MR Image Storage",
+  "frames_per_file": [
+   1
+  ],
+  "uids": {
+   "StudyInstanceUID": 1,
+   "SeriesInstanceUID": 1,
+   "SOPInstanceUID_unique": true
+  },
+  "protocol": {
+   "MagneticFieldStrength": 3.0,
+   "ImagingFrequency": 123.25,
+   "RepetitionTime": 2300.0,
+   "EchoTime": 3.0,
+   "InversionTime": 900.0,
+   "FlipAngle": 9.0,
+   "ScanningSequence": [
+    "GR",
+    "IR"
+   ],
+   "SequenceVariant": [
+    "SK",
+    "SP",
+    "MP"
+   ],
+   "MRAcquisitionType": "3D",
+   "PixelBandwidth": null,
+   "Manufacturer": "SYNTHETIC",
+   "ManufacturerModelName": "Synthetic MR Simulator",
+   "SoftwareVersions": "nmrqe-synth 0.3",
+   "SeriesDescription": "Synthetic T1w followup",
+   "ContrastBolusAgent": null
+  },
+  "protocol_varies_within_series": [],
+  "dates": {
+   "StudyDate": [
+    "20261120"
+   ],
+   "SeriesDate": [
+    "20261120"
+   ],
+   "AcquisitionDate": [
+    "20261120"
+   ],
+   "ContentDate": [
+    "None"
+   ]
+  },
+  "identifying_present": {
+   "PatientName": "<value present>",
+   "PatientID": "<value present>",
+   "PatientBirthDate": "<empty>",
+   "PatientSex": "<value present>",
+   "InstitutionName": "<value present>",
+   "StudyID": "<value present>"
+  },
+  "deid_markers": {
+   "PatientIdentityRemoved": "YES",
+   "DeidentificationMethod": "Synthetic generated data; no real patient"
+  },
+  "iop_unique": 1,
+  "iop_orthonormal": true,
+  "slices": 16,
+  "slice_gap_mm": {
+   "median": 4.0,
+   "min": 4.0,
+   "max": 4.0
+  },
+  "duplicate_positions": 0,
+  "missing_slices_est": 0,
+  "SliceThickness": 4.0,
+  "SpacingBetweenSlices": 4.0,
+  "PixelSpacing": [
+   3.0,
+   3.0
+  ],
+  "instance_numbers": {
+   "min": 1,
+   "max": 16,
+   "n": 16,
+   "gaps": 0
+  },
+  "rows_cols_match_pixels": true,
+  "pixel": {
+   "Rows": 64,
+   "Columns": 64,
+   "BitsStored": 12,
+   "RescaleSlope": 1.0,
+   "RescaleIntercept": 0.0
+  }
+ }
+]

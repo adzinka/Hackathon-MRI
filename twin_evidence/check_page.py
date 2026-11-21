@@ -1,8 +1,10 @@
 """ScanTwin "Check a scan" page (Streamlit).
 
 Flow:   1 Choose a scan (upload files OR an example)  ->  2 Result  ->  3 Compare with a later scan (optional)
-Data:   single-voxel MR spectroscopy (NIfTI-MRS) and structural T1-weighted MRI (NIfTI), detected automatically.
-        Upload several files at once: the scan, an optional second (later) scan, masks and JSON sidecars.
+Data:   single-voxel MR spectroscopy (NIfTI-MRS) and structural T1-weighted MRI (NIfTI or a DICOM series, .dcm files
+        or one .zip), detected automatically. Upload several files at once: the scan, an optional second (later) scan,
+        masks and JSON sidecars. DICOM headers are checked first (the "envelope"), then the image goes the T1w way.
+Result: TRUSTY / WARNING / ERROR (catalogue PASS / WARN / FAIL), one state per category, every problem with its ID.
 Views:  Simple (plain words, no codes or units) and Expert (gates, images, numbers, trace). Both read the SAME result.
 The page judges the measurement, never the person; it never says "diagnosis".
 """
@@ -18,10 +20,12 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from . import dicom_io as DI
 from . import ingest as I
 from . import mrs_fit as F
 from . import t1w as T
-from .gates import MRS_GATES, T1W_GATES, context_advice, context_factors, supported_range, STANDING_LIMITATIONS
+from .gates import (MRS_GATES, T1W_GATES, classify, context_advice, context_factors, supported_range,
+                    STANDING_LIMITATIONS)
 from .twin import Twin
 from .validate import evaluate
 
@@ -44,6 +48,10 @@ EXAMPLES = {
                                    "roi": f"{SP}/03_BIDS_MRI/derivatives/roi/sub-01/ses-{s}/anat/sub-01_ses-{s}_space-T1w_label-ROI_probseg.nii.gz",
                                    "sidecar": f"{SP}/03_BIDS_MRI/sub-01/ses-{s}/anat/sub-01_ses-{s}_T1w.json"}
                                   for s in ("baseline", "followup")]},
+    "Brain anatomy (T1w) · DICOM series, hackathon May (synthetic)":
+        {"kind": "t1w", "dicom": f"{SP}/01_DICOM/baseline", "scans": [{"mask": f"{SP}/02_NIfTI/synthetic_brain_mask.nii.gz"}]},
+    "Brain anatomy (T1w) · DICOM series with one slice missing (built from the hackathon data)":
+        {"kind": "t1w", "dicom": f"{SP}/01_DICOM/baseline", "drop": ["IM0008.dcm"], "scans": [{}]},
     "Brain anatomy (T1w) · hackathon May only (synthetic)":
         {"kind": "t1w", "scans": [{"image": f"{SP}/03_BIDS_MRI/sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.nii.gz",
                                    "mask": f"{SP}/02_NIfTI/synthetic_brain_mask.nii.gz",
@@ -66,7 +74,7 @@ PLAIN = {
     "F26": ("Patient stillness", "the patient moved during the scan (ghost images)", "Help the patient lie still (padding, shorter scan) and repeat"),
     "F27": ("Image clarity vs last scan", "the image is noisier than last time", "Check the receive coil and repeat"),
     "F28": ("Even brightness", "the brightness is uneven across the head", "Check coil and transmitter calibration; apply brightness correction"),
-    "F32": ("Same position as last time", "the head was positioned differently, so the scans don't line up", "Re-align the scans, or reposition and repeat"),
+    "F32": ("Outline follows the head", "the region outline did not move with the head, so it lands in the wrong place", "Re-draw or re-register the outline on the later scan"),
     "F35": ("Same settings as last time", "the scan settings differ from last time", "Repeat with the same settings as last time"),
 }
 MRS_BARS = ["F13", "F12", "F08", "F23", "F15", "F14"]
@@ -128,7 +136,9 @@ def _bars(st, g: dict, order: list):
             continue
         name = PLAIN[gid][0]
         if x["status"] == "N/A":
-            why = "needs an earlier scan" if "baseline" in (x.get("reason") or "") else "can't check this for this file"
+            r_ = x.get("reason") or ""
+            why = ("needs a brain mask" if "brain mask" in r_ else "needs an earlier scan" if "baseline" in r_
+                   else "background removed: motion can't be seen" if "background" in r_ else "can't check this for this file")
             st.markdown(f"<div style='display:flex;gap:12px;align-items:center;margin:7px 0'><div style='width:210px'>{name}</div>"
                         f"<div style='flex:1;color:#8a96a3'>⚪ {why}</div></div>", unsafe_allow_html=True)
             continue
@@ -216,12 +226,33 @@ def _kind_of(data: bytes, name: str) -> str:
     return "t1w"
 
 
+def _is_dicom(name: str, data: bytes) -> bool:
+    return name.lower().endswith(".dcm") or (len(data) > 132 and data[128:132] == b"DICM")
+
+
+def _dicom_files(files) -> list:
+    """(name, bytes) of every DICOM file in the uploads, unpacking .zip archives in memory."""
+    import zipfile
+    import io as _io
+    out = []
+    for f in files:
+        data = f.getvalue()
+        if f.name.lower().endswith(".zip"):
+            with zipfile.ZipFile(_io.BytesIO(data)) as z:
+                out += [(Path(n).name, z.read(n)) for n in z.namelist() if not n.endswith("/")]
+        elif _is_dicom(f.name, data):
+            out.append((f.name, data))
+    return out
+
+
 def _sort_uploads(files) -> dict:
-    """Split uploads into main scans, masks, region outlines and JSON (sidecars or a packet)."""
-    out = {"scans": [], "masks": [], "rois": [], "jsons": []}
+    """Split uploads into main scans, masks, region outlines, JSON (sidecars or a packet) and DICOM files."""
+    out = {"scans": [], "masks": [], "rois": [], "jsons": [], "dicom": []}
     for f in sorted(files, key=lambda f: f.name):
         n = f.name.lower()
-        if n.endswith(".json"):
+        if n.endswith(".zip") or _is_dicom(n, f.getvalue()):
+            out["dicom"].append(f)
+        elif n.endswith(".json"):
             out["jsons"].append(f)
         elif "mask" in n:
             out["masks"].append(f)
@@ -257,12 +288,20 @@ def render(st, *, starterpack_root: Path, thresholds: dict, schema: dict, packet
     if src == "Upload my files":
         ups = st.file_uploader("NIfTI files (.nii.gz / .nii): the scan, optionally a later scan of the same person, a brain "
                                "mask, a region outline (name contains 'roi' or 'probseg'), and JSON sidecars. "
-                               "Or one ScanTwin evidence packet (.json).", type=["gz", "nii", "json"],
+                               "Or a T1w DICOM series (all its .dcm files, or one .zip). "
+                               "Or one ScanTwin evidence packet (.json).", type=["gz", "nii", "json", "dcm", "zip"],
                                accept_multiple_files=True, key="chk_upload")
         if not ups:
             st.info("⬆️ **Drop one or more files above to start.** No files at hand? Choose **Use an example**.")
             return
         groups = _sort_uploads(ups)
+        if groups["dicom"]:
+            key = tuple((f.name, f.size) for f in ups)
+            if key not in cache:
+                cache[key] = {"kind": "t1w", "label": f"DICOM series ({len(groups['dicom'])} file(s))", "uploaded": True,
+                              "sources": groups, "dicom_files": _dicom_files(groups["dicom"])}
+            _page_t1w(st, cache[key], key, cache, starterpack_root, thresholds, schema, expert)
+            return
         if not groups["scans"] and groups["jsons"]:
             f = groups["jsons"][0]
             _render_packet(st, json.loads(f.getvalue()), f.name, starterpack_root, thresholds, schema, packets, manifest, expert)
@@ -519,7 +558,19 @@ def _slice_fig(items: list) -> go.Figure:
 
 
 def _load_t1w(spec, root):
+    """Returns (scans, dicom header check or None). A DICOM series whose geometry is broken gives no scan."""
     out = []
+    if spec.get("dicom_files") is not None or spec.get("dicom"):
+        if spec.get("dicom_files") is not None:
+            files = spec["dicom_files"]
+            masks = spec["sources"]["masks"]
+            mask = masks[0].getvalue() if masks else None
+        else:
+            drop = set(spec.get("drop", []))
+            files = [p for p in sorted(_resolve(spec["dicom"], root).iterdir()) if p.is_file() and p.name not in drop]
+            mask = _resolve(spec["scans"][0].get("mask"), root)
+        scan, check = DI.load(files, mask=mask)
+        return ([scan] if scan is not None else []), check
     if spec.get("uploaded"):
         gr = spec["sources"]
         side = {_stem(f.name): json.loads(f.getvalue()) for f in gr["jsons"]}
@@ -533,7 +584,48 @@ def _load_t1w(spec, root):
             sc = json.loads(_resolve(s["sidecar"], root).read_text()) if s.get("sidecar") else None
             out.append(T.load(_resolve(s["image"], root), name=Path(s["image"]).name, mask=_resolve(s.get("mask"), root),
                               roi=_resolve(s.get("roi"), root), sidecar=sc))
-    return out
+    return out, None
+
+
+STATE_STATUS = {"TRUSTY": "PASS", "WARNING": "WARN", "ERROR": "FAIL", "N/A": "N/A"}
+ORIGIN = {"F26": "patient (moved)", "F32": "processing (outline)", "F35": "protocol", "F27": "not proven (image quality)",
+          "F28": "not proven (image quality)", "F57": "data", "F58": "data", "F59": "data", "F54": "data / export",
+          "F56": "data"}
+
+
+def _state_card(st, c: dict):
+    """Level 1: TRUSTY / WARNING / ERROR with the reasons."""
+    s = c["state"]
+    title = {"TRUSTY": "🟢 TRUSTY · the scan can be used for measurements",
+             "WARNING": "🟡 WARNING · usable only with care; check the points below",
+             "ERROR": "🔴 ERROR · do not use this scan for measurements"}[s]
+    body = "Every check that applies passed." if not c["reasons"] else "<br>".join(f"• {r}" for r in c["reasons"])
+    _card(st, STATE_STATUS[s], title, body)
+
+
+def _category_table(c: dict) -> list[dict]:
+    """Level 2: one state per category."""
+    return [{"": ICON[STATE_STATUS[x["status"]]], "category": x["category"], "state": x["status"],
+             "checks": ", ".join(i["id"] for i in x["items"])} for x in c["categories"]]
+
+
+def _problem_table(c: dict) -> list[dict]:
+    """Level 3: every check that is not PASS, with its catalogue ID, value, reference, likely origin and fix."""
+    rows = []
+    for cat in c["categories"]:
+        for x in cat["items"]:
+            if x["status"] == "PASS":
+                continue
+            cid = x.get("catalogue_id", x["id"] if str(x["id"]).startswith("F") else None)
+            rows.append({"": ICON.get(x["status"], "⚪"), "problem": x["label"], "catalogue": cid or "— (proposed v1.2)",
+                         "measured": "N/A" if x.get("value") is None else (f"{x['value']:.2f}" if isinstance(x["value"], float)
+                                                                            else str(x["value"])),
+                         "reference": x.get("pass_if") or x.get("source", ""), "severity": x["status"],
+                         "evidence / reason": x.get("reason") or "",
+                         "likely origin": "unknown (input missing)" if x["status"] == "N/A" else
+                         ORIGIN.get(cid, "data / export" if x.get("kind") in ("file", "geometry", "metadata") else "not proven"),
+                         "fix": x.get("fix", "")})
+    return rows
 
 
 def _page_t1w(st, spec, key, cache, root, thresholds, schema, expert):
@@ -542,22 +634,35 @@ def _page_t1w(st, spec, key, cache, root, thresholds, schema, expert):
         with st.status("Analysing the anatomy scan …", expanded=True) as status:
             t0 = time.time()
             try:
-                st.write("Reading the image(s) and removing personal details …")
-                scans = _load_t1w(spec, root)
-                st.write("Separating grey matter, white matter and fluid; measuring quality and volumes …")
-                ms = [T.measure(scans[0])]
-                if len(scans) > 1:
-                    ms.append(T.measure(scans[1], scans[0], ms[0]))
+                st.write("Reading the image(s), checking the DICOM headers if any, and removing personal details …")
+                scans, dcheck = _load_t1w(spec, root)
+                ms = []
+                if scans:
+                    st.write("Separating grey matter, white matter and fluid; measuring quality and volumes …")
+                    ms = [T.measure(scans[0])]
+                    if len(scans) > 1:
+                        ms.append(T.measure(scans[1], scans[0], ms[0]))
             except Exception as err:
                 status.update(label="Could not read this file", state="error")
-                st.error("This doesn't look like a 3D T1-weighted brain image in NIfTI format. Ask your physicist to "
-                         "export it with dcm2niix." + (f"\n\nTechnical detail: `{err}`" if expert else ""))
+                st.error("This doesn't look like a 3D T1-weighted brain image (NIfTI, or a complete DICOM series). "
+                         + (f"\n\nTechnical detail: `{err}`" if expert else ""))
                 return
-            cache[ck] = (scans, ms, time.time() - t0)
+            cache[ck] = (scans, ms, time.time() - t0, dcheck)
             status.update(label=f"Done in {time.time() - t0:.1f} s", state="complete", expanded=False)
-    scans, ms, secs = cache[ck]
+    scans, ms, secs, dcheck = cache[ck]
+    if not scans:             # the DICOM envelope is broken: nothing is measured
+        c = classify(None, dcheck)
+        st.markdown("### 2 · Result")
+        _state_card(st, c)
+        st.markdown("**By category**")
+        st.dataframe(_category_table(c), width="stretch", hide_index=True)
+        st.markdown("**What was found**")
+        st.dataframe(_problem_table(c), width="stretch", hide_index=True)
+        st.caption("The image was not reconstructed or measured: a broken series would give a wrong volume.")
+        return
     sc0, m0 = scans[0], ms[0]
     g0 = T.gate(m0)
+    cls0 = classify(g0, dcheck)
     who = "your file" if spec.get("uploaded") else "the example"
     f = sc0.meta.get("MagneticFieldStrength")
     st.success(f"✅ Now showing {who} **{spec['label']}** · brain anatomy (T1w)" + (f" · {f:g} T" if f else "")
@@ -567,36 +672,65 @@ def _page_t1w(st, spec, key, cache, root, thresholds, schema, expert):
                + (" · a later scan is included" if len(scans) > 1 else ""))
 
     st.markdown("### 2 · Result" + (" · first scan" if len(scans) > 1 else ""))
-    _card(st, g0["status"], *_headline(g0))
+    _state_card(st, cls0)
     use_roi = m0.get("roi_mm3") is not None
     val = m0["roi_mm3"] if use_roi else m0["brain_ml"]
-    u = val * (m0.get("roi_u_rel", 0.03) if use_roi else 0.03)
-    lo, hi = supported_range(val, u, g0["status"])
     unit = "mm³" if use_roi else "mL"
     what = "region volume" if use_roi else "brain volume"
+    if val:
+        u = val * (m0.get("roi_u_rel", 0.03) if use_roi else 0.03)
+        lo, hi = supported_range(val, u, g0["status"])
+    fmt = lambda v, f: "N/A" if v is None else f.format(v)
     if not expert:
         c1, c2 = st.columns([3, 2])
         with c1:
             st.markdown("**Scan quality**")
             _bars(st, g0, T1W_BARS)
+            st.markdown("**By category**")
+            st.dataframe(_category_table(cls0), width="stretch", hide_index=True)
         with c2:
             _actions(st, g0)
             st.markdown("**What the result says**")
-            if g0["status"] == "FAIL":
+            if cls0["state"] == "ERROR":
                 st.markdown("Nothing: volumes from this scan must not be used.")
+            elif not val:
+                st.markdown("No volume: without a brain mask ScanTwin measures only motion and settings "
+                            "(it does not strip the skull). Upload a brain mask with the scan to measure volumes.")
             else:
                 st.plotly_chart(_range_fig([("this scan", val, lo, hi, g0["status"])], f"{what} ({unit})", "{:,.0f}"),
                                 width="stretch", key="t1_rng")
                 st.caption(f"The true {what} is somewhere between **{lo:,.0f} and {hi:,.0f} {unit}**. "
-                           f"Brain {m0['brain_ml']:.0f} mL · grey matter {m0['gm_ml']:.0f} mL · white matter {m0['wm_ml']:.0f} mL.")
+                           f"Brain {fmt(m0['brain_ml'], '{:.0f}')} mL · grey matter {fmt(m0['gm_ml'], '{:.0f}')} mL · "
+                           f"white matter {fmt(m0['wm_ml'], '{:.0f}')} mL.")
+        st.caption("Scanner: no quality-control history of this scanner is loaded, so nothing is compared with it and "
+                   "no problem is blamed on the machine.")
     else:
-        t_q, t_i, t_v, t_t = st.tabs(["Quality checks", "Images", "Volumes", "Trace"])
+        tabs = st.tabs(["Quality checks", "Problems", "Images", "Volumes", "Trace"] + (["DICOM envelope"] if dcheck else []))
+        t_q, t_p, t_i, t_v, t_t = tabs[:5]
+        if dcheck:
+            with tabs[5]:
+                st.dataframe([{"": ICON.get(x["status"], "⚪"), "check": x["label"], "catalogue": x["catalogue_id"] or "— (proposed v1.2)",
+                               "kind": x["kind"], "value": x["value"], "reason": x["reason"]} for x in dcheck["findings"]],
+                             width="stretch", hide_index=True)
+                if dcheck.get("ignored"):
+                    st.caption(f"Ignored (not DICOM): {', '.join(dcheck['ignored'])}")
+        with t_p:
+            st.markdown("**By category**")
+            st.dataframe(_category_table(cls0), width="stretch", hide_index=True)
+            rows = _problem_table(cls0)
+            st.markdown("**Everything that is not PASS**")
+            if rows:
+                st.dataframe(rows, width="stretch", hide_index=True)
+            else:
+                st.markdown("Nothing.")
+            st.caption("Scanner twin: no quality-control history of this scanner is loaded, so it is not compared and no "
+                       "problem is attributed to the machine.")
         with t_q:
             st.dataframe(_gate_table(g0), width="stretch", hide_index=True)
             k = st.columns(4)
-            k[0].metric("SNR (white matter)", f"{m0['snr_wm']:.0f}")
-            k[1].metric("Grey/white contrast-to-noise", f"{m0['cnr']:.1f}")
-            k[2].metric("Brightness variation", f"{m0['wm_cv_pct']:.1f} %")
+            k[0].metric("SNR (white matter)", fmt(m0["snr_wm"], "{:.0f}"))
+            k[1].metric("Grey/white contrast-to-noise", fmt(m0["cnr"], "{:.1f}"))
+            k[2].metric("Brightness variation", fmt(m0["wm_cv_pct"], "{:.1f} %"))
             k[3].metric("Ghost signal", "N/A" if m0["ghost_pct"] is None else f"{m0['ghost_pct']:.2f} %", m0.get("ghost_method", ""),
                         delta_color="off")
             for x in g0["deciding"]:
@@ -605,11 +739,16 @@ def _page_t1w(st, spec, key, cache, root, thresholds, schema, expert):
             st.plotly_chart(_slice_fig([("this scan", sc0)]), width="stretch", key="t1_img")
             st.caption("Red: region outline. Volumes use the provided brain mask or an automatic one (no skull stripping).")
         with t_v:
-            st.dataframe([{"structure": n, "volume": f"{v:,.1f} {un}"} for n, v, un in
-                          [("brain (mask)", m0["brain_ml"], "mL"), ("grey matter", m0["gm_ml"], "mL"), ("white matter", m0["wm_ml"], "mL"),
+            st.dataframe([{"structure": n, "volume": fmt(v, "{:,.1f} " + un)} for n, v, un in
+                          [("head (automatic mask)" if not sc0.brain_mask else "brain (mask)",
+                            m0["head_ml"] if not sc0.brain_mask else m0["brain_ml"], "mL"),
+                           ("grey matter", m0["gm_ml"], "mL"), ("white matter", m0["wm_ml"], "mL"),
                            ("fluid (CSF)", m0["csf_ml"], "mL")] + ([("region of interest", m0["roi_mm3"], "mm³")] if use_roi else [])],
                          width="stretch", hide_index=True)
-            st.caption(f"{what.capitalize()} uncertainty: {100 * (u / val):.0f} % (segmentation repeatability, or the registration-implied 3σ_b/r).")
+            if val:
+                st.caption(f"{what.capitalize()} uncertainty: {100 * (u / val):.0f} % (segmentation repeatability, or the registration-implied 3σ_b/r).")
+            else:
+                st.caption("Tissue volumes need a brain mask: ScanTwin does not strip the skull.")
         with t_t:
             st.markdown(f"**Source file** SHA-256 `{sc0.source_sha256}` · processed in {secs:.1f} s")
             if sc0.removed:
@@ -617,13 +756,16 @@ def _page_t1w(st, spec, key, cache, root, thresholds, schema, expert):
             for s_ in sc0.steps:
                 if not s_.startswith("de-identify"):
                     st.markdown(f"- {s_}")
-            with tempfile.TemporaryDirectory() as tmp:
-                sha = T.write_image(sc0, Path(tmp) / "scan.nii.gz")
-            p = T.build_packet(sc0, m0, g0, packet_id="E-t0-check_t1w", subject_id="sub-check", session_id="ses-baseline",
-                               months=0.0, rel_path="scan.nii.gz", sha=sha,
-                               origin="SIMULATED" if "synthetic" in spec["label"] else "MEASURED")
-            st.download_button("Download the evidence packet (JSON)", json.dumps(p, indent=2), file_name=f"{p['packet_id']}.json",
-                               mime="application/json", key="t1_dl")
+            if val:
+                with tempfile.TemporaryDirectory() as tmp:
+                    sha = T.write_image(sc0, Path(tmp) / "scan.nii.gz")
+                p = T.build_packet(sc0, m0, g0, packet_id="E-t0-check_t1w", subject_id="sub-check", session_id="ses-baseline",
+                                   months=0.0, rel_path="scan.nii.gz", sha=sha,
+                                   origin="SIMULATED" if "synthetic" in spec["label"] else "MEASURED")
+                st.download_button("Download the evidence packet (JSON)", json.dumps(p, indent=2), file_name=f"{p['packet_id']}.json",
+                                   mime="application/json", key="t1_dl")
+            else:
+                st.caption("No evidence packet: a packet carries a volume, and none was measured.")
 
     # ---------------------------------------------------------------- STEP 3 · compare
     st.markdown("### 3 · Compare with a later scan *(optional)*")
@@ -654,16 +796,20 @@ def _page_t1w(st, spec, key, cache, root, thresholds, schema, expert):
                 cache[fk] = (s1, T.measure(s1, sc0, m0))
         sc1, m1 = cache[fk]
     g1 = T.gate(m1)
+    cls1 = classify(g1)
     r = T.compare(m0, g0, m1, g1)
     _card(st, r["status"], r["title"], r["text"])
+    st.markdown(f"**Later scan:** {ICON[STATE_STATUS[cls1['state']]]} {cls1['state']}"
+                + (f" · {'; '.join(cls1['reasons'])}" if cls1["reasons"] else ""))
     v1 = m1["roi_mm3"] if use_roi else m1["brain_ml"]
-    items = [("first scan", val, lo, hi, g0["status"])]
-    if g1["status"] != "FAIL":
-        u1 = v1 * (m1.get("roi_u_rel", 0.03) if use_roi else 0.03)
-        lo1, hi1 = supported_range(v1, u1, g1["status"])
-        items.append(("later scan", v1, lo1, hi1, g1["status"]))
-    st.plotly_chart(_range_fig(items, f"{what} ({unit})", "{:,.0f}"), width="stretch", key="t1_rng_cmp")
-    st.caption("Each band is what that scan can support. If the bands overlap a lot, the scans cannot tell a difference.")
+    if val and v1:
+        items = [("first scan", val, lo, hi, g0["status"])]
+        if g1["status"] != "FAIL":
+            u1 = v1 * (m1.get("roi_u_rel", 0.03) if use_roi else 0.03)
+            lo1, hi1 = supported_range(v1, u1, g1["status"])
+            items.append(("later scan", v1, lo1, hi1, g1["status"]))
+        st.plotly_chart(_range_fig(items, f"{what} ({unit})", "{:,.0f}"), width="stretch", key="t1_rng_cmp")
+        st.caption("Each band is what that scan can support. If the bands overlap a lot, the scans cannot tell a difference.")
     if not expert:
         st.markdown("**Later scan quality**")
         _bars(st, g1, T1W_BARS)
@@ -671,10 +817,10 @@ def _page_t1w(st, spec, key, cache, root, thresholds, schema, expert):
         k = st.columns(5)
         k[0].metric("Later scan gates", f"{ICON[g1['status']]} {g1['status']}", " ".join(x["id"] for x in g1["deciding"]) or "all pass",
                     delta_color="off")
-        k[1].metric("Change z (F60)", f"{r['z']:+.2f}", f"{r['pct']:+.1f} %", delta_color="off")
-        k[2].metric("Head size change", f"{m1.get('head_size_change_pct', 0):+.1f} %")
-        k[3].metric("Scans line up within", f"{m1['reg_shift_mm']:.2f} mm")
-        k[4].metric("Image change", f"{m1['image_change_sd']:.2f} × noise")
+        k[1].metric("Change z (F60)", fmt(r["z"], "{:+.2f}"), fmt(r["pct"], "{:+.1f} %"), delta_color="off")
+        k[2].metric("Head moved by", fmt(m1.get("head_shift_mm"), "{:.1f} mm"), "not an error: scans are aligned", delta_color="off")
+        k[3].metric("Outline follows the head within", fmt(m1.get("reg_shift_mm"), "{:.2f} mm"))
+        k[4].metric("Image change", fmt(m1.get("image_change_sd"), "{:.2f} × noise"))
         st.plotly_chart(_slice_fig([("first scan", sc0), ("later scan", sc1)]), width="stretch", key="t1_img_cmp")
         st.dataframe(_gate_table(g1), width="stretch", hide_index=True)
     st.caption("A verdict about the measurement only. No diagnosis, no treatment advice.")

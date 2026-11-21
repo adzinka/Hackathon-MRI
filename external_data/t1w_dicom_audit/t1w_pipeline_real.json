@@ -1,0 +1,711 @@
+[
+ {
+  "baseline": "sub-000103_acq-standard",
+  "scan": "sub-000103_acq-standard",
+  "seconds": 91.9,
+  "shape": [
+   192,
+   256,
+   256
+  ],
+  "zooms": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 27.9326,
+  "cnr": 11.3758,
+  "wm_cv_pct": 15.8954,
+  "brain_ml": 8935.271,
+  "csf_ml": 5547.614,
+  "gm_ml": 2257.259,
+  "wm_ml": 1130.398,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": null,
+  "reg_shift_mm": null,
+  "protocol_diff": null,
+  "image_change_sd": null,
+  "status": "WARN",
+  "gates": {
+   "F26": "PASS",
+   "F27": "N/A",
+   "F28": "WARN",
+   "F32": "N/A",
+   "F35": "N/A"
+  }
+ },
+ {
+  "baseline": "sub-000103_acq-standard",
+  "scan": "sub-000103_acq-headmotion1",
+  "seconds": 93.2,
+  "shape": [
+   192,
+   256,
+   256
+  ],
+  "zooms": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 25.5442,
+  "cnr": 10.4454,
+  "wm_cv_pct": 14.7716,
+  "brain_ml": 8900.213,
+  "csf_ml": 5494.586,
+  "gm_ml": 2245.085,
+  "wm_ml": 1160.542,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 91.8218,
+  "reg_shift_mm": 1.6106,
+  "protocol_diff": 0.0,
+  "image_change_sd": 2.9258,
+  "head_size_change_pct": -0.3924,
+  "status": "WARN",
+  "gates": {
+   "F26": "PASS",
+   "F27": "PASS",
+   "F28": "WARN",
+   "F32": "PASS",
+   "F35": "PASS"
+  },
+  "compare": {
+   "status": "N/A",
+   "kind": "unknown",
+   "z": -0.093,
+   "pct": -0.392,
+   "title": "\u2754 Can't tell: no real change"
+  }
+ },
+ {
+  "baseline": "sub-000103_acq-standard",
+  "scan": "sub-000103_acq-headmotion2",
+  "seconds": 100.4,
+  "shape": [
+   192,
+   256,
+   256
+  ],
+  "zooms": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 21.8206,
+  "cnr": 9.0648,
+  "wm_cv_pct": 15.0622,
+  "brain_ml": 8871.889,
+  "csf_ml": 5466.497,
+  "gm_ml": 2212.267,
+  "wm_ml": 1193.125,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 79.685,
+  "reg_shift_mm": 2.4491,
+  "protocol_diff": 0.0,
+  "image_change_sd": 3.0261,
+  "head_size_change_pct": -0.7093,
+  "status": "WARN",
+  "gates": {
+   "F26": "PASS",
+   "F27": "WARN",
+   "F28": "WARN",
+   "F32": "WARN",
+   "F35": "PASS"
+  },
+  "compare": {
+   "status": "WARN",
+   "kind": "session",
+   "z": -0.168,
+   "pct": -0.709,
+   "title": "\ud83c\udfaf Probably this session"
+  }
+ },
+ {
+  "baseline": "sub-000175_acq-standard",
+  "scan": "sub-000175_acq-standard",
+  "seconds": 102.8,
+  "shape": [
+   192,
+   256,
+   256
+  ],
+  "zooms": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 23.7716,
+  "cnr": 11.1376,
+  "wm_cv_pct": 23.2531,
+  "brain_ml": 9780.182,
+  "csf_ml": 5942.278,
+  "gm_ml": 2420.678,
+  "wm_ml": 1417.226,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": null,
+  "reg_shift_mm": null,
+  "protocol_diff": null,
+  "image_change_sd": null,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "N/A",
+   "F28": "FAIL",
+   "F32": "N/A",
+   "F35": "N/A"
+  }
+ },
+ {
+  "baseline": "sub-000175_acq-standard",
+  "scan": "sub-000175_acq-headmotion1",
+  "seconds": 99.0,
+  "shape": [
+   192,
+   256,
+   256
+  ],
+  "zooms": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 22.0158,
+  "cnr": 10.3388,
+  "wm_cv_pct": 23.0976,
+  "brain_ml": 9761.065,
+  "csf_ml": 5877.392,
+  "gm_ml": 2437.956,
+  "wm_ml": 1445.717,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 92.828,
+  "reg_shift_mm": 0.1437,
+  "protocol_diff": 0.0,
+  "image_change_sd": 1.9751,
+  "head_size_change_pct": -0.1955,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "PASS",
+   "F28": "FAIL",
+   "F32": "PASS",
+   "F35": "PASS"
+  },
+  "compare": {
+   "status": "N/A",
+   "kind": "unknown",
+   "z": -0.046,
+   "pct": -0.195,
+   "title": "\u2754 Can't tell: no real change"
+  }
+ },
+ {
+  "baseline": "sub-000175_acq-standard",
+  "scan": "sub-000175_acq-headmotion2",
+  "seconds": 99.6,
+  "shape": [
+   192,
+   256,
+   256
+  ],
+  "zooms": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 21.4787,
+  "cnr": 10.183,
+  "wm_cv_pct": 22.9977,
+  "brain_ml": 9807.402,
+  "csf_ml": 5916.864,
+  "gm_ml": 2440.654,
+  "wm_ml": 1449.884,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 91.429,
+  "reg_shift_mm": 0.7247,
+  "protocol_diff": 0.0,
+  "image_change_sd": 1.677,
+  "head_size_change_pct": 0.2783,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "PASS",
+   "F28": "FAIL",
+   "F32": "PASS",
+   "F35": "PASS"
+  },
+  "compare": {
+   "status": "N/A",
+   "kind": "unknown",
+   "z": 0.066,
+   "pct": 0.278,
+   "title": "\u2754 Can't tell: no real change"
+  }
+ },
+ {
+  "baseline": "sub-003617_acq-standard",
+  "scan": "sub-003617_acq-standard",
+  "seconds": 89.2,
+  "shape": [
+   192,
+   256,
+   256
+  ],
+  "zooms": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 26.1777,
+  "cnr": 11.9914,
+  "wm_cv_pct": 21.5199,
+  "brain_ml": 8667.325,
+  "csf_ml": 5417.295,
+  "gm_ml": 2014.566,
+  "wm_ml": 1235.464,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": null,
+  "reg_shift_mm": null,
+  "protocol_diff": null,
+  "image_change_sd": null,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "N/A",
+   "F28": "FAIL",
+   "F32": "N/A",
+   "F35": "N/A"
+  }
+ },
+ {
+  "baseline": "sub-003617_acq-standard",
+  "scan": "sub-003617_acq-headmotion1",
+  "seconds": 95.0,
+  "shape": [
+   192,
+   256,
+   256
+  ],
+  "zooms": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 24.8906,
+  "cnr": 11.5161,
+  "wm_cv_pct": 21.5724,
+  "brain_ml": 8684.71,
+  "csf_ml": 5430.434,
+  "gm_ml": 2009.02,
+  "wm_ml": 1245.256,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 96.0358,
+  "reg_shift_mm": 0.9481,
+  "protocol_diff": 0.0,
+  "image_change_sd": 1.8133,
+  "head_size_change_pct": 0.2006,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "PASS",
+   "F28": "FAIL",
+   "F32": "PASS",
+   "F35": "PASS"
+  },
+  "compare": {
+   "status": "N/A",
+   "kind": "unknown",
+   "z": 0.047,
+   "pct": 0.201,
+   "title": "\u2754 Can't tell: no real change"
+  }
+ },
+ {
+  "baseline": "sub-003617_acq-standard",
+  "scan": "sub-003617_acq-headmotion2",
+  "seconds": 75.9,
+  "shape": [
+   192,
+   256,
+   256
+  ],
+  "zooms": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 22.8323,
+  "cnr": 10.418,
+  "wm_cv_pct": 21.1468,
+  "brain_ml": 8640.472,
+  "csf_ml": 5389.781,
+  "gm_ml": 2012.07,
+  "wm_ml": 1238.621,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 86.879,
+  "reg_shift_mm": 1.1487,
+  "protocol_diff": 0.0,
+  "image_change_sd": 2.1053,
+  "head_size_change_pct": -0.3098,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "PASS",
+   "F28": "FAIL",
+   "F32": "PASS",
+   "F35": "PASS"
+  },
+  "compare": {
+   "status": "N/A",
+   "kind": "unknown",
+   "z": -0.073,
+   "pct": -0.31,
+   "title": "\u2754 Can't tell: no real change"
+  }
+ },
+ {
+  "baseline": "sub-01_run-01",
+  "scan": "sub-01_run-01",
+  "seconds": 67.7,
+  "shape": [
+   256,
+   256,
+   196
+  ],
+  "zooms": [
+   1.0547000169754028,
+   1.0547000169754028,
+   1.2000000476837158
+  ],
+  "removed_ident": [],
+  "bg_masked": true,
+  "snr_wm": 18.6996,
+  "cnr": 8.8593,
+  "wm_cv_pct": 16.9361,
+  "brain_ml": 7232.3797,
+  "csf_ml": 4448.5738,
+  "gm_ml": 1831.1648,
+  "wm_ml": 952.6411,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": null,
+  "reg_shift_mm": null,
+  "protocol_diff": null,
+  "image_change_sd": null,
+  "status": "WARN",
+  "gates": {
+   "F26": "PASS",
+   "F27": "N/A",
+   "F28": "WARN",
+   "F32": "N/A",
+   "F35": "N/A"
+  }
+ },
+ {
+  "baseline": "sub-01_run-01",
+  "scan": "sub-01_run-02",
+  "seconds": 58.5,
+  "shape": [
+   256,
+   256,
+   196
+  ],
+  "zooms": [
+   1.0547000169754028,
+   1.0547000169754028,
+   1.2000000476837158
+  ],
+  "removed_ident": [],
+  "bg_masked": true,
+  "snr_wm": 18.6392,
+  "cnr": 8.8193,
+  "wm_cv_pct": 16.1057,
+  "brain_ml": 6744.5685,
+  "csf_ml": 4067.4241,
+  "gm_ml": 1732.024,
+  "wm_ml": 945.1204,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 99.5484,
+  "reg_shift_mm": 4.1607,
+  "protocol_diff": null,
+  "image_change_sd": 4.0691,
+  "head_size_change_pct": -6.7448,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "PASS",
+   "F28": "WARN",
+   "F32": "FAIL",
+   "F35": "N/A"
+  },
+  "compare": {
+   "status": "FAIL",
+   "kind": "session",
+   "z": -1.644,
+   "pct": -6.745,
+   "title": "\ud83c\udfaf This session went wrong"
+  }
+ },
+ {
+  "baseline": "sub-01_run-01",
+  "scan": "sub-01_run-03",
+  "seconds": 53.8,
+  "shape": [
+   256,
+   256,
+   196
+  ],
+  "zooms": [
+   1.0547000169754028,
+   1.0547000169754028,
+   1.2000000476837158
+  ],
+  "removed_ident": [],
+  "bg_masked": true,
+  "snr_wm": 18.6846,
+  "cnr": 8.8887,
+  "wm_cv_pct": 16.8229,
+  "brain_ml": 6901.6788,
+  "csf_ml": 4194.8109,
+  "gm_ml": 1770.3988,
+  "wm_ml": 936.4691,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 100.3316,
+  "reg_shift_mm": 9.0132,
+  "protocol_diff": null,
+  "image_change_sd": 4.4618,
+  "head_size_change_pct": -4.5725,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "PASS",
+   "F28": "WARN",
+   "F32": "FAIL",
+   "F35": "N/A"
+  },
+  "compare": {
+   "status": "FAIL",
+   "kind": "session",
+   "z": -1.103,
+   "pct": -4.573,
+   "title": "\ud83c\udfaf This session went wrong"
+  }
+ },
+ {
+  "baseline": "sub-01_run-01",
+  "scan": "sub-01_run-04",
+  "seconds": 57.2,
+  "shape": [
+   256,
+   256,
+   196
+  ],
+  "zooms": [
+   1.0547000169754028,
+   1.0547000169754028,
+   1.2000000476837158
+  ],
+  "removed_ident": [],
+  "bg_masked": true,
+  "snr_wm": 18.7718,
+  "cnr": 8.9326,
+  "wm_cv_pct": 16.2269,
+  "brain_ml": 6945.4345,
+  "csf_ml": 4231.2929,
+  "gm_ml": 1773.1527,
+  "wm_ml": 940.989,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 100.8272,
+  "reg_shift_mm": 5.7103,
+  "protocol_diff": null,
+  "image_change_sd": 4.1163,
+  "head_size_change_pct": -3.9675,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "PASS",
+   "F28": "WARN",
+   "F32": "FAIL",
+   "F35": "N/A"
+  },
+  "compare": {
+   "status": "FAIL",
+   "kind": "session",
+   "z": -0.954,
+   "pct": -3.968,
+   "title": "\ud83c\udfaf This session went wrong"
+  }
+ },
+ {
+  "baseline": "sub-101_ses-1",
+  "scan": "sub-101_ses-1",
+  "seconds": 112.0,
+  "shape": [
+   192,
+   288,
+   288
+  ],
+  "zooms": [
+   0.89000004529953,
+   0.8888888955116272,
+   0.8888888955116272
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 17.5736,
+  "cnr": 8.5217,
+  "wm_cv_pct": 21.2257,
+  "brain_ml": 8424.4577,
+  "csf_ml": 5273.1701,
+  "gm_ml": 2367.961,
+  "wm_ml": 783.3266,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": null,
+  "reg_shift_mm": null,
+  "protocol_diff": null,
+  "image_change_sd": null,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "N/A",
+   "F28": "FAIL",
+   "F32": "N/A",
+   "F35": "N/A"
+  }
+ },
+ {
+  "baseline": "sub-101_ses-1",
+  "scan": "sub-101_ses-2",
+  "seconds": 112.1,
+  "shape": [
+   192,
+   288,
+   288
+  ],
+  "zooms": [
+   0.89000004529953,
+   0.8888888955116272,
+   0.8888888955116272
+  ],
+  "removed_ident": [
+   "DeviceSerialNumber",
+   "InstitutionAddress",
+   "InstitutionName"
+  ],
+  "bg_masked": true,
+  "snr_wm": 21.3466,
+  "cnr": 9.9134,
+  "wm_cv_pct": 23.9886,
+  "brain_ml": 7983.1168,
+  "csf_ml": 4799.3423,
+  "gm_ml": 2247.9926,
+  "wm_ml": 935.7818,
+  "ghost_pct": 0.0,
+  "ghost_method": "background masked to zero by the source and free of ghosts",
+  "motion_rating": 1,
+  "cnr_pct_baseline": 116.3311,
+  "reg_shift_mm": 11.9346,
+  "protocol_diff": 0.0,
+  "image_change_sd": 5.361,
+  "head_size_change_pct": -5.2388,
+  "status": "FAIL",
+  "gates": {
+   "F26": "PASS",
+   "F27": "PASS",
+   "F28": "FAIL",
+   "F32": "FAIL",
+   "F35": "PASS"
+  },
+  "compare": {
+   "status": "FAIL",
+   "kind": "session",
+   "z": -1.268,
+   "pct": -5.239,
+   "title": "\ud83c\udfaf This session went wrong"
+  }
+ }
+]

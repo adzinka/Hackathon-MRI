@@ -1,10 +1,13 @@
 """Structural T1-weighted MRI: read, de-identify, segment, measure quality and volumes, simulate follow-ups.
 
 Quality metrics map to the ScanTwin catalogue's T1w rows:
-  F26 subject motion        -> ghost signal in the background along the phase-encode axis (rating 1-4, team proposal)
+  F26 subject motion        -> ghost signal in the background along the phase-encode axis (rating 1-4, team proposal);
+                               N/A when the source set the background to zero (nothing to see), never PASS
   F27 low SNR / CNR         -> grey/white contrast-to-noise as % of the baseline scan (needs a baseline)
-  F28 intensity bias field  -> coefficient of variation of white-matter intensity (%)
-  F32 registration error    -> rigid shift between sessions found by phase correlation (mm)
+  F28 intensity bias field  -> coefficient of variation of the estimated bias field in white matter (%)
+  F32 registration error    -> does the region outline follow the head? outline displacement minus head displacement
+                               (mm; needs both outlines). Repositioning the head is not an error: the head shift found
+                               by phase correlation is reported and the images are aligned before they are compared
   F33 stated vs implied u   -> volume uncertainty carried from the registration error (3 sigma_b / r_eq)
   F35 protocol mismatch     -> TR / TE / TI / flip angle / field from the sidecar
 Noise is measured inside white matter (as MRIQC's snr_wm), so it also works when the background was masked to zero.
@@ -47,6 +50,8 @@ class T1Scan:
     labels: np.ndarray | None = None      # 0 bg, 1 CSF, 2 GM, 3 WM
     bias: np.ndarray | None = None        # estimated multiplicative bias field (1 = none)
     bg_masked: bool = False               # background set to exactly zero by the source pipeline
+    bg_noise_free: bool = False           # background has no noise floor (SIMULATED motion on a masked source)
+    brain_mask: bool = True               # False: automatic head mask (no skull stripping), so no brain tissue classes
 
     @property
     def voxel_mm3(self) -> float:
@@ -67,13 +72,23 @@ def deidentify(meta: dict) -> tuple[dict, list]:
     return clean, sorted(removed)
 
 
+def _masked_source(d: np.ndarray) -> bool:
+    """True when the source pipeline set everything outside the brain to exactly zero (StarterPack): then the non-zero
+    voxels are all tissue and almost none is dark. Defaced real scans also contain zeros (face, padding), but their
+    non-zero voxels include the noise background, a large dark fraction."""
+    nz = d[d != 0]
+    return bool((d == 0).mean() > 0.2 and nz.size > 0 and (nz < 0.05 * np.percentile(nz, 99)).mean() < 0.01)
+
+
 def _auto_mask(d: np.ndarray) -> np.ndarray:
-    """Head/brain mask: exact non-zero support if the background was masked, else Otsu + largest component + fill."""
-    if (d == 0).mean() > 0.2:
+    """Head/brain mask: exact non-zero support if the source masked the background, else Otsu on the non-zero voxels
+    (zeros from defacing or padding are not background noise) + largest component + fill."""
+    if _masked_source(d):
         m = d > 0
     else:
         from skimage.filters import threshold_otsu
-        m = d > threshold_otsu(d)
+        nz = d[d != 0]
+        m = d > threshold_otsu(nz if nz.size else d)
     lab, n = ndimage.label(m)
     if n > 1:
         sizes = ndimage.sum(m, lab, range(1, n + 1))
@@ -109,31 +124,39 @@ def load(image: Path | bytes, *, name: str = "t1w.nii.gz", mask=None, roi=None, 
              f"{zooms[0]:.2f}×{zooms[1]:.2f}×{zooms[2]:.2f} mm",
              f"de-identify: removed {len(removed)} identifying field(s): {', '.join(removed) or 'none'}"]
     mk, _ = _nii(mask, "mask.nii.gz")
+    brain = True
     if mk is not None:
         mk = mk > 0.5
         steps.append("brain mask: provided")
     else:
         mk = _auto_mask(d)
-        steps.append("brain mask: estimated (non-zero support or Otsu threshold + largest component); "
-                     "no skull stripping, so on real data it is a head mask")
+        brain = _masked_source(d)
+        steps.append("brain mask: the source already removed everything outside the brain" if brain else
+                     "head mask only (Otsu + largest component): ScanTwin does not strip the skull, so contrast, "
+                     "uniformity and tissue volumes need a brain mask and are not measured")
     rr, _ = _nii(roi, "roi.nii.gz")
     if rr is not None:
         steps.append(f"region of interest: provided ({(rr > 0.5).sum()} voxels above 0.5)")
     scan = T1Scan(d, img.affine, zooms, mk, rr, meta, removed, steps, _sha(raw), Path(name).name,
-                  bg_masked=bool((d[~ndimage.binary_dilation(mk, iterations=2)] == 0).mean() > 0.9))
+                  bg_masked=bool(_masked_source(d)), brain_mask=brain)
     segment(scan)
     return scan
 
 
-def _kmeans(v: np.ndarray, k: int, iters: int = 30) -> tuple[np.ndarray, np.ndarray]:
+def _kmeans(v: np.ndarray, k: int, iters: int = 30, bins: int = 1024) -> tuple[np.ndarray, np.ndarray]:
+    """1-D k-means on a fine histogram of the intensities (same centres as on the voxels to within a bin width,
+    seconds instead of a minute on a 256³ volume); the voxels are then assigned to the nearest centre."""
     c = np.quantile(v, np.linspace(0.15, 0.85, k))
+    n, edges = np.histogram(v, bins=bins)
+    x = 0.5 * (edges[:-1] + edges[1:])
     for _ in range(iters):
-        a = np.argmin(np.abs(v[:, None] - c[None, :]), axis=1)
-        new = np.array([v[a == j].mean() if np.any(a == j) else c[j] for j in range(k)])
+        a = np.argmin(np.abs(x[:, None] - c[None, :]), axis=1)
+        new = np.array([np.average(x[a == j], weights=n[a == j]) if n[a == j].sum() else c[j] for j in range(k)])
         if np.allclose(new, c):
             break
         c = new
-    return np.argmin(np.abs(v[:, None] - c[None, :]), axis=1), c
+    c = np.sort(c)
+    return np.searchsorted((c[1:] + c[:-1]) / 2, v), c
 
 
 def _poly_basis(shape, mask):
@@ -177,13 +200,13 @@ def _ghost_pct(scan: T1Scan, noise: float, pe_axis: int = 1) -> tuple[float | No
     Preferred: phase-encode band vs frequency-encode band (ghosts run along the phase-encode axis). Fallback when the
     field of view is too tight for bands: whole background vs the expected noise floor (0 if the source masked it)."""
     d, m = scan.data, ndimage.binary_dilation(scan.mask, iterations=2)
-    bg = ~m
+    if scan.bg_masked:          # catalogue rule: an input that cannot be measured is N/A, never PASS
+        return None, "the background was set to zero by the source, so motion ghosts cannot be seen"
+    bg = ~m & (d != 0)          # exact zeros are removed data (defacing, padding), not background signal
     wm = d[scan.labels == 3].mean()
     if bg.sum() < 50:
         return None, "no background in the field of view"
     vals = np.abs(d[bg])
-    if (vals < 1e-9).mean() > 0.95:
-        return 0.0, "background masked to zero by the source and free of ghosts"
     proj = m.any(axis=2)
     xs, ys = np.where(proj.any(axis=1))[0], np.where(proj.any(axis=0))[0]
     pe_band, fe_band = np.zeros_like(proj), np.zeros_like(proj)
@@ -195,7 +218,7 @@ def _ghost_pct(scan: T1Scan, noise: float, pe_axis: int = 1) -> tuple[float | No
     fe = (fe_band & ~pe_band)[:, :, None] & bg
     if pe.sum() >= 200 and fe.sum() >= 200:
         return float(100 * (np.abs(d[pe]).mean() - np.abs(d[fe]).mean()) / wm), "phase- vs frequency-encode background"
-    floor = 0.0 if scan.bg_masked else noise * math.sqrt(math.pi / 2)
+    floor = 0.0 if scan.bg_noise_free else noise * math.sqrt(math.pi / 2)    # Rayleigh mean of pure noise
     return float(100 * max(0.0, vals.mean() - floor) / wm), "background above the noise floor"
 
 
@@ -243,29 +266,47 @@ def measure(scan: T1Scan, baseline: "T1Scan | None" = None, baseline_m: dict | N
          "wm_ml": float((lab == 3).sum() * v3 / 1000),
          "roi_mm3": None if scan.roi is None else float(scan.roi.sum() * v3)}
     m["ghost_pct"], m["ghost_method"] = _ghost_pct(scan, noise)
+    m["head_ml"] = float(scan.mask.sum() * v3 / 1000)
+    m["na_reasons"] = {}
+    if not scan.brain_mask:     # a head mask holds scalp fat (brighter than white matter in T1w): no brain classes
+        why = "needs a brain mask: ScanTwin does not strip the skull (upload a brain mask with the scan)"
+        for k in ("snr_wm", "cnr", "wm_cv_pct", "brain_ml", "csf_ml", "gm_ml", "wm_ml"):
+            m[k] = None
+        m["na_reasons"].update({"wm_cv_pct": why, "cnr_pct_baseline": why})
     m["motion_rating"] = motion_rating(m["ghost_pct"])
     # volume uncertainty: single scan -> segmentation repeatability 3 % (StarterPack baseline); a follow-up whose mask
     # was propagated through a registration carries 3 sigma_b / r_eq (Dossier §3.10, F33)
-    m.update({"cnr_pct_baseline": None, "reg_shift_mm": None, "protocol_diff": None, "image_change_sd": None})
+    m.update({"cnr_pct_baseline": None, "reg_shift_mm": None, "head_shift_mm": None, "protocol_diff": None,
+              "image_change_sd": None})
     if m["roi_mm3"]:
         r_eq = (3 * m["roi_mm3"] / (4 * math.pi)) ** (1 / 3)
         m["roi_r_eq_mm"] = r_eq
         m["roi_u_rel"] = 0.03
     if baseline is not None:
         bm = baseline_m or measure(baseline)
-        m["cnr_pct_baseline"] = 100 * m["cnr"] / bm["cnr"]
+        m["cnr_pct_baseline"] = 100 * m["cnr"] / bm["cnr"] if m["cnr"] and bm["cnr"] else None
+        if m["cnr_pct_baseline"] is None and "cnr_pct_baseline" not in m["na_reasons"]:
+            m["na_reasons"]["cnr_pct_baseline"] = "the baseline has no brain mask, so its contrast was not measured"
+        # the head may lie elsewhere in the second scan (repositioning): that is not an error, the scans are aligned.
+        # F32 asks whether the region outline followed the head: outline displacement minus head displacement.
         sh = phase_shift_mm(baseline.data, d, scan.zooms)
-        m["reg_shift_mm"] = float(np.linalg.norm(sh))
-        if scan.roi is not None and m["roi_mm3"]:
+        m["head_shift_mm"] = float(np.linalg.norm(sh))
+        if scan.roi is not None and baseline.roi is not None and m["roi_mm3"] and bm.get("roi_mm3"):
+            c0 = np.array(ndimage.center_of_mass(baseline.roi)) * np.asarray(scan.zooms)
+            c1 = np.array(ndimage.center_of_mass(scan.roi)) * np.asarray(scan.zooms)
+            m["reg_shift_mm"] = float(np.linalg.norm((c1 - c0) - sh))
             m["roi_u_rel"] = max(0.03, 3 * m["reg_shift_mm"] / m["roi_r_eq_mm"])
-        diff = (d - baseline.data)[scan.mask & baseline.mask]
+        aligned = ndimage.shift(d, -sh / np.asarray(scan.zooms), order=1, mode="nearest") if np.any(np.abs(sh) > 0.05) else d
+        amask = ndimage.shift(scan.mask.astype(float), -sh / np.asarray(scan.zooms), order=0) > 0.5
+        core2 = ndimage.binary_erosion(amask & baseline.mask, iterations=1)
+        diff = (aligned - baseline.data)[core2 if core2.sum() > 50 else amask & baseline.mask]
         m["image_change_sd"] = float(diff.std() / (math.sqrt(2) * noise))      # 1 = noise only
         bp = {k: baseline.meta.get(k) for k in PROTOCOL_KEYS}
         cp = {k: scan.meta.get(k) for k in PROTOCOL_KEYS}
         known = [k for k in PROTOCOL_KEYS if bp[k] is not None and cp[k] is not None]
         m["protocol_diff"] = float(sum(abs(bp[k] - cp[k]) > 1e-9 for k in known)) if known else None
-        m["volume_ratios"] = {k: m[k] / bm[k] for k in ("brain_ml", "gm_ml", "wm_ml", "csf_ml") if bm[k]}
-        m["head_size_change_pct"] = 100 * (m["brain_ml"] / bm["brain_ml"] - 1)
+        m["volume_ratios"] = {k: m[k] / bm[k] for k in ("brain_ml", "gm_ml", "wm_ml", "csf_ml") if bm[k] and m[k]}
+        m["head_size_change_pct"] = (100 * (m["brain_ml"] / bm["brain_ml"] - 1)) if m["brain_ml"] and bm["brain_ml"] else None
     return m
 
 
@@ -331,7 +372,9 @@ def degrade(scan: T1Scan, fault: str, strength: float, seed: int = 0) -> T1Scan:
         d = d * mask                      # keep the masked-background convention of the source
     out = T1Scan(d, scan.affine, scan.zooms, mask, roi, dict(scan.meta), scan.removed,
                  scan.steps[:2] + [f"SIMULATED follow-up: '{fault}' strength {strength} (seed {seed})"],
-                 scan.source_sha256, scan.name, bg_masked=scan.bg_masked)
+                 scan.source_sha256, scan.name, brain_mask=scan.brain_mask,
+                 bg_masked=scan.bg_masked and fault != "motion",   # ghosts fill it
+                 bg_noise_free=scan.bg_masked and fault == "motion")
     segment(out)
     return out
 
@@ -381,50 +424,83 @@ def build_packet(scan: T1Scan, m: dict, g: dict, *, packet_id: str, subject_id: 
 
 
 # --------------------------------------------------------------------------------- patient, machine, session or processing?
-MACHINE_GATES = {"F27": "the image got noisier (receive coil / RF chain)", "F28": "the brightness became uneven (coil / transmitter)"}
+QUALITY_GATES = {"F27": "the image got noisier (receive coil / RF chain, or motion the ghost check could not see)",
+                 "F28": "the brightness became uneven (coil / transmitter, or head position in the coil)"}
 SIDE_EFFECT = {"F27": "made the image noisier", "F28": "made the brightness uneven"}
-SESSION_GATES = {"F26": "the patient moved during the scan", "F32": "the head was positioned differently and the scans do not line up",
-                 "F35": "the scan settings differ from last time"}
+SESSION_GATES = {"F26": "the patient moved during the scan",
+                 "F32": "the region outline did not follow the head between the scans"}
 
 
-def compare(m0: dict, g0: dict, m1: dict, g1: dict) -> dict:
-    """Who explains the change between two T1w scans? Returns (status colour, title, text, kind, z)."""
+def compare(m0: dict, g0: dict, m1: dict, g1: dict, scanner: dict | None = None) -> dict:
+    """Who explains the change between two T1w scans? Returns status, title, text, kind, z, pct.
+
+    kind: session (patient moved / outline misplaced), protocol (F35), quality (image got worse, cause not proven),
+    geometry (size changed, not proven), machine (only with scanner evidence), processing, patient, unknown.
+    A bad image alone never blames the scanner: that needs `scanner` = {"status": PASS/WARN/FAIL, "source": text} from
+    real scanner QC (phantom, system_qc_id, scanner-twin history of the same machine)."""
+    bad_scanner = bool(scanner) and scanner.get("status") in ("WARN", "FAIL")
     use_roi = m0.get("roi_mm3") is not None and m1.get("roi_mm3") is not None
     key = "roi_mm3" if use_roi else "brain_ml"
     v0, v1 = m0[key], m1[key]
-    u0 = v0 * (m0.get("roi_u_rel", 0.03) if use_roi else 0.03)
-    u1 = v1 * (m1.get("roi_u_rel", 0.03) if use_roi else 0.03)
-    z = (v1 - v0) / math.hypot(u0, u1)
+    measured = bool(v0 and v1)       # no brain mask and no outline: there is no volume to compare
+    if measured:
+        u0 = v0 * (m0.get("roi_u_rel", 0.03) if use_roi else 0.03)
+        u1 = v1 * (m1.get("roi_u_rel", 0.03) if use_roi else 0.03)
+        z = (v1 - v0) / math.hypot(u0, u1)
+    else:
+        z = None
     # every check that got worse (WARN or FAIL), not only the ones that decided the verdict: motion may only WARN while
     # the contrast it ruined FAILs, and motion is still the explanation
     before = {y["id"] for y in g0["gates"] if y["status"] in ("WARN", "FAIL")}
     new_bad = [x for x in g1["gates"] if x["status"] in ("WARN", "FAIL") and x["id"] not in before]
-    pct = 100 * (v1 / v0 - 1)
+    pct = 100 * (v1 / v0 - 1) if measured else None
     what = "region" if use_roi else "brain"
     if new_bad:
         ids = [x["id"] for x in new_bad]
         sess = [SESSION_GATES[i] for i in ids if i in SESSION_GATES]
-        mach = [MACHINE_GATES[i] for i in sorted(ids, key=lambda i: i != "F28") if i in MACHINE_GATES]   # most specific first
+        qual = [QUALITY_GATES[i] for i in sorted(ids, key=lambda i: i != "F28") if i in QUALITY_GATES]   # most specific first
         fail = g1["status"] == "FAIL"
+        tail = ("The result is not used. " if fail else "It counts at reduced weight. ")
         if sess:      # motion or positioning also degrades contrast; they explain the quality loss first
             return {"status": "FAIL" if fail else "WARN", "kind": "session", "z": z, "pct": pct,
                     "title": "🎯 This session went wrong" if fail else "🎯 Probably this session",
                     "text": f"The later scan is not comparable: {' and '.join(sess)}"
-                            + (", which also " + " and ".join(SIDE_EFFECT[i] for i in ids if i in SIDE_EFFECT) if mach else "")
-                            + ". "
-                            + ("The result is not used. " if fail else "It counts at reduced weight. ")
-                            + "Repeat the scan with care; this says nothing about the patient."}
-        return {"status": "FAIL" if fail else "WARN", "kind": "machine", "z": z, "pct": pct,
-                "title": "🛠 It's the machine" if fail else "🛠 Probably the machine",
-                "text": f"The scan quality fell: {' and '.join(mach + sess)}. "
-                        + ("The result is not used. " if fail else "It counts at reduced weight. ")
-                        + "Check the scanner before reading any change."}
+                            + (", which also " + " and ".join(SIDE_EFFECT[i] for i in ids if i in SIDE_EFFECT) if qual else "")
+                            + ". " + tail + "Repeat the scan with care; this says nothing about the patient."}
+        if "F35" in ids and not qual:
+            return {"status": "FAIL" if fail else "WARN", "kind": "protocol", "z": z, "pct": pct,
+                    "title": "📋 The scan settings changed",
+                    "text": "The later scan used different settings (TR, TE, TI, flip angle or field; catalogue F35), so "
+                            "contrast and volumes are not directly comparable. This is a protocol difference, not a "
+                            "scanner fault. " + tail + "Repeat with the baseline protocol."}
+        if bad_scanner:
+            return {"status": "FAIL" if fail else "WARN", "kind": "machine", "z": z, "pct": pct,
+                    "title": "🛠 It's the machine" if fail else "🛠 Probably the machine",
+                    "text": f"The scan quality fell: {' and '.join(qual)}, and the scanner's own QC is "
+                            f"{scanner['status']} ({scanner.get('source', 'scanner QC')}). " + tail
+                            + "Fix the scanner before reading any change."}
+        return {"status": "FAIL" if fail else "WARN", "kind": "quality", "z": z, "pct": pct,
+                "title": "❔ The image got worse; cause not proven",
+                "text": f"The scan quality fell: {' and '.join(qual)}. " + tail
+                        + "A bad image alone does not prove a scanner fault: check the scanner's daily QC (phantom) and "
+                          "repeat the scan before reading any change."}
+    if not measured:
+        return {"status": "N/A", "kind": "unknown", "z": None, "pct": None,
+                "title": "❔ Quality compared; no volume to compare",
+                "text": "Both scans pass the checks that can run without a brain mask (motion, protocol). No brain "
+                        "volume was measured because ScanTwin does not strip the skull: upload a brain mask or a region "
+                        "outline for both scans to compare volumes."}
     head = m1.get("head_size_change_pct")
     if head is not None and abs(head) > 2.0:
-        return {"status": "WARN", "kind": "machine", "z": z, "pct": pct, "title": "🛠 Probably the machine (geometry)",
-                "text": f"The whole head measures {head:+.1f} % in size. Real brains do not change size like that in months, "
-                        "but a gradient calibration error does (catalogue F01). Check the scanner geometry with a phantom "
-                        "before believing any volume change."}
+        if bad_scanner:
+            return {"status": "WARN", "kind": "machine", "z": z, "pct": pct, "title": "🛠 Probably the machine (geometry)",
+                    "text": f"The whole head measures {head:+.1f} % in size and the scanner's QC is {scanner['status']} "
+                            f"({scanner.get('source', 'scanner QC')}): a gradient calibration error (catalogue F01). "
+                            "Recalibrate before believing any volume change."}
+        return {"status": "WARN", "kind": "geometry", "z": z, "pct": pct, "title": "❔ The head size changed: check the geometry",
+                "text": f"The whole head measures {head:+.1f} % in size. Brains do not change size like that in months; a "
+                        "gradient calibration error does (catalogue F01), but so does a different field of view or neck "
+                        "coverage. Scan a phantom to check the scanner geometry before believing any volume change."}
     img_same = (m1.get("image_change_sd") or 0) < 1.5 and all(abs(r - 1) < 0.02 for r in (m1.get("volume_ratios") or {}).values())
     if abs(z) >= 1.96 and img_same:
         return {"status": "WARN", "kind": "processing", "z": z, "pct": pct, "title": "⚙️ The processing, not the patient",

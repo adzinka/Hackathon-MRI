@@ -156,9 +156,50 @@ T1W_GATES = [
 NA_REASON.update({
     "motion_rating": "the background was masked to zero, so motion ghosts cannot be measured",
     "cnr_pct_baseline": "needs a baseline scan to compare with",
-    "reg_shift_mm": "needs a baseline scan to compare with",
+    "reg_shift_mm": "needs a baseline scan and the region outline of both scans (the images are aligned automatically)",
     "protocol_diff": "needs the protocol (sidecar) of both scans",
 })
+
+
+# ---------------------------------------------------------------------------- TRUSTY / WARNING / ERROR
+# The catalogue's decision rules with the names used on screen: PASS -> TRUSTY (update), WARN -> WARNING
+# (update_with_warning), FAIL -> ERROR (reject). A check that cannot run is N/A (catalogue rule 3, never FAIL); but if a
+# check of the minimum set is N/A the scan cannot be called TRUSTY ("no information" is not "no error").
+STATE = {"PASS": "TRUSTY", "WARN": "WARNING", "FAIL": "ERROR"}
+CATEGORIES = [
+    ("DICOM integrity", lambda f: f.get("kind") in ("file", "geometry") or f["id"] == "F54"),
+    ("Data integrity", lambda f: f["id"] in ("F56", "F57", "F58", "F59")),
+    ("Motion", lambda f: f["id"] == "F26"),
+    ("Image quality", lambda f: f["id"] in ("F27", "F28")),
+    ("Protocol", lambda f: f["id"] == "F35"),
+    ("Comparison between scans", lambda f: f["id"] in ("F32", "F33", "F34")),
+]
+MINIMUM_T1W = ("F26", "F28")      # team decision pending (docs/scantwin/INFORME_T1w_DICOM.md §5.2)
+
+
+def classify(gates_result: dict | None = None, dicom_check: dict | None = None,
+             minimum: tuple = MINIMUM_T1W) -> dict:
+    """One state for the scan and one per category. Each item keeps its catalogue ID, value, reason and fix."""
+    items = list((dicom_check or {}).get("findings", [])) + list((gates_result or {}).get("gates", []))
+    cats = []
+    for name, sel in CATEGORIES:
+        own = [x for x in items if sel(x)]
+        if not own:
+            continue
+        sts = [x["status"] for x in own if x["status"] in RANK]
+        st = max(sts, key=RANK.get) if sts else "N/A"
+        cats.append({"category": name, "status": STATE.get(st, "N/A"), "items": own})
+    worst = max((x["status"] for x in items if x["status"] in RANK), key=RANK.get, default="PASS")
+    present = {x["id"]: x for x in items}
+    unchecked = [present[i] for i in minimum if i in present and present[i]["status"] not in RANK]
+    state = STATE[worst]
+    if state == "TRUSTY" and unchecked:
+        state = "WARNING"
+    reasons = [f"{x['id']} {x['label']}: {x['status']}" + (f" ({x['reason']})" if x.get("reason") else "")
+               for x in items if x["status"] == worst and worst != "PASS"]
+    reasons += [f"{x['id']} {x['label']} could not be checked: {x.get('reason') or 'no data'}" for x in unchecked]
+    return {"state": state, "categories": cats, "reasons": reasons, "unchecked": [x["id"] for x in unchecked],
+            "verdict": {"TRUSTY": "update", "WARNING": "update_with_warning", "ERROR": "reject"}[state]}
 
 
 def evaluate_t1w(m: dict) -> dict:
@@ -166,8 +207,9 @@ def evaluate_t1w(m: dict) -> dict:
     for g in T1W_GATES:
         v = m.get(g.metric)
         st = g.status(v)
+        why = (m.get("na_reasons") or {}).get(g.metric) or NA_REASON.get(g.metric, "not available for this scan")
         results.append({"id": g.id, "label": g.label, "value": v, "unit": g.unit, "pass_if": g.pass_if, "status": st,
-                        "reason": "" if v is not None else NA_REASON.get(g.metric, "not available for this scan"),
+                        "reason": "" if v is not None else why,
                         "applies": True, "fix": row(g.id).get("Fix for the next scan", ""),
                         "source": row(g.id).get("Threshold source", "")})
     active = [r for r in results if r["status"] in RANK]
