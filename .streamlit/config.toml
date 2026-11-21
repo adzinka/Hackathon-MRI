@@ -1,0 +1,6 @@
+# The pitch deck (docs/story.html, slide 4.1) links to http://localhost:8501/?demo=machine|caution: keep the port fixed
+[server]
+port = 8501
+
+[browser]
+gatherUsageStats = false

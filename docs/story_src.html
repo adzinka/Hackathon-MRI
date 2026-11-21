@@ -218,6 +218,8 @@ html.model:not(.explore) .x-top { display: none; }
 .play::after { animation-delay: 1.2s; }
 @keyframes ripple { from { transform: scale(1); opacity: .55; } to { transform: scale(1.9); opacity: 0; } }
 .play i { width: 28px; height: 32px; margin-left: 7px; background: var(--signal); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+a.cue { text-decoration: none; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+a.cue:hover, a.cue:focus-visible { transform: translateY(-3px); box-shadow: 0 24px 70px rgba(var(--signal-rgb), .42); outline: none; }
 .cue b { display: block; font: 800 42px/1.04 var(--f-display); color: var(--night); letter-spacing: -.03em; }
 .cue small { display: block; margin-top: 10px; font: 500 16px/1.3 var(--f-mono); color: rgba(var(--night-rgb), .74); letter-spacing: .02em; }
   border-radius: 16px; border: 1px solid var(--line); background: var(--panel); }
@@ -554,8 +556,9 @@ html.flow .chip { font-size: 13px; }
       <h2 class="split" id="h-demo" data-d="80">See it in action</h2>
     </div>
     <div class="main">
-      <div class="cue" data-b style="--d:500"><span class="play" aria-hidden="true"><i></i></span>
-        <span><b>Open the ScanTwin prototype</b><small>Runs on the team laptop · streamlit run app.py</small></span></div>
+      <a class="cue" id="demo-link" href="http://localhost:8501/?demo=machine" target="_blank" rel="noopener" data-b style="--d:500"
+         title="Opens the app on this laptop (start it first: streamlit run app.py)"><span class="play" aria-hidden="true"><i></i></span>
+        <span><b>Open the ScanTwin prototype</b><small>Runs on the team laptop · streamlit run app.py · localhost:8501</small></span></a>
     </div>
   </section>
 
@@ -1035,7 +1038,7 @@ html.flow .chip { font-size: 13px; }
 
   addEventListener("keydown", function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    var k = e.key, onBtn = e.target && e.target.tagName === "BUTTON";
+    var k = e.key, onBtn = e.target && (e.target.tagName === "BUTTON" || e.target.tagName === "A");
     if (k === "n" || k === "N") { toggleNotes(); return; }
     if (k === "v" || k === "V") { setVariant(variant === "machine" ? "caution" : "machine"); return; }
     if (k === "e" || k === "E") { setExplore(!exploring); return; }
@@ -1089,6 +1092,7 @@ html.flow .chip { font-size: 13px; }
     variant = v; store.set("scantwin.verdict", v);
     var V = VAR[v];
     document.getElementById("b-verdict-t").textContent = V.btn; document.getElementById("b-verdict-dot").style.background = V.dot;
+    document.getElementById("demo-link").href = "http://localhost:8501/?demo=" + v;   // app.py opens the same verdict
     PH.build();
     if (three) three.refresh();
     Array.prototype.forEach.call(document.querySelectorAll(".seg [data-v]"), function (b) { b.setAttribute("aria-pressed", b.dataset.v === v ? "true" : "false"); });
