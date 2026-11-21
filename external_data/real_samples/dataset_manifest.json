@@ -1,0 +1,94 @@
+{
+  "manifest_version": "1.0",
+  "purpose": "Real (not simulated) MRI acquisitions for testing ScanTwin's T1w and 1H-MRS pipelines.",
+  "dataset": {
+    "name": "fMRS data of prolonged motor activation acquired at 3 Tesla",
+    "creators": ["Wilson, Martin"],
+    "doi": "10.5281/zenodo.13753316",
+    "record_url": "https://zenodo.org/records/13753316",
+    "publication_date": "2024-09-12",
+    "license": "CC-BY-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "related_publication": {
+      "citation": "Morelli M, Dudzikowska K, Deelchand DK, Quinn AJ, Mullins PG, Apps MAJ, Wilson M. Functional magnetic resonance spectroscopy of prolonged motor activation using conventional and spectral GLM analyses. Imaging Neuroscience 2025; 3: imag_a_00452.",
+      "doi": "10.1162/imag_a_00452"
+    },
+    "archive": {
+      "filename": "fMRS_MOTOR_TASK_DATA_CLEAN.zip",
+      "download_url": "https://zenodo.org/records/13753316/files/fMRS_MOTOR_TASK_DATA_CLEAN.zip?download=1",
+      "size_bytes": 1679792284,
+      "md5": "905e30dc42edca2914762d116dc63045",
+      "layout": "BIDS-like; 23 participants (sub-01 .. sub-23); per participant anat/sub-XX_T1w.nii.gz, mrs/sub-XX_svs.nii.gz + .json, mrs/sub-XX_ref.nii.gz + .json, func/sub-XX_bold.nii.gz (22 of 23)"
+    }
+  },
+  "participant": "sub-01",
+  "download_date": "2026-11-21",
+  "retrieval_method": "Only the listed archive members were read from the Zenodo archive with HTTP range requests (scripts/fetch_real_samples.py); each member's CRC-32 was verified by Python's zipfile on extraction. The full 1.68 GB archive was not downloaded, so the archive MD5 above is Zenodo's value and was not re-computed locally.",
+  "files": [
+    {
+      "repo_path": "external_data/real_samples/T1w/sub-01_T1w.nii.gz",
+      "archive_member": "sub-01/anat/sub-01_T1w.nii.gz",
+      "modality": "T1w",
+      "format": "NIfTI-1 (gzip), float32, 208 x 256 x 256, 1.0 mm isotropic, RAS, qform/sform code 1",
+      "size_bytes": 18724336,
+      "crc32": "3ea70bc4",
+      "sha256": "8610d1cd6566468ab404a078a2dac688f22b73509e230e713e25d7114d8e533c",
+      "modified": false,
+      "converted": false,
+      "notes": "Defaced by the data providers (face region set to zero). No JSON sidecar in the archive. Header 'descrip' holds a processing-tool string with a timestamp ('2203.6-dirty 2022-09-08T15:38:56+01:00'); kept unmodified, see README."
+    },
+    {
+      "repo_path": "external_data/real_samples/MRS/sub-01_svs.nii.gz",
+      "archive_member": "sub-01/mrs/sub-01_svs.nii.gz",
+      "modality": "1H-MRS (water-suppressed, single voxel)",
+      "format": "NIfTI-MRS v0.2 (NIfTI-2, gzip), complex128, shape 1 x 1 x 1 x 2048 x 1 x 750",
+      "size_bytes": 23487096,
+      "crc32": "b616def6",
+      "sha256": "12dfc9000d87a675d9e48ae5967331774a51c285e8e3582ab0bf1434a77afef5",
+      "modified": false,
+      "converted": false,
+      "notes": "Siemens 3 T (123.251 MHz), sLASER (svs_slaser_dkd), TE 28 ms, TR 2 s, 25 mm cubic voxel, 2000 Hz spectral width, 750 individual transients. Header extension has no dim_5/dim_6 tags (spec defaults: DIM_COIL size 1, DIM_DYN size 750)."
+    },
+    {
+      "repo_path": "external_data/real_samples/MRS/sub-01_svs.json",
+      "archive_member": "sub-01/mrs/sub-01_svs.json",
+      "modality": "1H-MRS sidecar",
+      "format": "JSON",
+      "size_bytes": 404,
+      "crc32": "23b5e4d0",
+      "sha256": "c71838bb35a697f177625095af10343aa7df48344f7c71b3b594d921d385218b",
+      "modified": false,
+      "converted": false,
+      "notes": "Same acquisition fields as the NIfTI-MRS header extension. No identifying fields."
+    },
+    {
+      "repo_path": "external_data/real_samples/MRS/sub-01_ref.nii.gz",
+      "archive_member": "sub-01/mrs/sub-01_ref.nii.gz",
+      "modality": "1H-MRS unsuppressed water reference",
+      "format": "NIfTI-MRS v0.2 (NIfTI-2, gzip), complex128, shape 1 x 1 x 1 x 2048",
+      "size_bytes": 31132,
+      "crc32": "0d598f5d",
+      "sha256": "5629254e9d0da29ab62a74afe91bf335100780fa518f430d9eefb5a528cf52dd",
+      "modified": false,
+      "converted": false,
+      "notes": "Already combined to one FID by the providers; the header extension still declares dim_5 DIM_COIL / dim_6 DIM_DYN and NumberOfTransients 4 from the raw acquisition."
+    },
+    {
+      "repo_path": "external_data/real_samples/MRS/sub-01_ref.json",
+      "archive_member": "sub-01/mrs/sub-01_ref.json",
+      "modality": "1H-MRS water reference sidecar",
+      "format": "JSON",
+      "size_bytes": 528,
+      "crc32": "fd36949a",
+      "sha256": "b73869730b67afbe47d67edc5ec33c2bdb52fce3950bb48b95c1c161ca08c6ed",
+      "modified": false,
+      "converted": false,
+      "notes": "No identifying fields."
+    }
+  ],
+  "privacy_check": {
+    "date": "2026-11-21",
+    "result": "No Patient* fields, institution, operator, physician, accession or device serial fields in the NIfTI headers, NIfTI-MRS header extensions or JSON sidecars. T1w is defaced. No DICOM files are included.",
+    "automated_test": "tests/real_samples/test_mrs_real_data.py::test_no_identifying_metadata, tests/real_samples/test_t1w_real_data.py::test_header_has_no_identifying_metadata"
+  }
+}

@@ -58,6 +58,16 @@ EXAMPLES = {
                                    "roi": f"{SP}/03_BIDS_MRI/derivatives/roi/sub-01/ses-baseline/anat/sub-01_ses-baseline_space-T1w_label-ROI_probseg.nii.gz",
                                    "sidecar": f"{SP}/03_BIDS_MRI/sub-01/ses-baseline/anat/sub-01_ses-baseline_T1w.json"}]},
 }
+# Real test data (external_data/real_samples; Morelli et al., Zenodo 10.5281/zenodo.13753316, CC BY 4.0), original
+# files, listed only when present (python scripts/fetch_real_samples.py)
+REAL = REPO / "external_data/real_samples"
+for _label, _spec, _file in [
+        ("Real test data · Spectroscopy · 3 T sLASER, 750 repeats, sub-01 (Morelli et al., Zenodo, CC BY 4.0)",
+         {"kind": "mrs", "files": [REAL / "MRS/sub-01_svs.nii.gz"]}, REAL / "MRS/sub-01_svs.nii.gz"),
+        ("Real test data · Brain anatomy (T1w) · 3 T, defaced, sub-01 (Morelli et al., Zenodo, CC BY 4.0)",
+         {"kind": "t1w", "scans": [{"image": REAL / "T1w/sub-01_T1w.nii.gz"}]}, REAL / "T1w/sub-01_T1w.nii.gz")]:
+    if _file.exists():
+        EXAMPLES[_label] = _spec
 
 # plain language for every gate (Simple view): name, reason, action
 PLAIN = {

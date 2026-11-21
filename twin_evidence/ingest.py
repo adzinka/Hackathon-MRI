@@ -34,6 +34,7 @@ IDENTIFYING_PREFIXES = ("Patient",)
 IDENTIFYING_KEYS = {"InstitutionAddress", "DeviceSerialNumber", "OperatorsName", "ReferringPhysicianName",
                     "PerformingPhysicianName", "AccessionNumber", "StudyID", "OtherPatientIDs"}
 KEEP_KEYS = {"PatientPosition"}   # scan geometry, not identity
+LIST_KEYS = {"SpectrometerFrequency", "ResonantNucleus"}   # arrays in the NIfTI-MRS standard
 
 
 def sha256_file(path: Path) -> str:
@@ -74,12 +75,17 @@ def read(path: Path) -> Ingested:
     for e in img.header.extensions:
         if e.get_code() == 44:
             meta = json.loads(e.get_content())
+    # some writers wrap every scalar in a one-element list ("EchoTime": [0.028]); the standard's arrays stay lists
+    wrapped = [k for k, v in meta.items() if isinstance(v, list) and len(v) == 1 and k not in LIST_KEYS]
+    meta = {k: (v[0] if k in wrapped else v) for k, v in meta.items()}
     dwell = float(img.header["pixdim"][4])
     nu0 = float((meta.get("SpectrometerFrequency") or [REF_NU0])[0])
     clean, removed = deidentify(meta)
     steps = [f"read {path.name}: shape {tuple(data.shape)}, dwell {dwell * 1e3:.4f} ms, nu0 {nu0:.3f} MHz "
              f"({nu0 / GAMMA_MHZ_PER_T:.2f} T)"]
     steps.append(f"de-identify: removed {len(removed)} identifying field(s): {', '.join(removed) or 'none'}")
+    if wrapped:
+        steps.append(f"metadata: {len(wrapped)} scalar field(s) stored as one-element lists, read as scalars")
 
     # dimension tags: dim 5..7 of NIfTI-MRS (index 4..6 of the array)
     if data.ndim < 4 or data.shape[:3] != (1, 1, 1):
@@ -173,6 +179,42 @@ def field_scaled(m: dict, nu0: float) -> dict:
 
 def gate(m: dict, nu0: float) -> dict:
     return evaluate_mrs(field_scaled(m, nu0))
+
+
+def water_reference(path: Path) -> dict:
+    """Unsuppressed water reference (NIfTI-MRS): water linewidth and offset, informational only (no catalogue gate).
+
+    Extra axes (coils, averages) are averaged; FWHM is read on the zero-order phased real spectrum, 8x zero-filled."""
+    import nibabel as nib
+    img = nib.load(str(path))
+    data = np.asarray(img.dataobj)
+    if data.ndim < 4 or data.shape[:3] != (1, 1, 1):
+        raise ValueError(f"not a single-voxel NIfTI-MRS file (shape {data.shape})")
+    meta = {}
+    for e in img.header.extensions:
+        if e.get_code() == 44:
+            meta = json.loads(e.get_content())
+    nu0 = float(np.ravel([meta.get("SpectrometerFrequency") or REF_NU0])[0])
+    dwell = float(img.header["pixdim"][4])
+    x = data[0, 0, 0].astype(np.complex128)
+    fid = x.reshape(x.shape[0], -1).mean(axis=1)
+    n = fid.size * 8
+    sp = np.fft.fftshift(np.fft.fft(fid, n))
+    f = np.fft.fftshift(np.fft.fftfreq(n, dwell))
+    i = int(np.argmax(np.abs(sp)))
+    re = (sp * np.exp(-1j * np.angle(sp[i]))).real
+    half = re[i] / 2
+    lo, hi = i, i
+    while lo > 0 and re[lo] > half:
+        lo -= 1
+    while hi < n - 1 and re[hi] > half:
+        hi += 1
+    fwhm = float(np.interp(half, [re[hi], re[hi - 1]], [f[hi], f[hi - 1]])
+                 - np.interp(half, [re[lo], re[lo + 1]], [f[lo], f[lo + 1]]))
+    _, removed = deidentify(meta)
+    return {"shape": tuple(data.shape), "points": int(x.shape[0]), "averaged_axes": int(x.size // x.shape[0]),
+            "nu0": nu0, "dwell": dwell, "water_fwhm_hz": fwhm, "water_fwhm_ppm": fwhm / nu0,
+            "water_offset_hz": float(f[i]), "removed": removed}
 
 
 def write_derivative(ing: Ingested, path: Path) -> str:

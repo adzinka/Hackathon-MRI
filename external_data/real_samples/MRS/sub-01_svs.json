@@ -1,0 +1,15 @@
+{
+  "SpectrometerFrequency": 123.251253,
+  "ResonantNucleus": "1H",
+  "SpectralWidth": 2000,
+  "NumberOfSpectralPoints": 2048,
+  "AcquisitionVoxelSize": [25, 25, 25],
+  "ChemicalShiftOffset": 4.65,
+  "RepetitionTime": 2,
+  "EchoTime": 0.028,
+  "FlipAngle": 90,
+  "SequenceName": "%CustomerSeq%\\svs_slaser_dkd",
+  "ChemicalShiftReference": 2.4,
+  "NumberOfTransients": 750,
+  "Manufacturer": "Siemens"
+}

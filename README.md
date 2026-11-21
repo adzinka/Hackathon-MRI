@@ -43,6 +43,9 @@ The full trace is written to `out/reference_update.json`.
 ```bash
 STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q
 ```
+- **Real data** (`pytest -q tests/real_samples`, no StarterPack needed): a real 3 T T1w and a real sLASER spectrum with
+  its water reference (Morelli et al., Zenodo, CC BY 4.0) in [external_data/real_samples/](external_data/real_samples/README.md):
+  checksums, headers, privacy, and the pipeline verdicts recorded in `qc_report.json`.
 - **Golden tests:** the Cho/Cr, NAA/Cr and ROI updates, the result without the WARN policy (K = 0.486), the rejection
   of `E-t1-chobad`, and the next-measurement gain.
 - **Negative tests** (every failure path from the Data Science lecture):

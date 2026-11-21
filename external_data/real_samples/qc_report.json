@@ -1,0 +1,264 @@
+{
+ "generated_by": "scripts/run_real_samples.py",
+ "dataset_doi": "10.5281/zenodo.13753316",
+ "participant": "sub-01",
+ "t1w": {
+  "file": "external_data/real_samples/T1w/sub-01_T1w.nii.gz",
+  "loaded": true,
+  "seconds": 18.9,
+  "shape": [
+   208,
+   256,
+   256
+  ],
+  "voxel_mm": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "voxel_mm3": 1.0,
+  "background_masked": false,
+  "brain_mask_supplied": false,
+  "identifying_fields_removed": [],
+  "metrics": {
+   "snr_wm": null,
+   "cnr": null,
+   "noise": 176.3209,
+   "wm_cv_pct": null,
+   "ghost_pct": 0.0,
+   "ghost_method": "background above the noise floor",
+   "motion_rating": 1,
+   "head_ml": 2994.382,
+   "brain_ml": null,
+   "gm_ml": null,
+   "wm_ml": null,
+   "csf_ml": null,
+   "roi_mm3": null,
+   "reg_shift_mm": null,
+   "head_shift_mm": null,
+   "protocol_diff": null
+  },
+  "gates": [
+   {
+    "id": "F26",
+    "label": "Subject motion (rating 1-4)",
+    "status": "PASS",
+    "value": 1,
+    "unit": "",
+    "pass_if": "1 (none)",
+    "reason": null
+   },
+   {
+    "id": "F27",
+    "label": "Grey/white contrast vs baseline",
+    "status": "N/A",
+    "value": null,
+    "unit": "%",
+    "pass_if": "≥ 80",
+    "reason": "needs a brain mask: ScanTwin does not strip the skull (upload a brain mask with the scan)"
+   },
+   {
+    "id": "F28",
+    "label": "White-matter brightness variation (bias field)",
+    "status": "N/A",
+    "value": null,
+    "unit": "%",
+    "pass_if": "≤ 10",
+    "reason": "needs a brain mask: ScanTwin does not strip the skull (upload a brain mask with the scan)"
+   },
+   {
+    "id": "F32",
+    "label": "Registration error between sessions",
+    "status": "N/A",
+    "value": null,
+    "unit": "mm",
+    "pass_if": "≤ 2",
+    "reason": "needs a baseline scan and the region outline of both scans (the images are aligned automatically)"
+   },
+   {
+    "id": "F35",
+    "label": "Protocol vs baseline (TR, TE, TI, flip, field)",
+    "status": "N/A",
+    "value": null,
+    "unit": "",
+    "pass_if": "all match",
+    "reason": "needs the protocol (sidecar) of both scans"
+   }
+  ],
+  "catalogue_status": "PASS",
+  "state": "WARNING",
+  "reasons": [
+   "F28 White-matter brightness variation (bias field) could not be checked: needs a brain mask: ScanTwin does not strip the skull (upload a brain mask with the scan)"
+  ],
+  "unchecked_minimum_gates": [
+   "F28"
+  ]
+ },
+ "mrs": {
+  "file": "external_data/real_samples/MRS/sub-01_svs.nii.gz",
+  "loaded": true,
+  "seconds": 6.4,
+  "shape": [
+   1,
+   1,
+   1,
+   2048,
+   1,
+   750
+  ],
+  "points": 2048,
+  "transients": 750,
+  "nu0_mhz": 123.251253,
+  "field_T": 2.89,
+  "dwell_s": 0.0005000000237487257,
+  "spectral_width_hz": 2000.0,
+  "identifying_fields_removed": [],
+  "processing_steps": [
+   "read sub-01_svs.nii.gz: shape (1, 1, 1, 2048, 1, 750), dwell 0.5000 ms, nu0 123.251 MHz (2.89 T)",
+   "de-identify: removed 0 identifying field(s): none",
+   "metadata: 10 scalar field(s) stored as one-element lists, read as scalars",
+   "transients: 750 stored",
+   "orient: spectrum was mirrored (NAA found at 7.3 ppm); conjugated to the StarterPack convention",
+   "reference: NAA found at 1.982 ppm, shifted by +3.5 Hz to 2.01 ppm",
+   "phase: zero-order -50.5°"
+  ],
+  "metrics": {
+   "snr": 79.8822,
+   "fwhm_hz": 11.351,
+   "fwhm_ppm": 0.0921,
+   "water_ratio": 11.7206,
+   "drift_abs_hz": 5.2014,
+   "outlier_pct": 0.2667,
+   "shift_sd_hz": 0.5267,
+   "cho_cr": 0.6687,
+   "cho_cr_crlb": 0.0319,
+   "naa_cr": 2.115,
+   "naa_cr_crlb": 0.0641,
+   "cho_crlb_pct": 4.2467,
+   "fit_lw_hz": 7.3,
+   "te_ms": 28.0
+  },
+  "metrics_note": "fwhm_hz and drift_abs_hz are measured Hz; the gates compare 3 T-equivalent Hz (x 123.25 / nu0, i.e. the same ppm criterion)",
+  "gates": [
+   {
+    "id": "F12",
+    "label": "Linewidth (shim)",
+    "status": "WARN",
+    "value": 11.3509,
+    "unit": "Hz",
+    "pass_if": "≤ 10",
+    "reason": null
+   },
+   {
+    "id": "F13",
+    "label": "SNR",
+    "status": "PASS",
+    "value": 79.8822,
+    "unit": "1",
+    "pass_if": "≥ 25",
+    "reason": null
+   },
+   {
+    "id": "F14",
+    "label": "Cho fit CRLB",
+    "status": "PASS",
+    "value": 4.2467,
+    "unit": "%",
+    "pass_if": "≤ 20",
+    "reason": null
+   },
+   {
+    "id": "F15",
+    "label": "Residual water / NAA",
+    "status": "FAIL",
+    "value": 11.7206,
+    "unit": "1",
+    "pass_if": "≤ 0.5",
+    "reason": null
+   },
+   {
+    "id": "F08",
+    "label": "Frequency drift",
+    "status": "PASS",
+    "value": 5.2014,
+    "unit": "Hz",
+    "pass_if": "≤ 6",
+    "reason": null
+   },
+   {
+    "id": "F23",
+    "label": "Transients rejected (motion)",
+    "status": "PASS",
+    "value": 0.2667,
+    "unit": "%",
+    "pass_if": "≤ 5",
+    "reason": null
+   },
+   {
+    "id": "F20",
+    "label": "Voxel centre vs baseline",
+    "status": "N/A",
+    "value": null,
+    "unit": "mm",
+    "pass_if": "≤ 2",
+    "reason": "needs the baseline voxel position"
+   },
+   {
+    "id": "F21",
+    "label": "CSF fraction change",
+    "status": "N/A",
+    "value": null,
+    "unit": "pp",
+    "pass_if": "≤ 5",
+    "reason": "needs a tissue segmentation of this session"
+   },
+   {
+    "id": "F35",
+    "label": "Protocol vs baseline (TE)",
+    "status": "N/A",
+    "value": null,
+    "unit": "",
+    "pass_if": "match",
+    "reason": "needs the protocol (sidecar) of both scans"
+   },
+   {
+    "id": "F19",
+    "label": "Chemical-shift displacement, change vs baseline",
+    "status": "N/A",
+    "value": null,
+    "unit": "pp",
+    "pass_if": "≈ 0 (same protocol)",
+    "reason": "needs the sequence and RF bandwidth of both sessions"
+   },
+   {
+    "id": "F61",
+    "label": "Transmitter reference vs phantom baseline",
+    "status": "N/A",
+    "value": null,
+    "unit": "%",
+    "pass_if": "≤ 10",
+    "reason": "needs the transmitter reference / phantom baseline of this scanner"
+   }
+  ],
+  "catalogue_status": "FAIL",
+  "state": "ERROR",
+  "deciding": [
+   "F15"
+  ],
+  "water_reference": {
+   "file": "external_data/real_samples/MRS/sub-01_ref.nii.gz",
+   "available": true,
+   "loaded": true,
+   "shape": [
+    1,
+    1,
+    1,
+    2048
+   ],
+   "water_fwhm_hz": 6.61,
+   "water_fwhm_ppm": 0.0537,
+   "water_offset_hz": 3.66,
+   "note": "informational; no catalogue gate uses the water reference yet"
+  }
+ }
+}

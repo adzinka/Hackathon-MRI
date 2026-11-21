@@ -1,5 +1,11 @@
 # External data: real scans converted by the ScanTwin field mapper
 
+## real_samples (REAL T1w + ¹H-MRS + water reference, original files)
+
+Morelli et al., Zenodo 10.5281/zenodo.13753316, CC BY 4.0, participant sub-01. Unlike the folder below, these are the
+**original published files**, unmodified: their metadata has no identifying fields and the T1w is defaced. Details,
+provenance, checksums and the ScanTwin results are in [real_samples/README.md](real_samples/README.md).
+
 ## zenodo_5085449_example_02 (REAL in-vivo brain spectrum + SIMULATED follow-ups)
 
 **Source and licence.** `example_02.nii.gz` from *NIfTI-MRS example data* (Zenodo record 5085449), by William T. Clarke,
