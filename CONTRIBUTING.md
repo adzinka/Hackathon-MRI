@@ -42,6 +42,10 @@ run `python scripts/import_catalogue.py` after either changes.
 Raw downloads never go into the repo (they can contain identifying metadata). Keep them outside, e.g.
 `../real_data/<source>/`, and run the converter with `python -I`. See `external_data/README.md`.
 
+## Running the app
+After pulling new code, **restart** Streamlit (Ctrl+C, then `streamlit run app.py`). A browser refresh does not
+reload changed modules in `twin_evidence/`.
+
 ## Rules
 - Work on a branch (`git switch -c p2/rf-fault-scenario`), open a PR or merge after `pytest` is green.
 - Never change the reference numbers in `tests/test_reference.py`: they reproduce the dossier.

@@ -70,15 +70,16 @@ def fmt(v, obs):
 
 # ---------- sidebar ----------
 st.sidebar.title("ScanTwin")
-root = st.sidebar.text_input("StarterPack v0.3 folder", "../MRI_Hackathon_DataScience_StarterPack_v0.3")
+with st.sidebar.expander("⚙️ Settings"):
+    root = st.text_input("StarterPack v0.3 folder", "../MRI_Hackathon_DataScience_StarterPack_v0.3")
 if not (Path(root) / "05_TwinReady_JSON_CSV").exists():
     st.error(f"StarterPack not found at `{root}`. Set the path in the sidebar.")
     st.stop()
 thresholds, schema, manifest, PK = load_pack(str(Path(root).resolve()))
 
-mode = st.sidebar.radio("Mode", ["🔎 Check a scan", "🧠 Twin explorer"], index=0, key="mode",
-                        help="Check a scan: upload any spectrum or packet and get a verdict. "
-                             "Twin explorer: the worked StarterPack example, scanner twin and fault scenarios.")
+mode = st.sidebar.radio("Page", ["🔎 Check a scan", "🧪 Hackathon lab"], index=0, key="mode",
+                        help="Check a scan: upload a spectrum or packet and get a verdict. "
+                             "Hackathon lab: the worked StarterPack example, scanner twin and fault scenarios.")
 if mode.startswith("🔎"):
     from twin_evidence import check_page
     st.sidebar.caption("Synthetic and public de-identified data only. Verdicts are about the measurement, never the person.")
