@@ -47,7 +47,7 @@
       "sha256": "12dfc9000d87a675d9e48ae5967331774a51c285e8e3582ab0bf1434a77afef5",
       "modified": false,
       "converted": false,
-      "notes": "Siemens 3 T (123.251 MHz), sLASER (svs_slaser_dkd), TE 28 ms, TR 2 s, 25 mm cubic voxel, 2000 Hz spectral width, 750 individual transients. Header extension has no dim_5/dim_6 tags (spec defaults: DIM_COIL size 1, DIM_DYN size 750)."
+      "notes": "Siemens 3 T (123.251 MHz), sLASER (svs_slaser_dkd), TE 28 ms, TR 2 s, 25 mm cubic voxel, 2000 Hz spectral width, 750 individual transients. Header extension has no dim_5/dim_6 tags; the official nifti-mrs 1.4.1 validator rejects the file because dim_5 is required with 6 dimensions (dim 5 has size 1, dim 6 holds the 750 transients)."
     },
     {
       "repo_path": "external_data/real_samples/MRS/sub-01_svs.json",

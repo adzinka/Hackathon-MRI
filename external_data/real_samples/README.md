@@ -113,9 +113,12 @@ spectrum, 3.7 Hz off resonance. This is informational only; no gate uses it.
 
 - One participant, one session: no follow-up scan, so every between-session gate (F20, F21, F27, F32, F35, F19) is N/A.
 - No T1w sidecar (TR / TE / TI / field) and no brain mask in the archive.
-- The svs header extension has no `dim_5` / `dim_6` tags. The NIfTI-MRS defaults (DIM_COIL size 1, DIM_DYN size 750)
-  give the same result as the reader's fallback. The water reference's extension still declares `dim_5` / `dim_6`
-  and 4 transients although the stored array is a single combined FID.
+- **Neither file passes the official NIfTI-MRS validator** (`nifti-mrs` 1.4.1, `validate_nifti_mrs`). The svs has 6
+  dimensions but no `dim_5` tag, which the standard requires ("With 6 dimensions the header extension must contain
+  'dim_5'"). The water reference stores its dim tags as lists (`"dim_5": ["DIM_COIL"]`) and still declares `dim_5` /
+  `dim_6` and 4 transients although the stored array is a single combined FID. `NumberOfTransients` is not a standard
+  key and has no `Description`. ScanTwin reads both files leniently: an untagged axis is treated as transients, which is
+  correct here because dim 5 has size 1.
 - The header extension stores scalars as one-element lists (`"EchoTime": [0.028]`). The original reader crashed on
   this; `ingest.read` now reads them as scalars in memory. The file is not changed.
 - The svs JSON gives `ChemicalShiftReference` 2.4 ppm (water ref: 4.7). ScanTwin references NAA to 2.01 ppm itself,
