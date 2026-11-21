@@ -143,3 +143,35 @@ def context_advice(selected: list[str], gates_result: dict) -> list[dict]:
                         "reading": ("matches the context: fix the cause first" if st in ("WARN", "FAIL")
                                     else "watch this gate on the next scan" if st == "PASS" else "")})
     return out
+
+
+# Structural T1w gates (catalogue rows marked "Built" for Structural T1w / T2w, plus F27/F28 "Designed" with numbers)
+T1W_GATES = [
+    Gate("F26", "motion_rating", "Subject motion (rating 1-4)", "", "1 (none)", (">", 1.5), (">", 2.5)),
+    Gate("F27", "cnr_pct_baseline", "Grey/white contrast vs baseline", "%", "≥ 80", ("<", 80.0), ("<", 60.0)),
+    Gate("F28", "wm_cv_pct", "White-matter brightness variation (bias field)", "%", "≤ 10", (">", 10.0), (">", 20.0)),
+    Gate("F32", "reg_shift_mm", "Registration error between sessions", "mm", "≤ 2", (">", 2.0), (">", 3.0)),
+    Gate("F35", "protocol_diff", "Protocol vs baseline (TR, TE, TI, flip, field)", "", "all match", (">", 0.5), None),
+]
+NA_REASON.update({
+    "motion_rating": "the background was masked to zero, so motion ghosts cannot be measured",
+    "cnr_pct_baseline": "needs a baseline scan to compare with",
+    "reg_shift_mm": "needs a baseline scan to compare with",
+    "protocol_diff": "needs the protocol (sidecar) of both scans",
+})
+
+
+def evaluate_t1w(m: dict) -> dict:
+    results = []
+    for g in T1W_GATES:
+        v = m.get(g.metric)
+        st = g.status(v)
+        results.append({"id": g.id, "label": g.label, "value": v, "unit": g.unit, "pass_if": g.pass_if, "status": st,
+                        "reason": "" if v is not None else NA_REASON.get(g.metric, "not available for this scan"),
+                        "applies": True, "fix": row(g.id).get("Fix for the next scan", ""),
+                        "source": row(g.id).get("Threshold source", "")})
+    active = [r for r in results if r["status"] in RANK]
+    worst = max((r["status"] for r in active), key=RANK.get, default="PASS")
+    deciding = [r for r in active if r["status"] == worst and worst != "PASS"]
+    return {"status": worst, "verdict": {"PASS": "update", "WARN": "update_with_warning", "FAIL": "reject"}[worst],
+            "gates": results, "deciding": deciding, "notes": []}

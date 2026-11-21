@@ -259,7 +259,8 @@ def build_packet(ing: Ingested, m: dict, g: dict, *, packet_id: str, subject_id:
         "qc_checks": checks, "qc_status": status,
         "qc_reasons": [f"{x['id']} {x['label']}: {x['status']}" for x in g["deciding"]],
         "acquisition_context": {"field_strength_T": float(field_nominal), "spectrometer_frequency_MHz": round(nu0, 6),
-                                "sequence": ing.meta.get("ProtocolName") or ing.meta.get("SequenceName"),
+                                "sequence": (ing.meta.get("ProtocolName") or ing.meta.get("SequenceName")
+                                             or ing.meta.get("PulseSequenceType") or "not recorded"),
                                 "TE_s": ing.meta.get("EchoTime"), "TR_s": ing.meta.get("RepetitionTime"),
                                 "transients": int(ing.transients.shape[0]), "manufacturer": ing.meta.get("Manufacturer")},
         "processing": {"pipeline": "scantwin.ingest", "version": "0.1",

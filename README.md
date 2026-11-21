@@ -78,7 +78,9 @@ STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q
 The sidebar has two modes.
 
 **🔎 Check a scan** (the landing page): upload a raw single-voxel spectrum (NIfTI-MRS `.nii.gz`, any field, with coils
-and transients) or an evidence packet (`.json`, e.g. an unseen Gate 3 packet), or pick an example (a real 7 T scan from
+and transients), a **structural T1-weighted image** (NIfTI, optionally with a brain mask, a region outline and the JSON
+sidecar; `twin_evidence/t1w.py`), **two scans of the same person** to compare real data, or an evidence packet
+(`.json`, e.g. an unseen Gate 3 packet), or pick an example (a real 7 T scan from
 Zenodo, CC BY 4.0, or the StarterPack scans). The converter (`twin_evidence/ingest.py`) de-identifies, combines coils,
 fixes the axis, references, phases, measures and fits. The page shows, as in the ScanTwin concept: the scan, scanner
 health (catalogue gates), the verdict and the gate that decided it, the range the result can support, the fix for the

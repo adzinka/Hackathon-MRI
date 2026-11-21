@@ -6,7 +6,7 @@ git clone <repo-url> twin-evidence && cd twin-evidence
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 # the StarterPack is NOT in the repo: unzip MRI_Hackathon_DataScience_StarterPack_v0.3 next to this folder
-STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 58 tests must pass
+STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 69 tests must pass
 streamlit run app.py
 ```
 
@@ -24,6 +24,7 @@ streamlit run app.py
 | `twin_evidence/mrs_fit.py` | time-domain fit (Cho/Cr with CRLB) + SNR / FWHM / residual-water QC | QE / DS |
 | `twin_evidence/scenarios.py` | 11 fault scenarios, gate, naive-Bayes fault model | all |
 | `twin_evidence/ingest.py` + `scripts/ingest_mrs.py` | field mapper: raw NIfTI-MRS (any field, coils, transients) → de-identified derivative + packet v1.0 + simulated follow-ups | DS |
+| `twin_evidence/t1w.py` | T1w: de-identify, bias-corrected segmentation, quality gates F26–F35, volumes, simulated follow-ups, patient / machine / session / processing | QE / DS |
 | `twin_evidence/check_page.py` | the "Check a scan" page (Streamlit) | UI |
 | `twin_evidence/scanner_link.py` | the two twins talk: scanner-twin state on the scan date → gate finding F11 on every subject packet; patient-or-machine attribution | Metrology / DT |
 | `twin_evidence/gates.py` | ScanTwin catalogue v1.1 gates with IDs, scan-context advice | all |
