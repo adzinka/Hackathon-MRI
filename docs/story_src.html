@@ -1,0 +1,1506 @@
+<title>ScanTwin Story</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a 1600×900 slide frame scaled to the screen, floating over one full-screen 3D scanner room. Each slide moves
+   the camera and the machine's state and plays its own build once. Phones and portrait screens get the same slides
+   stacked as a scroll. One dark "scanner console" world by design (single theme). */
+:root {
+  --night: #05090f;  --night-rgb: 5, 9, 15;
+  --deep: #0b141f;
+  --panel: rgba(10, 18, 29, .8);
+  --line: rgba(150, 185, 215, .17);
+  --line-2: rgba(150, 185, 215, .32);
+  --text: #edf2f7;
+  --soft: #c2cfdb;
+  --muted: #8899ad;
+  --ink-rgb: 237, 242, 247;
+  --signal: #6fd3e8;  --signal-rgb: 111, 211, 232;      /* the MR signal: the one accent */
+  --signal-hi: #9ae6f2;
+  --pass: #3ccf7f;    --pass-rgb: 60, 207, 127;
+  --warn: #f5b13d;    --warn-rgb: 245, 177, 61;
+  --fail: #ff5d55;    --fail-rgb: 255, 93, 85;
+  --roi0: #5b8cff;
+  --f-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --ease-out: cubic-bezier(.16, .84, .24, 1);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+html { background: var(--night); }
+body { margin: 0; background: var(--night); color: var(--text); font: 400 16px/1.5 var(--f-body); overflow: hidden;
+  -webkit-font-smoothing: antialiased; }
+html.flow, html.flow body { height: auto; overflow: visible; }
+html.flow body { overflow-x: clip; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- stage ---------- */
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+.scrim, .veil, .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 1; transition: opacity 1.2s ease; }
+.scrim { background: linear-gradient(90deg, rgba(var(--night-rgb), .97) 0%, rgba(var(--night-rgb), .86) 30%,
+  rgba(var(--night-rgb), .38) 58%, rgba(var(--night-rgb), 0) 80%); }
+.veil { background: var(--night); opacity: 0; }
+.vignette { background: radial-gradient(130% 100% at 68% 46%, transparent 42%, rgba(var(--night-rgb), .66) 78%, rgba(var(--night-rgb), .96)); }
+.nogl { position: fixed; z-index: 2; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(env(safe-area-inset-top, 0px) + 12px);
+  font: 400 12px/1.3 var(--f-mono); color: var(--muted); }
+.tag3d { position: fixed; z-index: 3; transform: translate(-50%, -50%); pointer-events: none; display: flex; gap: 8px; align-items: center;
+  font: 500 13px/1 var(--f-mono); padding: 7px 11px; border-radius: 999px; background: rgba(var(--night-rgb), .86);
+  border: 1px solid var(--line-2); color: var(--soft); white-space: nowrap; opacity: 0; transition: opacity .4s; }
+.tag3d i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.tag3d b { color: var(--text); font-weight: 600; }
+
+/* ---------- deck and frame ---------- */
+.deck { position: fixed; inset: 0; z-index: 2; padding-block: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.frame { position: absolute; left: 50%; top: 50%; width: 1600px; height: 900px; transform: translate(-50%, -50%) scale(var(--s, .6));
+  --h1: 98px; --h2: 66px; --h3: 26px; --lede: 31px; --body: 23px; --small: 18px; --foot: 15px;
+  font-size: var(--body); line-height: 1.45; color: var(--soft); }
+.chrome { position: absolute; top: 44px; left: 96px; right: 96px; display: flex; align-items: center; justify-content: space-between;
+  z-index: 3; pointer-events: none; }
+.brand { display: flex; align-items: center; gap: 12px; font: 700 22px/1 var(--f-display); color: var(--text); letter-spacing: .005em; }
+.mark { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--signal); position: relative; flex: none; }
+.mark::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--warn); }
+.where { display: flex; align-items: center; gap: 16px; font: 500 15px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.where b { color: var(--signal); font-weight: 600; letter-spacing: .04em; }
+.ticks { display: flex; gap: 5px; }
+.ticks i { width: 18px; height: 3px; border-radius: 2px; background: var(--line-2); transition: background .4s, width .4s; }
+.ticks i.on { background: var(--signal); width: 30px; }
+
+.slide { position: absolute; inset: 0; padding: 116px 96px 72px; display: flex; flex-direction: column; gap: 30px;
+  opacity: 0; visibility: hidden; transform: translateY(18px);
+  transition: opacity .5s ease, transform .8s var(--ease-out), visibility 0s linear .8s; }
+.slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .7s ease .12s, transform 1s var(--ease-out) .12s, visibility 0s; }
+.slide.dense { gap: 24px; padding-top: 108px; --h2: 58px; --body: 21px; }
+
+h1, h2, h3 { margin: 0; color: var(--text); font-family: var(--f-display); text-wrap: balance; }
+h1 { font-size: var(--h1); font-weight: 800; line-height: .97; letter-spacing: -.048em; }
+h2 { font-size: var(--h2); font-weight: 700; line-height: 1.02; letter-spacing: -.034em; }
+h3 { font-size: var(--h3); font-weight: 600; letter-spacing: -.01em; line-height: 1.15; }
+p { margin: 0; }
+b { color: var(--text); font-weight: 600; }
+em { font-style: normal; color: var(--signal); }
+.head { display: grid; gap: 18px; justify-items: start; }
+.eyebrow { font: 500 15px/1 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--signal); }
+.foot { margin-top: auto; font: 400 var(--foot)/1.4 var(--f-mono); color: var(--muted); letter-spacing: .02em; }
+.sim { display: inline-block; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  border: 1px dashed var(--muted); padding: 4px 6px; border-radius: 4px; vertical-align: middle; }
+.fail-t { color: var(--fail); } .warn-t { color: var(--warn); } .pass-t { color: var(--pass); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px 28px;
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.chip { display: inline-flex; align-items: baseline; gap: 10px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line-2);
+  font: 500 18px/1 var(--f-mono); color: var(--soft); background: rgba(var(--ink-rgb), .03); white-space: nowrap; }
+.chip b { font-weight: 600; }
+.pts { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.pts li { position: relative; padding-left: 28px; }
+.pts li::before { content: ""; position: absolute; left: 0; top: .66em; width: 12px; height: 2px; border-radius: 1px; background: var(--signal); }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px; border-radius: 999px; font: 600 16px/1 var(--f-mono);
+  border: 1px solid currentColor; white-space: nowrap; }
+.pill::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.pill.pass { color: var(--pass); background: rgba(var(--pass-rgb), .08); }
+.pill.warn { color: var(--warn); background: rgba(var(--warn-rgb), .08); }
+.pill.fail { color: var(--fail); background: rgba(var(--fail-rgb), .08); }
+.pill.ink { color: var(--soft); background: rgba(var(--ink-rgb), .04); border-color: var(--line-2); }
+.pill.ink::before { background: var(--signal); }
+
+/* builds: visible at rest; replayed when a slide becomes active */
+.split .w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .12em; margin-bottom: -.12em; }
+.split .w > span { display: inline-block; transform-origin: 0 100%; }
+.go .split .w > span { animation: wordup 1s var(--ease-out) both; animation-delay: calc(var(--d, 0) * 1ms); }
+@keyframes wordup { from { transform: translateY(110%) rotate(5deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.go [data-b] { animation: rise 1s var(--ease-out) both; animation-delay: calc(var(--d, 0) * 1ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(26px); filter: blur(8px); } to { opacity: 1; transform: none; filter: blur(0); } }
+
+/* ---------- 1 intro ---------- */
+.s-intro { justify-content: space-between; }
+.intro-main { display: grid; gap: 30px; max-width: 1010px; margin-top: 18px; }
+.lede { font-size: var(--lede); line-height: 1.36; color: var(--text); max-width: 39ch; }
+.lede + .lede { color: var(--soft); margin-top: 14px; }
+.lockup { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; font: 500 17px/1 var(--f-mono); color: var(--muted); letter-spacing: .06em;
+  margin-bottom: 64px; position: relative; z-index: 1; }
+.lockup b { display: inline-flex; align-items: center; gap: 12px; font: 800 32px/1 var(--f-display); letter-spacing: -.02em; }
+.lockup .bar-sep { width: 1px; height: 28px; background: var(--line-2); }
+.fid { position: absolute; left: 0; bottom: 0; width: 100%; height: 160px; pointer-events: none; display: block; }
+.fid-cap { position: absolute; left: 96px; bottom: 30px; font: 500 12px/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; color: rgba(var(--signal-rgb), .6); }
+
+/* ---------- 2 problem ---------- */
+.c-problem { display: grid; grid-template-columns: minmax(0, 1fr) 480px; gap: 56px; align-items: start; }
+.tbl { display: grid; }
+.tr { display: grid; grid-template-columns: 1.15fr .8fr .95fr 1.4fr; align-items: center; gap: 18px; padding: 26px 0; border-bottom: 1px solid var(--line); }
+.tr.th { padding: 0 0 14px; font: 500 14px/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+.tr.th span:last-child { text-align: right; }
+.tr .m b { display: block; font: 600 27px/1.15 var(--f-display); }
+.tr .m small { display: block; margin-top: 6px; font: 400 16px/1.2 var(--f-mono); color: var(--muted); letter-spacing: .04em; }
+.tr .v { font: 500 28px/1 var(--f-mono); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tr .v small { font-size: 17px; color: var(--muted); margin-left: 4px; }
+.tr .v.nov { color: var(--fail); }
+.chg { justify-self: end; font: 800 88px/.86 var(--f-display); color: var(--fail); letter-spacing: -.05em; font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 46px rgba(var(--fail-rgb), .38); white-space: nowrap; }
+.why { display: grid; gap: 16px; }
+.why h3 { font-size: 22px; }
+.why .pts { gap: 14px; font-size: 19.5px; line-height: 1.42; }
+.question { font: 600 46px/1.12 var(--f-display); color: var(--text); letter-spacing: -.025em; }
+.question span { display: block; font: 500 15px/1 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+/* ---------- 3 cause ---------- */
+.c-cause { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); gap: 46px; flex: 1; min-height: 0; }
+.col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.colh { display: flex; align-items: baseline; gap: 14px; font: 600 25px/1.1 var(--f-display); }
+.colh span { font: 500 14px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.spx { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.spx figure, .t1row figure { margin: 0; }
+.spx figure { padding: 14px 16px 8px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); display: grid; gap: 4px; }
+.spx figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 14px/1.2 var(--f-mono); color: var(--muted); }
+.spx figcaption b { font: 700 20px/1 var(--f-display); }
+.spx figure:last-child figcaption b { color: var(--warn); }
+svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+svg.chart text { fill: var(--muted); font: 500 12px var(--f-mono); }
+svg.chart .lab { fill: var(--text); font: 600 14px var(--f-display); }
+svg.chart .grid { stroke: var(--line); stroke-width: 1; }
+.cap { font: 400 13px/1.4 var(--f-mono); color: var(--muted); }
+.c-cause .pts { font-size: 20.5px; gap: 10px; }
+.c-cause .chip { font-size: 16px; padding: 6px 11px; margin: 4px 6px 0 0; }
+.t1row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.t1row figure { display: grid; gap: 8px; }
+.t1box { position: relative; aspect-ratio: 1; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+.t1box canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.t1box canvas.px { image-rendering: pixelated; }
+.t1row figcaption { font: 500 13px/1.25 var(--f-mono); color: var(--muted); text-align: center; }
+.offer { display: flex; gap: 30px; align-items: center; padding: 20px 30px; border-radius: 18px; border: 1px solid rgba(var(--signal-rgb), .42);
+  background: linear-gradient(90deg, rgba(var(--signal-rgb), .15), rgba(var(--signal-rgb), .03) 70%); }
+.offer .eyebrow { white-space: nowrap; }
+.offer p { font: 600 25px/1.3 var(--f-display); color: var(--text); letter-spacing: -.012em; }
+
+/* ---------- 4 how ---------- */
+.steps { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 30px; margin-top: 12px; }
+.rail { position: absolute; left: 36px; right: calc(25% - 58.5px); top: 35px; height: 2px; background: var(--line-2); overflow: visible; }
+.rail i { position: absolute; top: -5px; left: 0; width: 140px; height: 12px; margin-left: -70px; border-radius: 6px;
+  background: radial-gradient(closest-side, rgba(var(--signal-rgb), 1), rgba(var(--signal-rgb), 0)); animation: travel 4.8s linear infinite; }
+@keyframes travel { 0% { left: 0; opacity: 0; } 4% { opacity: 1; } 75% { left: 100%; opacity: 1; } 82%, 100% { left: 100%; opacity: 0; } }
+.step { position: relative; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.step .n { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font: 700 27px/1 var(--f-display); color: var(--signal);
+  background: var(--deep); border: 2px solid rgba(var(--signal-rgb), .45); position: relative; z-index: 1;
+  animation: lit 4.8s ease-out infinite; animation-delay: calc(var(--i) * 1.2s); }
+@keyframes lit { 0% { box-shadow: 0 0 0 0 rgba(var(--signal-rgb), .55); border-color: var(--signal); color: var(--night); background: var(--signal); }
+  22% { box-shadow: 0 0 0 18px rgba(var(--signal-rgb), 0); border-color: rgba(var(--signal-rgb), .45); color: var(--signal); background: var(--deep); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--signal-rgb), 0); border-color: rgba(var(--signal-rgb), .45); color: var(--signal); background: var(--deep); } }
+.step .k { font: 500 14px/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.step h3 { font: 700 38px/1 var(--f-display); letter-spacing: -.03em; }
+.step p { font-size: 20.5px; line-height: 1.42; }
+.step .vis { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.mini { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 4px; background: var(--panel); font-size: 17px; line-height: 1.38; }
+.mini b { font: 600 18px/1.2 var(--f-display); }
+.mini.block { border-color: rgba(var(--fail-rgb), .4); }
+.hash { font: 500 15px/1 var(--f-mono); color: var(--muted); }
+.tagline { margin-top: auto; font: italic 500 38px/1.25 var(--f-body); color: var(--text); letter-spacing: -.01em; }
+.tagline span { color: var(--signal); }
+
+/* ---------- 3D model slide ---------- */
+.s-model .head { max-width: 640px; }
+.model-sub { font: 500 15px/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--soft); }
+.model-flow { display: none; }
+html.model .deck { pointer-events: none; }
+html.model #stage { cursor: grab; touch-action: none; }
+html.model #stage:active { cursor: grabbing; }
+html.model:not(.explore) .x-top { display: none; }
+
+/* ---------- 4.1 demo ---------- */
+.s-demo .main { display: grid; align-content: center; flex: 1; max-width: 900px; padding-bottom: 70px; }
+.cue { display: inline-flex; align-items: center; gap: 28px; padding: 22px 44px 22px 22px; border-radius: 999px; width: max-content; max-width: 100%;
+  background: linear-gradient(100deg, var(--signal), var(--signal-hi)); color: var(--night); box-shadow: 0 18px 60px rgba(var(--signal-rgb), .28); }
+.play { position: relative; width: 86px; height: 86px; border-radius: 50%; background: var(--night); display: grid; place-items: center; flex: none; }
+.play::before, .play::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--night); animation: ripple 2.4s ease-out infinite; }
+.play::after { animation-delay: 1.2s; }
+@keyframes ripple { from { transform: scale(1); opacity: .55; } to { transform: scale(1.9); opacity: 0; } }
+.play i { width: 28px; height: 32px; margin-left: 7px; background: var(--signal); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.cue b { display: block; font: 800 42px/1.04 var(--f-display); color: var(--night); letter-spacing: -.03em; }
+.cue small { display: block; margin-top: 10px; font: 500 16px/1.3 var(--f-mono); color: rgba(var(--night-rgb), .74); letter-spacing: .02em; }
+  border-radius: 16px; border: 1px solid var(--line); background: var(--panel); }
+  font: 700 21px/1 var(--f-display); color: var(--signal); border: 1.5px solid rgba(var(--signal-rgb), .5); }
+
+/* ---------- 5 memory ---------- */
+.c-mem { display: grid; grid-template-columns: minmax(0, 1fr) 700px; gap: 54px; flex: 1; min-height: 0; }
+.c-mem .pts { font-size: 22px; gap: 16px; }
+.result { display: grid; gap: 12px; margin-top: 8px; }
+.result p { font: 600 28px/1.25 var(--f-display); color: var(--text); letter-spacing: -.015em; }
+.charts { display: grid; gap: 14px; align-content: start; }
+.charts .panel { padding: 18px 22px 12px; display: grid; gap: 8px; }
+.charts figure { margin: 0; }
+.charts figcaption { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 500 13px/1.3 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- 6 tested ---------- */
+.sub { font: 500 15px/1 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: -10px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.6fr); gap: 14px; }
+.tile { padding: 20px 20px 18px; border-radius: 18px; border: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tile .big { font: 800 56px/.9 var(--f-display); color: var(--signal); letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.tile span { font-size: 17.5px; line-height: 1.36; color: var(--soft); }
+.tile small { font: 400 13px/1.4 var(--f-mono); color: var(--muted); }
+.strike { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 2px; }
+.strike s { position: relative; text-decoration: none; font: 500 13px/1 var(--f-mono); padding: 7px 9px; border-radius: 6px; color: var(--fail);
+  border: 1px solid rgba(var(--fail-rgb), .35); background: rgba(var(--fail-rgb), .06); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strike s::after { content: ""; position: absolute; left: 7px; right: 7px; top: 50%; height: 1.5px; background: currentColor; transform-origin: 0 50%; }
+.go .strike s::after { animation: strikeit .5s ease-out both; animation-delay: calc(var(--d, 0) * 1ms); }
+@keyframes strikeit { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.c-test { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 1000px; }
+.c-test .panel { display: grid; gap: 12px; align-content: start; }
+.c-test h3 { font-size: 24px; }
+.c-test p { font-size: 20px; }
+.adds { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- 7 next ---------- */
+.c-next { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.c-next .panel { display: grid; gap: 14px; align-content: start; }
+.c-next h3 { font-size: 24px; }
+.c-next .pts { font-size: 20px; gap: 9px; }
+.c-next ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; counter-reset: s; font-size: 20px; }
+.c-next ol li { display: grid; grid-template-columns: 34px 1fr; align-items: baseline; }
+.c-next ol li::before { counter-increment: s; content: counter(s); font: 600 16px/1 var(--f-mono); color: var(--signal); }
+.closing { font: 800 74px/1 var(--f-display); letter-spacing: -.045em; color: var(--text); position: relative; z-index: 1; }
+.closing .hl { color: var(--signal); }
+.s-next .foot { position: relative; z-index: 1; }
+
+/* ---------- controls ---------- */
+.bar { position: fixed; z-index: 6; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(var(--night-rgb), .84);
+  border: 1px solid var(--line); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); transition: opacity .45s, transform .45s; }
+.bar.idle:not(:focus-within) { opacity: 0; transform: translateY(10px); }
+.bar button { appearance: none; border: 0; background: transparent; color: var(--soft); font: 500 13px/1 var(--f-mono); height: 36px; min-width: 36px;
+  padding: 0 12px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap; }
+.bar button:hover { background: rgba(var(--ink-rgb), .08); color: var(--text); }
+.bar button[aria-pressed="true"] { color: var(--signal); }
+.bar svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bar .dotv { width: 9px; height: 9px; border-radius: 50%; background: var(--fail); }
+.bar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+.segs { display: flex; gap: 2px; list-style: none; margin: 0; padding: 0; }
+.segs button { padding: 0 6px; min-width: 34px; position: relative; color: var(--muted); }
+.segs button::after { content: ""; position: absolute; left: 9px; right: 9px; bottom: 5px; height: 2px; border-radius: 1px; background: transparent; }
+.segs button[aria-current="step"] { color: var(--text); }
+.segs button[aria-current="step"]::after { background: var(--signal); }
+.notes { position: fixed; z-index: 7; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  width: min(620px, calc(100% - 32px)); max-height: 52vh; overflow: auto; padding: 18px 20px; border-radius: 16px;
+  background: rgba(var(--night-rgb), .95); border: 1px solid var(--line-2); display: grid; gap: 10px; color: var(--soft); font-size: 16px; line-height: 1.5; }
+.notes .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 500 13px/1.2 var(--f-mono); color: var(--muted); letter-spacing: .06em; }
+.notes .top b { color: var(--signal); }
+.notes .timer { font: 600 22px/1 var(--f-mono); color: var(--text); font-variant-numeric: tabular-nums; }
+.notes .timer.late { color: var(--warn); } .notes .timer.over { color: var(--fail); }
+.notes .tip { font: 400 13.5px/1.45 var(--f-mono); color: var(--warn); }
+.notes .keys { font: 400 12px/1.5 var(--f-mono); color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; }
+
+/* ---------- drag the scene, explore mode ---------- */
+.deck { transition: opacity .5s ease; }
+.slide { cursor: grab; }
+.slide > * { cursor: auto; }
+html.flow .slide { cursor: auto; }
+html.dragging, html.dragging * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
+.drag-hint { position: absolute; right: 96px; bottom: 22px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--soft);
+  padding: 8px 12px; border-radius: 999px; background: rgba(var(--night-rgb), .78); border: 1px solid var(--line); }
+html.explore .deck { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .5s ease, visibility 0s linear .5s; }
+html.explore, html.explore body { overflow: hidden; }
+html.explore #stage { cursor: grab; touch-action: none; }
+html.explore #stage:active { cursor: grabbing; }
+.explore { position: fixed; inset: 0; z-index: 5; pointer-events: none; color: var(--soft); }
+.x-top { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 18px); left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.x-title { display: grid; gap: 8px; pointer-events: auto; text-shadow: 0 1px 10px rgba(var(--night-rgb), .95); }
+.x-title b { font: 700 24px/1.1 var(--f-display); letter-spacing: -.02em; }
+.x-title small { font: 400 13px/1.4 var(--f-mono); color: var(--soft); }
+.xbtn { pointer-events: auto; appearance: none; border: 1px solid var(--line-2); background: rgba(var(--night-rgb), .84); color: var(--text);
+  font: 500 14px/1 var(--f-mono); padding: 11px 16px; border-radius: 999px; cursor: pointer; display: inline-flex; gap: 10px; align-items: center; white-space: nowrap; }
+.xbtn:hover { border-color: var(--signal); }
+.xbtn kbd { font: 600 12px/1 var(--f-mono); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--line-2); color: var(--muted); }
+#x-hot { position: absolute; inset: 0; pointer-events: none; }
+.hot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: auto; appearance: none; display: inline-flex; gap: 8px; align-items: center;
+  padding: 7px 12px; border-radius: 999px; background: rgba(var(--night-rgb), .86); border: 1px solid var(--line-2); color: var(--soft);
+  font: 500 13px/1 var(--f-mono); cursor: pointer; white-space: nowrap; transition: border-color .2s, color .2s; }
+.hot i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.hot:hover, .hot[aria-pressed="true"] { border-color: var(--signal); color: var(--text); }
+.x-panel { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  width: min(440px, calc(100% - 32px)); display: grid; gap: 16px; padding: 18px 20px; border-radius: 18px; pointer-events: auto;
+  background: rgba(var(--night-rgb), .9); border: 1px solid var(--line-2); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.x-info { display: grid; gap: 6px; }
+.x-info h3 { font: 600 19px/1.2 var(--f-display); color: var(--text); }
+.x-info p { font-size: 15px; line-height: 1.5; }
+.x-info small { font: 400 12px/1.4 var(--f-mono); color: var(--muted); }
+.x-ctrl { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.x-ctrl label { display: flex; justify-content: space-between; gap: 12px; font: 500 12px/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.x-ctrl output { color: var(--text); text-transform: none; letter-spacing: 0; }
+.x-ctrl input[type="range"] { width: 100%; accent-color: var(--signal); margin: 0 0 4px; }
+.seg { display: flex; gap: 4px; padding: 4px; border-radius: 999px; border: 1px solid var(--line); }
+.seg button { flex: 1; appearance: none; border: 0; background: transparent; color: var(--muted); font: 500 13px/1 var(--f-mono); padding: 9px 10px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: rgba(var(--signal-rgb), .16); color: var(--text); }
+.seg-note { font: 400 11.5px/1.3 var(--f-mono); color: var(--muted); }
+
+/* ---------- stacked reading mode (phones, portrait) ---------- */
+html.flow .deck { position: relative; inset: auto; padding-block: 8px 40px; }
+html.flow .frame { position: static; width: auto; height: auto; transform: none;
+  --h1: clamp(38px, 10.5vw, 60px); --h2: clamp(28px, 7.6vw, 42px); --h3: 19px; --lede: 18px; --body: 16px; --small: 14px; --foot: 12px; }
+html.flow .chrome { position: static; padding-block: 18px 6px; }
+html.flow .where { display: none; }
+html.flow .slide, html.flow .slide.dense { position: relative; inset: auto; opacity: 1; visibility: visible; transform: none; padding: 52px 0 28px; gap: 20px;
+  border-bottom: 1px solid var(--line); }
+html.flow .slide:last-child { border-bottom: 0; }
+html.flow .slide.dense { --h2: clamp(28px, 7.6vw, 42px); --body: 16px; }
+html.flow .intro-main { margin-top: 0; gap: 22px; }
+html.flow .lockup { margin-bottom: 0; font-size: 13px; gap: 12px; }
+html.flow .lockup b { font-size: 22px; }
+html.flow .fid, html.flow .fid-cap, html.flow .rail { display: none; }
+html.flow .c-problem, html.flow .c-cause, html.flow .c-mem, html.flow .c-test, html.flow .c-next { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+html.flow .tr { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; padding: 16px 0; }
+html.flow .tr.th { display: none; }
+html.flow .tr .m { grid-column: 1 / -1; }
+html.flow .tr .m b { font-size: 19px; }
+html.flow .tr .v { font-size: 18px; }
+html.flow .tr .v::before { content: attr(data-l) " "; font-size: 12px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+html.flow .chg { grid-column: 1 / -1; justify-self: start; font-size: 56px; }
+html.flow .why .pts, html.flow .c-cause .pts, html.flow .c-mem .pts, html.flow .c-next .pts, html.flow .c-next ol { font-size: 16px; }
+html.flow .question { font-size: 26px; }
+html.flow .spx { grid-template-columns: minmax(0, 1fr); }
+html.flow .offer { flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px; }
+html.flow .offer p { font-size: 19px; }
+html.flow .steps { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+html.flow .step .n { width: 52px; height: 52px; font-size: 21px; }
+html.flow .step h3 { font-size: 28px; }
+html.flow .step p { font-size: 16px; }
+html.flow .tagline { font-size: 22px; margin-top: 8px; }
+html.flow .cue { gap: 16px; padding: 14px 22px 14px 14px; border-radius: 22px; }
+html.flow .play { width: 56px; height: 56px; }
+html.flow .play i { width: 18px; height: 21px; margin-left: 5px; }
+html.flow .cue b { font-size: 22px; }
+html.flow .cue small { font-size: 12px; }
+html.flow html.flow html.flow html.flow html.flow html.flow .result p { font-size: 20px; }
+html.flow .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html.flow .tile:last-child { grid-column: 1 / -1; }
+html.flow .tile .big { font-size: 44px; }
+html.flow .tile span { font-size: 15px; }
+html.flow .c-test p { font-size: 16px; }
+html.flow .closing { font-size: 34px; }
+html.flow .notes, html.flow .drag-hint, html.flow .model-sub { display: none; }
+html.flow .model-flow { display: block; font-size: 15px; }
+html.flow .bar > :not(#b-3d) { display: none; }
+html.flow .panel { padding: 18px; }
+html.flow .chip { font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .go [data-b], .go .split .w > span, .go .strike s::after, .rail i, .step .n, .play::before, .play::after { animation: none !important; }
+  .slide, .scrim, .veil { transition: none !important; }
+}
+</style>
+<script>
+(function () { var w = innerWidth, h = innerHeight; if (w < 900 || w / h < 1.05) document.documentElement.classList.add("flow"); })();
+</script>
+
+<canvas id="stage" aria-hidden="true"></canvas>
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+<div class="veil" id="veil" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="nogl" id="nogl" hidden>3D view off: this browser has no WebGL. The slides work without it.</div>
+<div id="tags" aria-hidden="true"></div>
+<p class="sr" id="live" aria-live="polite"></p>
+
+<div class="deck" id="deck">
+<div class="frame" id="frame">
+  <header class="chrome">
+    <div class="brand"><i class="mark" aria-hidden="true"></i>ScanTwin</div>
+    <div class="where" aria-hidden="true"><span id="where-t"></span><b id="where-n">1</b><span class="ticks" id="ticks"></span></div>
+  </header>
+
+  <!-- 1 · Introduction -->
+  <section class="slide s-intro active" id="intro" aria-labelledby="h-intro">
+    <div class="intro-main">
+      <span class="eyebrow" data-b style="--d:0">A digital twin for MRI measurements</span>
+      <h1 class="split" id="h-intro" data-d="120">Is it the patient, or the <em>machine</em>?</h1>
+      <div data-b style="--d:1050">
+        <p class="lede">ScanTwin is a digital twin of the MRI scanner and of every measurement it makes.</p>
+        <p class="lede">Before anyone acts on a follow-up result, it tells you whether the scan can be trusted, and if not, why.</p>
+      </div>
+    </div>
+    <div class="lockup" data-b style="--d:1500">
+      <b><i class="mark" aria-hidden="true"></i>ScanTwin</b>
+      <span class="bar-sep" id="team-sep" hidden></span><span id="team" hidden></span>
+      <span class="bar-sep"></span><span>InnovateU NMR challenge · Ulm 2026</span>
+    </div>
+    <canvas class="fid" data-fid aria-hidden="true"></canvas>
+    <span class="fid-cap" aria-hidden="true">free induction decay · the raw MR signal</span>
+    <span class="drag-hint" aria-hidden="true">drag the scanner · E or double-click: explore in 3D</span>
+  </section>
+
+  <!-- 2 · The problem -->
+  <section class="slide dense" id="problem" aria-labelledby="h-problem">
+    <div class="head">
+      <span class="eyebrow" data-b style="--d:0">The problem · May → November</span>
+      <h2 class="split" id="h-problem" data-d="80">One follow-up scan, two alarming numbers</h2>
+    </div>
+    <div class="c-problem">
+      <div class="tbl" role="table" aria-label="May and November results">
+        <div class="tr th" role="row" data-b style="--d:500"><span role="columnheader">Measure</span><span role="columnheader">May</span><span role="columnheader">November</span><span role="columnheader">Change</span></div>
+        <div class="tr" role="row" data-b style="--d:650">
+          <span class="m" role="cell"><b>Choline / creatine</b><small>brain chemistry</small></span>
+          <span class="v" role="cell" data-l="May">0.69</span>
+          <span class="v nov" role="cell" data-l="Nov"><span data-from="0.69" data-to="0.85" data-dec="2" data-delay="900">0.85</span></span>
+          <span class="chg" role="cell" data-from="0" data-to="23" data-pre="+" data-suf="%" data-delay="900">+23%</span>
+        </div>
+        <div class="tr" role="row" data-b style="--d:850">
+          <span class="m" role="cell"><b>Brain region volume</b><small>anatomy</small></span>
+          <span class="v" role="cell" data-l="May">22,140<small>mm³</small></span>
+          <span class="v nov" role="cell" data-l="Nov"><span data-from="22140" data-to="27810" data-delay="1150">27,810</span><small>mm³</small></span>
+          <span class="chg" role="cell" data-from="0" data-to="26" data-pre="+" data-suf="%" data-delay="1150">+26%</span>
+        </div>
+      </div>
+      <aside class="why panel" data-b style="--d:1500">
+        <h3>Why this matters</h3>
+        <ul class="pts">
+          <li>Choline reflects how fast cells rebuild their membranes. Doctors watch for a rising choline because it can signal increased cell activity, for example around a tumour or inflammation.</li>
+          <li>A healthy brain region changes by well under 1% a year. A 26% jump in six months would suggest something is growing.</li>
+          <li>Together, these two numbers would worry any patient and lead to more tests.</li>
+        </ul>
+      </aside>
+    </div>
+    <p class="question" data-b style="--d:2300"><span>The question</span>Did the brain change, or did the <em>scan</em>?</p>
+    <p class="foot">Hackathon StarterPack · synthetic subject</p>
+  </section>
+
+  <!-- 3 · What went wrong, and what we offer -->
+  <section class="slide dense" id="cause" aria-labelledby="h-cause">
+    <div class="head">
+      <span class="eyebrow" data-b style="--d:0">What went wrong, and what we offer</span>
+      <h2 class="split" id="h-cause" data-d="80">The scan changed, not the brain</h2>
+    </div>
+    <div class="c-cause">
+      <div class="col" data-b style="--d:350">
+        <h3 class="colh">The chemistry <span>choline vs creatine</span></h3>
+        <div class="spx">
+          <figure><figcaption><b>May</b><span>two sharp, separate peaks</span></figcaption>
+            <svg class="chart" id="spMay" viewBox="0 0 400 170" role="img" aria-label="May spectrum: choline and creatine peaks sharp and separate"></svg></figure>
+          <figure><figcaption><b>November</b><span>two wide, overlapping peaks</span></figcaption>
+            <svg class="chart" id="spNov" viewBox="0 0 400 170" role="img" aria-label="November spectrum: choline and creatine peaks wide and overlapping"></svg></figure>
+        </div>
+        <p class="cap">Real StarterPack spectra, each scaled to its creatine peak. The dip between the peaks fills from 30% to 42% of choline.</p>
+        <ul class="pts">
+          <li>Choline and creatine sit only <b>0.17 ppm</b> apart in the spectrum.</li>
+          <li>In November the magnet was poorly tuned:<br><span class="chip">signal-to-noise <b>31 → 25</b></span><span class="chip">peak width <b>8.7 → 11.4 Hz</b></span></li>
+          <li>The blurred peaks bleed into each other, so the ratio can't be trusted.</li>
+        </ul>
+      </div>
+      <div class="col" data-b style="--d:700">
+        <h3 class="colh">The anatomy <span>the region</span></h3>
+        <div class="t1row">
+          <figure><div class="t1box"><canvas class="px" id="t1may" width="40" height="40"></canvas><canvas id="o1may" width="320" height="320"></canvas></div><figcaption>May · outline in blue</figcaption></figure>
+          <figure><div class="t1box"><canvas class="px" id="t1nov" width="40" height="40"></canvas><canvas id="o1nov" width="320" height="320"></canvas></div><figcaption>November · in amber</figcaption></figure>
+          <figure><div class="t1box"><canvas class="px" id="t1diff" width="40" height="40"></canvas></div><figcaption>November − May</figcaption></figure>
+        </div>
+        <ul class="pts">
+          <li>The May and November images are identical apart from noise.</li>
+          <li>Only the outline drawn around the region changed.</li>
+          <li>So the 26% "growth" came from processing, not the patient.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="offer" data-b style="--d:1900"><span class="eyebrow">Our offer</span>
+      <p>ScanTwin checks the machine and the processing every time it checks the patient, so a bad scan is caught before anyone acts on it.</p></div>
+  </section>
+
+  <!-- 4 · How it works -->
+  <section class="slide" id="how" aria-labelledby="h-how">
+    <div class="head">
+      <span class="eyebrow" data-b style="--d:0">How it works</span>
+      <h2 class="split" id="h-how" data-d="80">Four steps, every scan</h2>
+    </div>
+    <div class="steps">
+      <div class="rail" aria-hidden="true" data-b style="--d:1500"><i></i></div>
+      <article class="step" style="--i:0" data-b data-dd="450">
+        <span class="n" aria-hidden="true">1</span><span class="k">Step 1</span><h3>Measure</h3>
+        <p>The scan comes in, personal data is removed, and the file is fingerprinted.</p>
+        <div class="vis"><span class="pill ink">de-identified</span><span class="hash">SHA-256 fe373f15…</span></div>
+      </article>
+      <article class="step" style="--i:1" data-b data-dd="650">
+        <span class="n" aria-hidden="true">2</span><span class="k">Step 2</span><h3>Check</h3>
+        <p>It's compared against 61 known failure types, each with a limit and a source.</p>
+        <div class="vis"><span class="pill pass">good</span><span class="pill warn">caution</span><span class="pill fail">don't use</span></div>
+      </article>
+      <article class="step" style="--i:2" data-b data-dd="850">
+        <span class="n" aria-hidden="true">3</span><span class="k">Step 3</span><h3>Update</h3>
+        <p>Two twins move.</p>
+        <div class="mini"><b>Scanner twin</b>records the machine's health.</div>
+        <div class="mini block"><b>Patient twin</b>moves only as far as the scan quality allows. A failing scanner blocks the update.</div>
+      </article>
+      <article class="step" style="--i:3" data-b data-dd="1050">
+        <span class="n" aria-hidden="true">4</span><span class="k">Step 4</span><h3>Advise</h3>
+        <p>Says who changed and the cheapest fix.</p>
+        <div class="vis"><span class="pill ink">patient</span><span class="pill ink">machine</span><span class="pill ink">processing</span></div>
+      </article>
+    </div>
+    <p class="tagline" data-b style="--d:1700">It never diagnoses. <span>It decides how much a scan can be trusted.</span></p>
+  </section>
+
+  <!-- 3D · the model -->
+  <section class="slide s-model" id="model" aria-labelledby="h-model">
+    <div class="head">
+      <span class="eyebrow" data-b style="--d:0">3D model</span>
+      <h2 class="split" id="h-model" data-d="80">Inside the twin</h2>
+      <p class="model-sub" data-b style="--d:600">Drag to turn · scroll to zoom · click a label</p>
+      <p class="model-flow">Tap “Explore 3D” to turn the model.</p>
+    </div>
+  </section>
+
+  <!-- 4.1 · Live demo -->
+  <section class="slide s-demo" id="demo" aria-labelledby="h-demo">
+    <div class="head">
+      <span class="eyebrow" data-b style="--d:0">Live demo</span>
+      <h2 class="split" id="h-demo" data-d="80">See it in action</h2>
+    </div>
+    <div class="main">
+      <div class="cue" data-b style="--d:500"><span class="play" aria-hidden="true"><i></i></span>
+        <span><b>Open the ScanTwin prototype</b><small>Runs on the team laptop · streamlit run app.py</small></span></div>
+    </div>
+  </section>
+
+  <!-- 5 · Tracking change over time -->
+  <section class="slide" id="memory" aria-labelledby="h-memory">
+    <div class="head">
+      <span class="eyebrow" data-b style="--d:0">Tracking change over time</span>
+      <h2 class="split" id="h-memory" data-d="80">The twin remembers</h2>
+    </div>
+    <div class="c-mem">
+      <div class="col">
+        <ul class="pts">
+          <li data-b style="--d:400">ScanTwin keeps a running record, not a one-off comparison.</li>
+          <li data-b style="--d:600"><b>For the brain region:</b> the November scan failed its consistency check, so the twin held its estimate at about <b>22,190 mm³</b> instead of jumping to 27,810.</li>
+          <li data-b style="--d:800"><b>For the scanner:</b> every week it measures a bottle of liquid that never changes. If the readings drift, the twin flags the machine weeks before patient scans suffer.</li>
+        </ul>
+        <div class="result" data-b style="--d:1100"><span class="eyebrow">Result</span>
+          <p>A real change builds up over trustworthy scans; a bad scan can't rewrite the record.</p></div>
+      </div>
+      <div class="charts">
+        <figure class="panel" data-b style="--d:500"><figcaption><span>Brain region volume · mm³</span><span>May → November</span></figcaption>
+          <svg class="chart" id="tl" viewBox="0 0 640 270" role="img" aria-label="Region volume: May 22,140; November measured 27,810, rejected; twin estimate 22,190"></svg></figure>
+        <figure class="panel" data-b style="--d:750"><figcaption><span>Scanner twin · weekly bottle scan, peak width (Hz)</span><span class="sim">simulated record</span></figcaption>
+          <svg class="chart" id="ph" viewBox="0 0 640 172" role="img" aria-label="Weekly phantom peak width over 26 weeks"></svg></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · Reliability and current status -->
+  <section class="slide dense" id="tested" aria-labelledby="h-tested">
+    <div class="head">
+      <span class="eyebrow" data-b style="--d:0">Reliability and current status</span>
+      <h2 class="split" id="h-tested" data-d="80">Tested, not assumed</h2>
+    </div>
+    <h3 class="sub" data-b style="--d:350">What exists today</h3>
+    <div class="tiles">
+      <div class="tile" data-b style="--d:450"><span class="big" data-from="0" data-to="2" data-delay="500" data-ms="900">2</span><span>data types in a working prototype: spectroscopy and anatomy</span></div>
+      <div class="tile" data-b style="--d:550"><span class="big" data-from="0" data-to="61" data-delay="600">61</span><span>failure modes catalogued, each limit with its source</span>
+        <small>ACR phantom standards · MRS expert consensus · challenge dossier · labelled team proposal</small></div>
+      <div class="tile" data-b style="--d:650"><span class="big" data-from="0" data-to="660" data-delay="700">660</span><span>simulated scans with known truth</span></div>
+      <div class="tile" data-b style="--d:750"><span class="big" data-from="0" data-to="88" data-delay="800">88</span><span>automated tests; reproduces the challenge's reference result exactly</span></div>
+      <div class="tile" data-b style="--d:850"><span class="big">7 T</span><span>A real public brain scan processed end to end, with six identifying fields removed</span>
+        <div class="strike"><s style="--d:1400">PatientName</s><s style="--d:1500">PatientDoB</s><s style="--d:1600">PatientSex</s><s style="--d:1700">PatientWeight</s><s style="--d:1800">InstitutionAddress</s><s style="--d:1900">DeviceSerialNumber</s></div></div>
+    </div>
+    <div class="c-test">
+      <div class="panel" data-b style="--d:1200"><h3>Compared with current tools</h3>
+        <p>Existing quality-control tools judge one image at a time. ScanTwin adds:</p>
+        <div class="adds"><span class="pill ink">memory over time</span><span class="pill ink">spectroscopy</span><span class="pill ink">a twin of the scanner itself</span></div></div>
+    </div>
+  </section>
+
+  <!-- 7 · Limitations and future work -->
+  <section class="slide s-next" id="next" aria-labelledby="h-next">
+    <div class="head">
+      <span class="eyebrow" data-b style="--d:0">Limitations and future work</span>
+      <h2 class="split" id="h-next" data-d="80">What's next</h2>
+    </div>
+    <div class="c-next">
+      <div class="panel" data-b style="--d:400"><h3>Limitations</h3>
+        <ul class="pts">
+          <li>Hackathon data are synthetic; the scanner's history is simulated.</li>
+          <li>Many limits are our own proposals, not yet clinically validated.</li>
+          <li>Tested on brain spectroscopy and anatomy only.</li>
+          <li>No diagnosis, no clinical claims, not a certified device.</li>
+        </ul></div>
+      <div class="panel" data-b style="--d:650"><h3>Next steps</h3>
+        <ol>
+          <li>Validate on real repeat scans of the same people.</li>
+          <li>Connect to real daily scanner quality checks.</li>
+          <li>Add more scan types: diffusion and functional MRI.</li>
+          <li>Have MRI physicists review every limit.</li>
+        </ol></div>
+    </div>
+    <p class="closing split" data-d="1100">ScanTwin: <span class="hl">trust the number,</span><br>or know why not.</p>
+    <p class="foot">7 T example data: W. T. Clarke, University of Oxford (Zenodo 5085449, CC BY 4.0) · code: github.com/adzinka/Hackathon-MRI · AI-assisted, reviewed by the team</p>
+    <canvas class="fid" data-fid aria-hidden="true"></canvas>
+  </section>
+</div>
+</div>
+
+<nav class="bar" id="bar" aria-label="Slide controls">
+  <button type="button" id="b-prev" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <ol class="segs" id="segs"></ol>
+  <button type="button" id="b-next" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+  <span class="sep" aria-hidden="true"></span>
+  <button type="button" id="b-verdict" title="Which choline verdict the demo shows (V)"><i class="dotv" id="b-verdict-dot"></i><span id="b-verdict-t">Verdict: machine</span></button>
+  <button type="button" id="b-3d" aria-pressed="false" title="Explore the scanner in 3D (E)"><svg viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12M21 7l-9 5-9-5"/></svg>Explore 3D</button>
+  <button type="button" id="b-notes" aria-pressed="false" title="Speaker notes and timer (N)">Notes</button>
+  <button type="button" id="b-fs" aria-label="Full screen (F)" title="Full screen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</nav>
+<div class="explore" id="explore" hidden>
+  <div class="x-top">
+    <div class="x-title"><span class="eyebrow">Explore in 3D</span><b>The scanner, the brain and both twins</b><small>Drag to turn · scroll or pinch to zoom · right-drag to move · click a label</small></div>
+    <button type="button" class="xbtn" id="x-close">Back to slides <kbd>E</kbd></button>
+  </div>
+  <div id="x-hot"></div>
+  <div class="x-panel">
+    <div class="x-info" id="x-info" aria-live="polite"><h3></h3><p></p><small></small></div>
+    <div class="x-ctrl">
+      <div class="seg" role="group" aria-label="Scanner condition, simulated record">
+        <button type="button" data-v="caution" aria-pressed="false">Scanner healthy</button><button type="button" data-v="machine" aria-pressed="true">Shim degrading</button>
+      </div>
+      <span class="seg-note">Simulated record. Also sets the demo verdict (V).</span>
+      <label for="x-week">Scanner record <output id="x-week-o" for="x-week">week 26 · Nov scan</output></label>
+      <input type="range" id="x-week" min="0" max="26" step="1" value="26">
+      <label for="x-ray">See inside <output id="x-ray-o" for="x-ray">70%</output></label>
+      <input type="range" id="x-ray" min="0" max="100" step="1" value="70">
+    </div>
+  </div>
+</div>
+<aside class="notes" id="notes" hidden aria-label="Speaker notes">
+  <div class="top"><span id="n-slot"></span><span class="timer" id="n-timer">0:00</span></div>
+  <p id="n-text"></p>
+  <p class="tip" id="n-tip" hidden></p>
+  <p class="keys">→ / space / clicker: next · ←: back · 1–7: jump · N notes · V verdict · E explore 3D · T start/pause timer · R reset · F full screen</p>
+</aside>
+
+<script type="application/json" id="data">__DATA__</script>
+<script type="application/json" id="meshes">__MESHES__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  "use strict";
+  var TEAM = "";   // team name shown on slide 1; empty hides it
+  var reduce = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var D = JSON.parse(document.getElementById("data").textContent);
+  var root = document.documentElement, frame = document.getElementById("frame");
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var css = getComputedStyle(root);
+  function tok(n) { return css.getPropertyValue(n).trim(); }
+  var COL = { PASS: tok("--pass"), WARN: tok("--warn"), FAIL: tok("--fail"), signal: tok("--signal"), muted: tok("--muted"), text: tok("--text"), roi0: tok("--roi0") };
+  var NS = "http://www.w3.org/2000/svg";
+  function el(p, n, a, txt) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; p.appendChild(e); return e; }
+  function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+  function easeIO(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function linear(t) { return t; }
+  function fmt(v, dec) { return v.toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+  var store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+
+  /* ---------------- slides, timing, notes ---------------- */
+  var META = {
+    intro:   { n: "1",   title: "Introduction",      t: [0, 15] },
+    problem: { n: "2",   title: "The problem",       t: [15, 45] },
+    cause:   { n: "3",   title: "What went wrong",   t: [45, 75] },
+    how:     { n: "4",   title: "How it works",      t: [75, 100] },
+    model:   { n: "3D",  title: "3D model",          t: [100, 110] },
+    demo:    { n: "4.1", title: "Live demo",         t: [110, 135] },
+    memory:  { n: "5",   title: "Change over time",  t: [135, 150] },
+    tested:  { n: "6",   title: "Reliability",       t: [150, 168] },
+    next:    { n: "7",   title: "What's next",       t: [168, 180] }
+  };
+  var NOTES = {
+    intro: "Every follow-up MRI raises one question: if a number changed, was it the patient or the machine? ScanTwin is a digital twin of the scanner that answers that before anyone acts on the result.",
+    problem: "Here's a patient's follow-up after six months. Choline, a marker of how fast cells rebuild their membranes, rose 23%. A brain region grew 26%. A healthy region barely changes in a year, so together these numbers look like something is growing. That's the kind of result that frightens a patient and triggers more tests. So: did the brain change, or the scan?",
+    cause: "Look at the signal. Choline and creatine sit almost on top of each other. In November the magnet was poorly tuned: the peaks got wider and noisier, so they bled together and the ratio became unreliable. And the region? The images are identical; only the outline drawn around it changed. Neither number reflects the patient. ScanTwin catches this before anyone acts on it.",
+    how: "It works in four steps. Every scan is checked against 61 known failure types and gets a verdict: good, caution or don't use. Then two twins update: one for the scanner, one for the patient. The patient's record only moves as far as the scan quality allows. Finally, it tells you who changed and the cheapest fix.",
+    model: "Here is the twin itself. The brain is the StarterPack subject, lying in the scanner. The amber cube is the spectroscopy voxel; blue and amber are the May and November outlines of the region. Every part of the machine carries its own health state from the scanner twin.",
+    memory: "Because it's a twin, it remembers. A bad scan can't rewrite the record: the region estimate stayed at about 22,000 instead of jumping to 27,000. And the scanner's own weekly checks reveal a drifting machine before patients are affected.",
+    tested: "We tested it: 660 simulated scans with known answers, 88 automated tests, and a real 7 Tesla scan.",
+    next: "Our data is mostly synthetic, so next we validate on real repeat scans and real scanner checks. ScanTwin never diagnoses. It tells you whether to trust the number, or exactly why not."
+  };
+  var TIPS = { model: "Not in the 3:00 plan: about 10 s, taken from the demo. Drag the model or click one label; E opens it full screen.", memory: "Running over? Cut the scanner-bottle sentence first.", tested: "Running over? Cut “Compared with current tools” next." };
+  var VAR = {
+    machine: { btn: "Verdict: machine", dot: COL.FAIL, cho: "🛠 It's the machine", sub: "The shim failed on the scan date, so the scan is blocked.", tone: "t-fail",
+      rec: D.rec.machine,
+      demo: "[Switch to the app.] Here's the November scan. On that date, the scanner twin shows the shim had failed, so the verdict is “it's the machine” and the patient's record isn't changed. Here's the region: the outline grew, the images didn't, so “processing, not the patient”. And the fix: re-shim and repeat, about four minutes.",
+      tip: "Before the pitch: Hackathon lab sidebar → State of the scanner → “Shim degrading”. Demo tabs loaded, backup screenshots ready." },
+    caution: { btn: "Verdict: caution", dot: COL.WARN, cho: "🟡 Use with caution", sub: "The scan counts at reduced weight: the twin moves from 0.69 to 0.74, not 0.85.", tone: "t-warn",
+      rec: D.rec.caution,
+      demo: "[Switch to the app.] Here's the November scan. The scan only counts at reduced weight. The twin moves from 0.69 to 0.74, not 0.85. Here's the region: the outline grew, the images didn't, so “processing, not the patient”. And the fix: re-shim and repeat, about four minutes.",
+      tip: "Before the pitch: Hackathon lab sidebar → “Scanner stable” or “no scanner twin”. Demo tabs loaded, backup screenshots ready." }
+  };
+  var variant = store.get("scantwin.verdict") === "caution" ? "caution" : "machine";
+
+  if (TEAM) { var tm = document.getElementById("team"); tm.textContent = TEAM; tm.hidden = false; document.getElementById("team-sep").hidden = false; }
+
+  // split headings into words for the reveal
+  Array.prototype.forEach.call(document.querySelectorAll(".split"), function (h) {
+    var base = +(h.dataset.d || 0), i = 0;
+    function wrap(node, holder) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (c) {
+        if (c.nodeType === 3) {
+          c.textContent.split(/(\s+)/).forEach(function (part) {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { holder.appendChild(document.createTextNode(" ")); return; }
+            var w = document.createElement("span"); w.className = "w";
+            var inner = document.createElement("span"); inner.textContent = part; inner.style.setProperty("--d", base + 70 * i++);
+            w.appendChild(inner); holder.appendChild(w);
+          });
+        } else if (c.nodeType === 1) {
+          var clone = c.cloneNode(false); holder.appendChild(clone); wrap(c, clone);
+        }
+      });
+    }
+    var frag = document.createElement("span"); wrap(h, frag);
+    h.setAttribute("aria-label", h.textContent.replace(/\s+/g, " ").trim());
+    h.innerHTML = ""; while (frag.firstChild) h.appendChild(frag.firstChild);
+    Array.prototype.forEach.call(h.querySelectorAll(".w"), function (w) { w.setAttribute("aria-hidden", "true"); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-dd]"), function (e) { e.style.setProperty("--d", e.dataset.dd); });
+
+  /* ---------------- tweens ---------------- */
+  var tweens = [], instant = false;
+  function tw(ms, delay, fn, ease) {
+    if (instant || reduce) { fn(1); return; }
+    fn(0); tweens.push({ t0: performance.now() + delay, ms: ms, fn: fn, ease: ease || easeOut });
+  }
+  function finishAll() { var t = tweens; tweens = []; t.forEach(function (o) { o.fn(1); }); }
+  function stepTweens(now) {
+    if (!tweens.length) return;
+    tweens = tweens.filter(function (o) { if (now < o.t0) return true; var p = Math.min(1, (now - o.t0) / o.ms); o.fn(o.ease(p)); return p < 1; });
+  }
+  function counters(s) {
+    Array.prototype.forEach.call(s.querySelectorAll("[data-to]"), function (e) {
+      var from = +(e.dataset.from || 0), to = +e.dataset.to, dec = +(e.dataset.dec || 0), pre = e.dataset.pre || "", suf = e.dataset.suf || "";
+      tw(+(e.dataset.ms || 1500), +(e.dataset.delay || 0), function (p) { e.textContent = pre + fmt(from + (to - from) * p, dec) + suf; });
+    });
+  }
+
+  /* ---------------- slide 3: spectra ---------------- */
+  var SP = { W: 400, H: 170, L: 8, R: 8, T: 30, B: 28, p0: 3.45, p1: 2.75 };
+  function sx(p) { return SP.L + (SP.p0 - p) / (SP.p0 - SP.p1) * (SP.W - SP.L - SP.R); }
+  function sy(v) { return SP.H - SP.B - (clamp(v, -0.12, 1.12) + 0.04) / 1.16 * (SP.H - SP.T - SP.B); }
+  var zp = D.zoom.baseline.ppm;
+  function crNorm(y) { var m = 0; for (var i = 0; i < zp.length; i++) if (zp[i] > 2.98 && zp[i] < 3.08) m = Math.max(m, y[i]); return y.map(function (v) { return v / m; }); }
+  var yMay = crNorm(D.zoom.baseline.y), yNov = crNorm(D.zoom.followup.y);
+  var idx = []; for (var ii = 0; ii < zp.length; ii++) if (zp[ii] <= SP.p0 && zp[ii] >= SP.p1) idx.push(ii);
+  function lineD(y) { return idx.map(function (i, k) { return (k ? "L" : "M") + sx(zp[i]).toFixed(1) + " " + sy(y[i]).toFixed(1); }).join(""); }
+  function areaD(y, hi, lo) {
+    var pts = idx.filter(function (i) { return zp[i] <= hi && zp[i] >= lo; });
+    if (!pts.length) return "";
+    var d = "M" + sx(zp[pts[0]]).toFixed(1) + " " + sy(0).toFixed(1);
+    pts.forEach(function (i) { d += "L" + sx(zp[i]).toFixed(1) + " " + sy(Math.max(0, y[i])).toFixed(1); });
+    return d + "L" + sx(zp[pts[pts.length - 1]]).toFixed(1) + " " + sy(0).toFixed(1) + "Z";
+  }
+  function specChart(id, color) {
+    var svg = document.getElementById(id), g = "g" + id;
+    var defs = el(svg, "defs", {}), lg = el(defs, "linearGradient", { id: g, x1: 0, y1: 0, x2: 0, y2: 1 });
+    el(lg, "stop", { offset: "0", "stop-color": color, "stop-opacity": ".28" }); el(lg, "stop", { offset: "1", "stop-color": color, "stop-opacity": "0" });
+    [3.4, 3.2, 3.0].forEach(function (p) { el(svg, "text", { x: sx(p), y: SP.H - 8, "text-anchor": "middle" }, p.toFixed(1)); });
+    el(svg, "text", { x: SP.W - SP.R, y: SP.H - 8, "text-anchor": "end" }, "ppm");
+    el(svg, "line", { x1: SP.L, x2: SP.W - SP.R, y1: sy(0), y2: sy(0), class: "grid" });
+    [[3.20, "Cho"], [3.03, "Cr"]].forEach(function (m) {
+      el(svg, "line", { x1: sx(m[0]), x2: sx(m[0]), y1: SP.T - 6, y2: sy(0), stroke: COL.muted, "stroke-opacity": ".35", "stroke-dasharray": "3 4" });
+      el(svg, "text", { x: sx(m[0]), y: SP.T - 12, "text-anchor": "middle", class: "lab" }, m[1]);
+    });
+    var area = el(svg, "path", { fill: "url(#" + g + ")", stroke: "none" });
+    var ov = el(svg, "path", { fill: COL.FAIL, "fill-opacity": ".26", stroke: "none" });
+    var ovl = el(svg, "text", { x: sx(3.115), y: sy(0) - 7, "text-anchor": "middle", fill: COL.FAIL, style: "fill:" + COL.FAIL }, "overlap");
+    var line = el(svg, "path", { fill: "none", stroke: color, "stroke-width": 2.2, "stroke-linejoin": "round", "stroke-linecap": "round" });
+    return { area: area, ov: ov, ovl: ovl, line: line };
+  }
+  var cMay = specChart("spMay", "#a9bccd"), cNov = specChart("spNov", COL.WARN);
+  function setSpec(c, y) { c.area.setAttribute("d", areaD(y, 3.45, 2.75)); c.ov.setAttribute("d", areaD(y, 3.20, 3.03)); c.line.setAttribute("d", lineD(y)); }
+  function mixY(t) { return yMay.map(function (v, i) { return v + (yNov[i] - v) * t; }); }
+  function drawIn(c, p) {
+    var len = c.line.getTotalLength ? c.line.getTotalLength() : 0;
+    if (p >= 1 || !len) { c.line.style.strokeDasharray = "none"; c.line.style.strokeDashoffset = 0; }
+    else { c.line.style.strokeDasharray = len + " " + len; c.line.style.strokeDashoffset = len * (1 - p); }
+    c.area.style.opacity = p; c.ov.style.opacity = clamp(p * 2 - 1, 0, 1); c.ovl.style.opacity = clamp(p * 2 - 1, 0, 1);
+  }
+  setSpec(cMay, yMay); setSpec(cNov, yNov);
+
+  /* ---------------- slide 3: T1w images ---------------- */
+  var T1 = D.t1, N = T1.n, CROP = 40;
+  var cx0 = 0, cy0 = 0, cnt = 0;
+  for (var q = 0; q < N * N; q++) if (T1.roi_nov[q]) { cx0 += q % N; cy0 += Math.floor(q / N); cnt++; }
+  var ox = clamp(Math.round(cx0 / Math.max(1, cnt) - CROP / 2), 0, N - CROP), oy = clamp(Math.round(cy0 / Math.max(1, cnt) - CROP / 2), 0, N - CROP);
+  function paintImg(id, pix) {
+    var c = document.getElementById(id), x = c.getContext("2d"), im = x.createImageData(CROP, CROP);
+    for (var yy = 0; yy < CROP; yy++) for (var xx = 0; xx < CROP; xx++) {
+      var v = pix[(yy + oy) * N + xx + ox], k = 4 * (yy * CROP + xx); im.data[k] = v; im.data[k + 1] = v; im.data[k + 2] = v; im.data[k + 3] = 255;
+    }
+    x.putImageData(im, 0, 0);
+  }
+  function outline(ctx, m, color, a) {
+    var k = 320 / CROP; ctx.strokeStyle = color; ctx.globalAlpha = a; ctx.lineWidth = 3; ctx.lineCap = "square"; ctx.beginPath();
+    function on(xx, yy) { return xx >= 0 && yy >= 0 && xx < CROP && yy < CROP && m[(yy + oy) * N + xx + ox]; }
+    for (var yy = 0; yy < CROP; yy++) for (var xx = 0; xx < CROP; xx++) {
+      if (!on(xx, yy)) continue;
+      if (!on(xx - 1, yy)) { ctx.moveTo(xx * k, yy * k); ctx.lineTo(xx * k, (yy + 1) * k); }
+      if (!on(xx + 1, yy)) { ctx.moveTo((xx + 1) * k, yy * k); ctx.lineTo((xx + 1) * k, (yy + 1) * k); }
+      if (!on(xx, yy - 1)) { ctx.moveTo(xx * k, yy * k); ctx.lineTo((xx + 1) * k, yy * k); }
+      if (!on(xx, yy + 1)) { ctx.moveTo(xx * k, (yy + 1) * k); ctx.lineTo((xx + 1) * k, (yy + 1) * k); }
+    }
+    ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  paintImg("t1may", T1.may); paintImg("t1nov", T1.nov); paintImg("t1diff", T1.diff);
+  var oMay = document.getElementById("o1may").getContext("2d"), oNov = document.getElementById("o1nov").getContext("2d");
+  function drawOutlines(a, b) {
+    oMay.clearRect(0, 0, 320, 320); oNov.clearRect(0, 0, 320, 320);
+    outline(oMay, T1.roi_may, COL.roi0, a);
+    outline(oNov, T1.roi_may, COL.roi0, a * .55); outline(oNov, T1.roi_nov, COL.WARN, b);
+  }
+  drawOutlines(1, 1);
+
+  /* ---------------- slide 5: region timeline ---------------- */
+  var TL = (function () {
+    var svg = document.getElementById("tl"), W = 640, H = 270, L = 70, R = 24, T = 24, B = 44, lo = 20000, hi = 29000;
+    function y(v) { return T + (hi - v) / (hi - lo) * (H - T - B); }
+    var xA = 150, xB = 520;
+    [22000, 24000, 26000, 28000].forEach(function (v) {
+      el(svg, "line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" });
+      el(svg, "text", { x: L - 10, y: y(v) + 4, "text-anchor": "end" }, fmt(v, 0));
+    });
+    el(svg, "text", { x: xA, y: H - 10, "text-anchor": "middle" }, "May"); el(svg, "text", { x: xB, y: H - 10, "text-anchor": "middle" }, "November");
+    var band = el(svg, "path", { d: "M" + xA + " " + y(22140 + 664) + "L" + xB + " " + y(22190 + 697) + "L" + xB + " " + y(22190 - 697) + "L" + xA + " " + y(22140 - 664) + "Z", fill: COL.signal, "fill-opacity": ".12" });
+    var jump = el(svg, "line", { x1: xA, y1: y(22140), x2: xB, y2: y(27810), stroke: COL.FAIL, "stroke-width": 2, "stroke-dasharray": "6 6" });
+    var twin = el(svg, "line", { x1: xA, y1: y(22140), x2: xB, y2: y(22190), stroke: COL.signal, "stroke-width": 3, "stroke-linecap": "round" });
+    var dA = el(svg, "circle", { cx: xA, cy: y(22140), r: 7, fill: COL.signal });
+    el(svg, "text", { x: xA - 14, y: y(22140) + 26, "text-anchor": "middle", class: "lab" }, "22,140");
+    var gM = el(svg, "g", {});
+    var dM = el(gM, "circle", { cx: xB, cy: y(27810), r: 8, fill: COL.FAIL });
+    var xM = el(gM, "path", { d: "M" + (xB - 6) + " " + (y(27810) - 6) + "l12 12m0 -12l-12 12", stroke: COL.text, "stroke-width": 2.4, "stroke-linecap": "round" });
+    var lM = el(gM, "text", { x: xB - 18, y: y(27810) + 5, "text-anchor": "end", class: "lab" }, "measured 27,810");
+    var sM = el(gM, "line", { x1: xB - 18, x2: xB - 18 - 124, y1: y(27810), y2: y(27810), stroke: COL.text, "stroke-width": 2 });
+    var cM = el(gM, "text", { x: xB - 18, y: y(27810) + 26, "text-anchor": "end", fill: COL.FAIL, style: "fill:" + COL.FAIL }, "✕ failed its consistency check");
+    var gT = el(svg, "g", {});
+    el(gT, "circle", { cx: xB, cy: y(22190), r: 8, fill: COL.signal });
+    el(gT, "circle", { cx: xB, cy: y(22190), r: 15, fill: "none", stroke: COL.signal, "stroke-opacity": ".4", "stroke-width": 2 });
+    el(gT, "text", { x: xB - 22, y: y(22190) + 36, "text-anchor": "end", class: "lab" }, "twin estimate 22,190 ± 697");
+    el(gT, "text", { x: xB - 22, y: y(22190) + 54, "text-anchor": "end" }, "the bad scan moved the record by 50 mm³");
+    var jl = Math.hypot(xB - xA, y(27810) - y(22140)), tl = xB - xA;
+    function set(p) {
+      // p in 0..1 across the whole story of the chart
+      var a = clamp(p / .12, 0, 1), b = clamp((p - .12) / .26, 0, 1), c = clamp((p - .45) / .14, 0, 1), d = clamp((p - .62) / .3, 0, 1);
+      dA.setAttribute("r", 7 * easeOut(a));
+      jump.style.strokeDasharray = b < 1 ? (jl * b) + " " + jl : "6 6";
+      jump.style.opacity = 1 - .6 * c;
+      gM.style.opacity = b > .98 ? 1 : 0;
+      dM.setAttribute("fill", c > .5 ? COL.muted : COL.FAIL); xM.style.opacity = c; cM.style.opacity = c;
+      sM.setAttribute("x2", (xB - 18) - 124 * c); sM.style.opacity = c > 0 ? 1 : 0;
+      lM.style.opacity = 1 - .45 * c;
+      twin.setAttribute("x2", xA + tl * easeOut(d)); twin.setAttribute("y2", y(22140) + (y(22190) - y(22140)) * easeOut(d));
+      twin.style.opacity = d > 0 ? 1 : 0; band.style.opacity = d; gT.style.opacity = clamp((d - .6) / .4, 0, 1);
+    }
+    set(1);
+    return { set: set };
+  })();
+
+  /* ---------------- slide 5: scanner twin record ---------------- */
+  var PH = (function () {
+    var svg = document.getElementById("ph"), W = 640, H = 172, L = 40, R = 16, T = 12, B = 26, lo = 2.5, hi = 7.5, nodes = null;
+    function x(w) { return L + w / 26 * (W - L - R); }
+    function y(v) { return T + (hi - clamp(v, lo, hi)) / (hi - lo) * (H - T - B); }
+    function build() {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      var rec = VAR[variant].rec;
+      [3, 4, 5, 6, 7].forEach(function (v) { el(svg, "line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" }); el(svg, "text", { x: L - 8, y: y(v) + 4, "text-anchor": "end" }, v); });
+      [[4.5, COL.WARN, "caution"], [6, COL.FAIL, "fail"]].forEach(function (l) {
+        el(svg, "line", { x1: L, x2: W - R, y1: y(l[0]), y2: y(l[0]), stroke: l[1], "stroke-dasharray": "5 5", "stroke-opacity": ".75" });
+        el(svg, "text", { x: L + 6, y: y(l[0]) - 5, fill: l[1], style: "fill:" + l[1] }, l[2] + " " + l[0]);
+      });
+      [0, 13, 26].forEach(function (w) { el(svg, "text", { x: x(w), y: H - 6, "text-anchor": w === 0 ? "start" : w === 26 ? "end" : "middle" }, w === 26 ? "week 26 · Nov scan" : w === 0 ? "week 0 · May scan" : "week 13"); });
+      var first = -1; rec.forEach(function (r) { if (first < 0 && r.st.ph_fwhm_hz !== "PASS") first = r.w; });
+      var mark = null;
+      if (first >= 0) {
+        mark = el(svg, "g", {});
+        el(mark, "line", { x1: x(first), x2: x(first), y1: T, y2: H - B, stroke: COL.WARN, "stroke-opacity": ".6" });
+        el(mark, "text", { x: x(first) - 8, y: T + 12, "text-anchor": "end", fill: COL.WARN, style: "fill:" + COL.WARN }, "first warning · week " + first);
+      } else {
+        mark = el(svg, "text", { x: W - R, y: T + 12, "text-anchor": "end", fill: COL.PASS, style: "fill:" + COL.PASS }, "every weekly check passes");
+      }
+      var dots = rec.map(function (r) { return el(svg, "circle", { cx: x(r.w), cy: y(r.lw), r: 3, fill: COL[r.st.ph_fwhm_hz] }); });
+      var line = el(svg, "path", { fill: "none", stroke: COL.signal, "stroke-width": 2.4, "stroke-linejoin": "round" });
+      var head = el(svg, "circle", { r: 6, fill: COL.signal, stroke: tok("--night"), "stroke-width": 2 });
+      nodes = { rec: rec, dots: dots, line: line, head: head, mark: mark, first: first };
+      set(26);
+    }
+    function set(wf) {
+      var rec = nodes.rec, w = clamp(wf, 0, 26), wi = Math.floor(w), d = "";
+      for (var i = 0; i <= wi; i++) d += (i ? "L" : "M") + x(i).toFixed(1) + " " + y(rec[i].lwx).toFixed(1);
+      var hx = x(w), hy = y(lerp(rec[wi].lwx, rec[Math.min(26, wi + 1)].lwx, w - wi));
+      if (w > wi) d += "L" + hx.toFixed(1) + " " + hy.toFixed(1);
+      nodes.line.setAttribute("d", d);
+      nodes.dots.forEach(function (c, i) { c.style.opacity = i <= w ? 1 : 0; });
+      nodes.head.setAttribute("cx", hx); nodes.head.setAttribute("cy", hy); nodes.head.setAttribute("fill", COL[rec[wi].st.ph_fwhm_hz]);
+      nodes.mark.style.opacity = nodes.first < 0 ? (w >= 26 ? 1 : 0) : (w >= nodes.first ? 1 : 0);
+    }
+    build();
+    return { build: build, set: set };
+  })();
+
+
+  /* ---------------- FID oscilloscope ---------------- */
+  var fids = Array.prototype.slice.call(document.querySelectorAll("canvas[data-fid]"));
+  function sizeFids() {
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    fids.forEach(function (c) { var r = c.getBoundingClientRect(); c.width = Math.max(2, Math.round(r.width * dpr)); c.height = Math.max(2, Math.round(r.height * dpr)); });
+  }
+  function drawFid(c, t) {
+    var g = c.getContext("2d"), W = c.width, H = c.height, mid = H * .55, amp = H * .36, n = Math.min(900, Math.round(W / 2));
+    g.clearRect(0, 0, W, H);
+    var per = 5.2, ph = (t % per) / per, cur = ph * W * 1.08, cyc = Math.floor(t / per);
+    function s(u) { var tt = u * 9; return Math.exp(-tt / 3.2) * (Math.cos(2 * Math.PI * 1.9 * tt + cyc) + .6 * Math.cos(2 * Math.PI * 2.35 * tt) + .35 * Math.cos(2 * Math.PI * 2.6 * tt + 1)) / 1.95; }
+    g.lineWidth = Math.max(1, W / 1400); g.strokeStyle = "rgba(" + tok("--signal-rgb") + ",.13)"; g.beginPath();
+    for (var i = 0; i <= n; i++) { var u = i / n, X = u * W, Y = mid - amp * s(u); i ? g.lineTo(X, Y) : g.moveTo(X, Y); } g.stroke();
+    var tail = W * .3, x0 = Math.max(0, cur - tail), x1 = Math.min(W, cur);
+    if (x1 > x0) {
+      var gr = g.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, "rgba(" + tok("--signal-rgb") + ",0)"); gr.addColorStop(1, "rgba(" + tok("--signal-rgb") + ",.95)");
+      g.strokeStyle = gr; g.lineWidth = Math.max(1.5, W / 900); g.shadowColor = COL.signal; g.shadowBlur = 12; g.beginPath();
+      for (var j = Math.floor(x0 / W * n); j <= Math.ceil(x1 / W * n); j++) { var uu = j / n, XX = uu * W, YY = mid - amp * s(uu); j === Math.floor(x0 / W * n) ? g.moveTo(XX, YY) : g.lineTo(XX, YY); }
+      g.stroke(); g.shadowBlur = 0;
+      if (cur < W) { g.fillStyle = COL.signal; g.beginPath(); g.arc(cur, mid - amp * s(cur / W), Math.max(2.5, W / 500), 0, 7); g.fill(); }
+    }
+  }
+
+  /* ---------------- per-slide motion ---------------- */
+  var three = null;
+  var ANIM = {
+    problem: function (s) { counters(s); },
+    cause: function () {
+      tw(1100, 400, function (p) { drawIn(cMay, p); }, easeIO);
+      tw(1100, 650, function (p) { setSpec(cNov, yMay); drawIn(cNov, p); }, easeIO);
+      tw(1500, 1950, function (p) { if (p > 0) { setSpec(cNov, mixY(p)); cNov.line.style.strokeDasharray = "none"; cNov.ov.style.opacity = 1; cNov.ovl.style.opacity = 1; } }, easeIO);
+      tw(1800, 1000, function (p) { drawOutlines(clamp(p / .4, 0, 1), clamp((p - .5) / .5, 0, 1)); }, linear);
+    },
+    tested: function (s) { counters(s); },
+    memory: function () {
+      tw(3600, 700, function (p) { TL.set(p); }, linear);
+      tw(3400, 900, function (p) { PH.set(26 * p); if (three) three.week(Math.round(26 * p)); }, linear);
+    }
+  };
+
+  /* ---------------- navigation ---------------- */
+  var cur = -1, flow = root.classList.contains("flow"), scale = 1;
+  var segs = document.getElementById("segs"), ticks = document.getElementById("ticks");
+  slides.forEach(function (s, i) {
+    var m = META[s.id];
+    var li = document.createElement("li"), b = document.createElement("button");
+    b.type = "button"; b.textContent = m.n; b.setAttribute("aria-label", "Slide " + m.n + ": " + m.title); b.title = m.n + " · " + m.title;
+    b.addEventListener("click", function () { show(i); }); li.appendChild(b); segs.appendChild(li);
+    ticks.appendChild(document.createElement("i"));
+  });
+  var SCENE = {   // backdrop strength per slide: scrim = left gradient, veil = even dim
+    intro: [1, 0], problem: [1, .38], cause: [1, .72], how: [.6, .7], model: [.35, 0], demo: [1, 0], memory: [1, .4], tested: [1, .7], next: [1, .45]
+  };
+  function setBackdrop(id) {
+    var v = flow ? [0, .74] : SCENE[id];
+    document.getElementById("scrim").style.opacity = v[0]; document.getElementById("veil").style.opacity = v[1];
+  }
+  function show(i, force) {
+    i = clamp(i, 0, slides.length - 1);
+    if (i === cur && !force) return;
+    if (exploring) setExplore(false, true);
+    var prevI = cur; cur = i;
+    var s = slides[i], m = META[s.id];
+    if (!flow) {
+      slides.forEach(function (x, k) { x.classList.toggle("active", k === i); x.inert = k !== i; x.setAttribute("aria-hidden", k === i ? "false" : "true"); });
+      finishAll();
+      s.classList.remove("go"); void s.offsetWidth; s.classList.add("go");
+      if (ANIM[s.id]) ANIM[s.id](s);
+      try { history.replaceState(null, "", "#" + s.id); } catch (e) {}
+      document.getElementById("live").textContent = "Slide " + m.n + ", " + m.title;
+      if (prevI === 0 && i === 1) startTimer();
+    }
+    document.getElementById("where-n").textContent = m.n; document.getElementById("where-t").textContent = m.title;
+    Array.prototype.forEach.call(segs.querySelectorAll("button"), function (b, k) { if (k === i) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
+    Array.prototype.forEach.call(ticks.children, function (t, k) { t.classList.toggle("on", k === i); });
+    var wasModel = modelOn;
+    modelOn = !flow && !!three && s.id === "model";
+    root.classList.toggle("model", modelOn); syncOverlay();
+    setBackdrop(s.id);
+    if (three) three.go(s.id);
+    if (modelOn && !wasModel) selectHot(null);
+    renderNotes();
+  }
+  function next() { wake(); show(cur + 1); }
+  function prev() { show(cur - 1); }
+  function fromHash() { var h = (location.hash || "").slice(1); for (var i = 0; i < slides.length; i++) if (slides[i].id === h) return i; return -1; }
+
+  addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key, onBtn = e.target && e.target.tagName === "BUTTON";
+    if (k === "n" || k === "N") { toggleNotes(); return; }
+    if (k === "v" || k === "V") { setVariant(variant === "machine" ? "caution" : "machine"); return; }
+    if (k === "e" || k === "E") { setExplore(!exploring); return; }
+    if (exploring) { if (k === "Escape") setExplore(false); else if (k === "f" || k === "F") toggleFs(); return; }
+    if (flow) return;
+    if (e.target && e.target.tagName === "INPUT") return;
+    if ((k === " " || k === "Enter") && onBtn) return;
+    if (["ArrowRight", "ArrowDown", "PageDown", " ", "Enter"].indexOf(k) >= 0) { e.preventDefault(); next(); }
+    else if (["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].indexOf(k) >= 0) { e.preventDefault(); prev(); }
+    else if (k === "Home") { e.preventDefault(); show(0); }
+    else if (k === "End") { e.preventDefault(); show(slides.length - 1); }
+    else if (/^[1-7]$/.test(k)) { for (var j = 0; j < slides.length; j++) if (META[slides[j].id].n === k) show(j); }
+    else if (k === "f" || k === "F") toggleFs();
+    else if (k === "t" || k === "T") toggleTimer();
+    else if (k === "r" || k === "R") resetTimer();
+    else if (k === "Escape") { if (!notesEl.hidden) toggleNotes(); }
+  });
+  var tx = null, ty = null;
+  document.getElementById("deck").addEventListener("touchstart", function (e) { if (flow) return; tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+  document.getElementById("deck").addEventListener("touchend", function (e) {
+    if (flow || tx == null) return; var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; tx = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { if (dx < 0) next(); else prev(); }
+  });
+  addEventListener("hashchange", function () { if (location.hash === "#explore") { setExplore(true); return; } var i = fromHash(); if (i >= 0 && !flow) show(i); });
+  document.getElementById("b-prev").addEventListener("click", prev);
+  document.getElementById("b-next").addEventListener("click", next);
+
+  // controls fade away while presenting
+  var bar = document.getElementById("bar"), idleT = 0;
+  function poke() { bar.classList.remove("idle"); clearTimeout(idleT); idleT = setTimeout(function () { bar.classList.add("idle"); }, 2600); }
+  addEventListener("mousemove", poke); addEventListener("touchstart", poke, { passive: true }); poke();
+
+  // full screen + keep the screen awake
+  var fsBtn = document.getElementById("b-fs");
+  if (!document.fullscreenEnabled || !root.requestFullscreen) fsBtn.hidden = true;
+  function toggleFs() {
+    try {
+      if (!document.fullscreenElement) { var p = root.requestFullscreen(); if (p && p.catch) p.catch(function () {}); wake(); }
+      else document.exitFullscreen();
+    } catch (e) {}
+  }
+  fsBtn.addEventListener("click", toggleFs);
+  var lock = null;
+  function wake() {
+    if (lock || !navigator.wakeLock) return;
+    navigator.wakeLock.request("screen").then(function (l) { lock = l; l.addEventListener("release", function () { lock = null; }); }).catch(function () {});
+  }
+
+  // verdict variant
+  function setVariant(v) {
+    variant = v; store.set("scantwin.verdict", v);
+    var V = VAR[v];
+    document.getElementById("b-verdict-t").textContent = V.btn; document.getElementById("b-verdict-dot").style.background = V.dot;
+    PH.build();
+    if (three) three.refresh();
+    Array.prototype.forEach.call(document.querySelectorAll(".seg [data-v]"), function (b) { b.setAttribute("aria-pressed", b.dataset.v === v ? "true" : "false"); });
+    renderNotes(); renderInfo();
+  }
+  document.getElementById("b-verdict").addEventListener("click", function () { setVariant(variant === "machine" ? "caution" : "machine"); });
+
+  // notes + timer
+  var notesEl = document.getElementById("notes"), nBtn = document.getElementById("b-notes");
+  var timer = { acc: 0, t0: 0, on: false };
+  function elapsed() { return timer.acc + (timer.on ? (performance.now() - timer.t0) / 1000 : 0); }
+  function startTimer() { if (!timer.on) { timer.t0 = performance.now(); timer.on = true; } }
+  function toggleTimer() { if (timer.on) { timer.acc = elapsed(); timer.on = false; } else startTimer(); }
+  function resetTimer() { timer.acc = 0; timer.on = false; }
+  function mmss(s) { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+  function toggleNotes() { notesEl.hidden = !notesEl.hidden; nBtn.setAttribute("aria-pressed", notesEl.hidden ? "false" : "true"); renderNotes(); }
+  nBtn.addEventListener("click", toggleNotes);
+  function renderNotes() {
+    if (notesEl.hidden || cur < 0) return;
+    var id = slides[cur].id, m = META[id];
+    document.getElementById("n-slot").innerHTML = "<b>" + m.n + "</b> · " + m.title + " · " + mmss(m.t[0]) + "–" + mmss(m.t[1]);
+    document.getElementById("n-text").textContent = id === "demo" ? VAR[variant].demo : NOTES[id];
+    var tip = id === "demo" ? VAR[variant].tip : TIPS[id], te = document.getElementById("n-tip");
+    te.hidden = !tip; te.textContent = tip || "";
+  }
+  var timerEl = document.getElementById("n-timer"), lastTimerTxt = "";
+  function tickTimer() {
+    if (notesEl.hidden || cur < 0) return;
+    var e = elapsed(), m = META[slides[cur].id], txt = mmss(e) + " / 3:00" + (timer.on ? "" : " · paused");
+    if (txt !== lastTimerTxt) { timerEl.textContent = txt; lastTimerTxt = txt; }
+    timerEl.className = "timer" + (e > 180 ? " over" : e > m.t[1] ? " late" : "");
+  }
+
+  /* ---------------- layout: deck vs stacked ---------------- */
+  var io = null;
+  function setMode(f) {
+    flow = f; root.classList.toggle("flow", f);
+    if (f) {
+      finishAll(); instant = true;
+      slides.forEach(function (s) { s.classList.remove("go"); s.classList.add("active"); s.inert = false; s.removeAttribute("aria-hidden"); if (ANIM[s.id]) ANIM[s.id](s); });
+      instant = false;
+      if (!io && "IntersectionObserver" in window) {
+        io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting && flow && !exploring) { var i = slides.indexOf(e.target); if (i !== cur) show(i, true); } }); }, { rootMargin: "-45% 0px -45% 0px" });
+        slides.forEach(function (s) { io.observe(s); });
+      }
+      setBackdrop(slides[Math.max(0, cur)].id);
+    } else {
+      var i = Math.max(0, cur); cur = -1; show(i, true);
+    }
+  }
+  function layout() {
+    var W = innerWidth, H = innerHeight, f = W < 900 || W / H < 1.05;
+    if (f !== flow) setMode(f);
+    if (!flow) {
+      var deck = document.getElementById("deck"), cs = getComputedStyle(deck);
+      var cw = deck.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      scale = Math.min(cw / 1600, deck.clientHeight / 900);
+      frame.style.setProperty("--s", scale.toFixed(4));
+    }
+    sizeFids();
+    if (three) three.resize();
+  }
+  addEventListener("resize", layout);
+
+  /* ---------------- 3D scanner room ---------------- */
+  var PARTS = [
+    { key: "magnet", name: "Magnet & shim", obs: ["ph_fwhm_hz", "ph_freq_hz"], at: [-330, 250, 120] },
+    { key: "head", name: "Head coil", obs: ["ph_snr_pct"], at: [0, 120, 60] },
+    { key: "body", name: "Transmitter", obs: ["ph_water_ratio"], at: [236, -70, 150] },
+    { key: "grad", name: "Gradients", obs: ["ph_geometry_mm"], at: [262, 210, -170] }
+  ];
+  var RANK = { PASS: 0, WARN: 1, FAIL: 2 }, WORD = { PASS: "good", WARN: "caution", FAIL: "fail" };
+  function initThree() {
+    var canvas = document.getElementById("stage");
+    if (!window.THREE) return null;
+    var renderer;
+    try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: "high-performance" }); } catch (e) { return null; }
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setClearColor(tok("--night"), 1);
+    var scene = new THREE.Scene(); scene.fog = new THREE.Fog(tok("--night"), 1000, 2900);
+    var camera = new THREE.PerspectiveCamera(34, 1, 1, 7000);
+    scene.add(new THREE.HemisphereLight(0xbcd7ff, 0x0a0f18, .85));
+    var key = new THREE.DirectionalLight(0xffffff, .9); key.position.set(500, 700, 600); scene.add(key);
+    var rim = new THREE.DirectionalLight(COL.signal, .55); rim.position.set(-600, 200, -500); scene.add(rim);
+    var grid = new THREE.GridHelper(4400, 44, 0x1a2a3a, 0x0e1620); grid.position.y = -420; scene.add(grid);
+
+    // housing: a rounded ring lathed around the bore axis (z)
+    var Ri = 215, Ro = 400, Hh = 230, rr = 60, prof = [new THREE.Vector2(Ri, -Hh)], a, t;
+    for (a = 0; a <= 8; a++) { t = -Math.PI / 2 + a / 8 * Math.PI / 2; prof.push(new THREE.Vector2(Ro - rr + rr * Math.cos(t), -Hh + rr + rr * Math.sin(t))); }
+    for (a = 0; a <= 8; a++) { t = a / 8 * Math.PI / 2; prof.push(new THREE.Vector2(Ro - rr + rr * Math.cos(t), Hh - rr + rr * Math.sin(t))); }
+    prof.push(new THREE.Vector2(Ri, Hh));
+    var hMat = new THREE.MeshStandardMaterial({ color: 0xe9eef3, roughness: .36, metalness: .05, transparent: true, opacity: .96, side: THREE.DoubleSide });
+    var housing = new THREE.Mesh(new THREE.LatheGeometry(prof, 128), hMat); housing.rotation.x = Math.PI / 2; scene.add(housing);
+    var boreMat = new THREE.MeshStandardMaterial({ color: 0xd7dee6, roughness: .6, side: THREE.BackSide, transparent: true, opacity: .96 });
+    var bore = new THREE.Mesh(new THREE.CylinderGeometry(Ri, Ri, Hh * 2, 128, 1, true), boreMat); bore.rotation.x = Math.PI / 2; scene.add(bore);
+    var ringMat = new THREE.MeshBasicMaterial({ color: COL.signal });
+    var lightRing = new THREE.Mesh(new THREE.TorusGeometry(Ri + 6, 3, 10, 160), ringMat); lightRing.position.z = Hh + 2; scene.add(lightRing);
+    var panel = new THREE.Mesh(new THREE.BoxGeometry(120, 34, 6), new THREE.MeshBasicMaterial({ color: 0x0d1822 })); panel.position.set(0, Ro - 70, Hh + 4); scene.add(panel);
+    // RF pulse rings breathing out of the bore
+    var pulses = [0, 1, 2].map(function () {
+      var m = new THREE.MeshBasicMaterial({ color: COL.signal, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+      var r = new THREE.Mesh(new THREE.TorusGeometry(Ri + 10, 1.6, 8, 160), m); r.position.z = Hh + 6; scene.add(r); return r;
+    });
+
+    // internal parts, seen in x-ray mode
+    function statusMat() { return new THREE.MeshStandardMaterial({ color: 0x8fa1b3, emissive: 0x000000, roughness: .4, metalness: .3, transparent: true, opacity: 0 }); }
+    var mats = { magnet: statusMat(), grad: statusMat(), body: statusMat(), head: statusMat() };
+    var internals = new THREE.Group(); scene.add(internals);
+    [-170, -100, -35, 35, 100, 170].forEach(function (z) { var c = new THREE.Mesh(new THREE.TorusGeometry(330, 14, 10, 120), mats.magnet); c.position.z = z; internals.add(c); });
+    mats.grad.wireframe = true;
+    var gradM = new THREE.Mesh(new THREE.CylinderGeometry(258, 258, 380, 48, 8, true), mats.grad); gradM.rotation.x = Math.PI / 2; internals.add(gradM);
+    [-160, 160].forEach(function (z) { var r = new THREE.Mesh(new THREE.TorusGeometry(232, 4, 8, 96), mats.body); r.position.z = z; internals.add(r); });
+    for (var k = 0; k < 16; k++) { var ang = k / 16 * Math.PI * 2, rod = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 320, 6), mats.body); rod.rotation.x = Math.PI / 2; rod.position.set(232 * Math.cos(ang), 232 * Math.sin(ang), 0); internals.add(rod); }
+
+    // patient table and head coil
+    var table = new THREE.Mesh(new THREE.BoxGeometry(200, 14, 980), new THREE.MeshStandardMaterial({ color: 0x2a3a4c, roughness: .7 })); table.position.set(0, -135, 260); scene.add(table);
+    var pedestal = new THREE.Mesh(new THREE.BoxGeometry(160, 270, 420), new THREE.MeshStandardMaterial({ color: 0xdfe6ee, roughness: .5 })); pedestal.position.set(0, -285, 560); scene.add(pedestal);
+    var head = new THREE.Group();
+    for (k = 0; k < 10; k++) { var rib = new THREE.Mesh(new THREE.TorusGeometry(120, 3, 6, 40, Math.PI), mats.head); rib.rotation.y = Math.PI / 2; rib.position.z = -90 + k * 20; head.add(rib); }
+    [-95, 95].forEach(function (z) { var r = new THREE.Mesh(new THREE.TorusGeometry(120, 4, 8, 60, Math.PI), mats.head); r.position.z = z; head.add(r); });
+    head.position.y = -20; scene.add(head);
+
+    // brain from the StarterPack NIfTI (RAS mm → x' = −x, y' = y, z' = −z: supine, head into the bore)
+    var brainGrp = new THREE.Group(); brainGrp.scale.setScalar(.9); scene.add(brainGrp);
+    var roi0Mat = new THREE.MeshStandardMaterial({ color: COL.roi0, emissive: 0x1b2f80, emissiveIntensity: .5 });
+    var roi1Mat = new THREE.MeshStandardMaterial({ color: COL.WARN, emissive: COL.FAIL, emissiveIntensity: .3, transparent: true, opacity: 0, depthWrite: false });
+    var voxMat = new THREE.MeshStandardMaterial({ color: COL.WARN, emissive: COL.WARN, emissiveIntensity: .4, transparent: true, opacity: .6 });
+    var voxel = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 20), voxMat); voxel.position.set(16, 45, -6); brainGrp.add(voxel);
+    function addMeshes(M) {
+      function geo(m) {
+        var g = new THREE.BufferGeometry(), v = m.v, o = new Float32Array(v.length);
+        for (var i = 0; i < v.length; i += 3) { o[i] = -v[i]; o[i + 1] = v[i + 1]; o[i + 2] = -v[i + 2]; }
+        g.setAttribute("position", new THREE.BufferAttribute(o, 3)); g.setIndex(m.f); g.computeVertexNormals(); return g;
+      }
+      brainGrp.add(new THREE.Mesh(geo(M.brain), new THREE.MeshStandardMaterial({ color: 0xcfdcea, roughness: .5, transparent: true, opacity: .3, depthWrite: false, side: THREE.DoubleSide })));
+      brainGrp.add(new THREE.Mesh(geo(M.csf), new THREE.MeshStandardMaterial({ color: 0x3d5c7c, transparent: true, opacity: .55 })));
+      brainGrp.add(new THREE.Mesh(geo(M.roi0), roi0Mat)); brainGrp.add(new THREE.Mesh(geo(M.roi1), roi1Mat));
+    }
+    var mEl = document.getElementById("meshes"), mTxt = mEl ? mEl.textContent.trim() : "";
+    if (mTxt.charAt(0) === "{") { try { addMeshes(JSON.parse(mTxt)); } catch (e) {} }
+    else if (window.fetch) fetch("story_meshes.json").then(function (r) { return r.ok ? r.json() : null; }).then(function (M) { if (M) addMeshes(M); }).catch(function () {});
+
+    // camera keyframes per slide: position, target, x-ray, region overlay, RF pulses, horizontal shift (fraction of width)
+    var K = {
+      intro:   { p: [700, 270, 830], t: [0, -20, 60], x: 0, r: 0, rf: 1, sh: .2 },
+      problem: { p: [150, 72, 330], t: [-12, 0, -10], x: .12, r: 1, rf: 0, sh: .27 },
+      cause:   { p: [70, 95, 150], t: [4, 25, -6], x: .6, r: 1, rf: 0, sh: .3 },
+      how:     { p: [0, 780, 1120], t: [0, -90, 40], x: .55, r: 0, rf: .4, sh: 0 },
+      model:   { p: [1000, 460, 980], t: [0, -30, 0], x: .7, r: 1, rf: .3, sh: .1 },
+      demo:    { p: [1180, 560, 940], t: [0, -30, 0], x: 1, r: 0, rf: 0, sh: .27 },
+      memory:  { p: [1200, 480, 1040], t: [0, -20, 0], x: 1, r: 0, rf: 0, sh: .31 },
+      tested:  { p: [-560, 300, -700], t: [0, -10, 0], x: .15, r: 0, rf: .5, sh: .24 },
+      next:    { p: [660, 230, 920], t: [0, -10, 100], x: 0, r: 0, rf: 1, sh: .2 }
+    };
+    var st = { p: new THREE.Vector3().fromArray(K.intro.p), t: new THREE.Vector3().fromArray(K.intro.t), x: 0, r: 0, rf: 1, sh: .2 };
+    var from = null, to = K.intro, t0 = 0, dur = 1900, slideId = "intro", week = null, override = null, ringFail = false;
+    var UP = new THREE.Vector3(0, 1, 0), uYaw = 0, uPitch = 0, tYaw = 0, tPitch = 0, shNow = .2, orbitNow = 0, ex = false, xT = .7, focus = null;
+    var inter = false, wkSel = 26;   // inter: OrbitControls drive the camera (3D slide or explore mode)
+    var controls = null;
+    if (THREE.OrbitControls) {
+      controls = new THREE.OrbitControls(camera, canvas);
+      controls.enabled = false; controls.enableDamping = true; controls.dampingFactor = .08; controls.screenSpacePanning = true;
+      controls.minDistance = 90; controls.maxDistance = 2600; controls.autoRotateSpeed = .5;
+      controls.addEventListener("start", function () { controls.autoRotate = false; focus = null; });
+    }
+    // clickable labels for explore mode
+    var HOT = [
+      { k: "voxel", name: "Spectroscopy voxel", at: [14.4, 40.5, -5.4], dist: 240, x: 1 },
+      { k: "roi", name: "Measured region", at: [-28.4, -14, .4], dist: 230, x: 1 },
+      { k: "magnet", name: "Magnet & shim", at: PARTS[0].at, dist: 1250, x: .85 },
+      { k: "head", name: "Head coil", at: PARTS[1].at, dist: 700, x: .85 },
+      { k: "body", name: "Transmitter", at: PARTS[2].at, dist: 1100, x: .85 },
+      { k: "grad", name: "Gradients", at: PARTS[3].at, dist: 1150, x: .85 }
+    ];
+    var hotBox = document.getElementById("x-hot");
+    HOT.forEach(function (h) {
+      h.v = new THREE.Vector3().fromArray(h.at);
+      var b = document.createElement("button"); b.type = "button"; b.className = "hot"; b.dataset.k = h.k; b.setAttribute("aria-pressed", "false");
+      b.innerHTML = "<i></i><span></span>"; b.lastChild.textContent = h.name;
+      b.addEventListener("click", function () { selectHot(h.k); });
+      hotBox.appendChild(b); h.el = b;
+    });
+    function orbitAngle() { return reduce ? 0 : Math.sin(clock * .16) * .07 * (1 - .6 * st.x); }
+    function startInter() {
+      if (inter || !controls) return;
+      inter = true; focus = null; controls.target.copy(st.t); controls.enabled = true; controls.autoRotate = !reduce; controls.update();
+    }
+    function stopInter() {
+      if (!inter) return;
+      inter = false; focus = null; controls.enabled = false; st.t.copy(controls.target);
+      st.p.copy(camera.position).sub(st.t).applyAxisAngle(UP, -orbitAngle()).add(st.t);
+    }
+    function go(id) {
+      stopInter();
+      slideId = id; to = id === "model" ? Object.assign({}, K.model, { x: xT }) : K[id]; t0 = performance.now(); tYaw = 0; tPitch = 0;
+      from = { p: st.p.clone(), t: st.t.clone(), x: st.x, r: st.r, rf: st.rf, sh: st.sh };
+      week = id === "demo" ? 26 : id === "memory" ? (reduce || flow ? 26 : 0) : id === "model" ? wkSel : null;
+      override = id === "cause" ? { magnet: "WARN" } : null;
+      ringFail = id === "problem";
+      paintParts();
+    }
+    function status(p) {
+      if (override && override[p.key]) return override[p.key];
+      if (week == null) return "PASS";
+      var s = VAR[variant].rec[week].st;
+      return p.obs.reduce(function (acc, o) { return RANK[s[o]] > RANK[acc] ? s[o] : acc; }, "PASS");
+    }
+    var stat = {};
+    function paintParts() { PARTS.forEach(function (p) { stat[p.key] = status(p); }); }
+    var tagsBox = document.getElementById("tags"), tagEls = {};
+    PARTS.forEach(function (p) {
+      var e = document.createElement("div"); e.className = "tag3d"; e.innerHTML = "<i></i><span>" + p.name + "</span><b></b>"; tagsBox.appendChild(e); tagEls[p.key] = e;
+    });
+    function resize() { var w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+    resize(); paintParts();
+    var clock = 0, tmpC = new THREE.Color(), anchors = {};
+    PARTS.forEach(function (p) { anchors[p.key] = new THREE.Vector3().fromArray(p.at); });
+    return {
+      go: go, resize: resize, refresh: paintParts,
+      week: function (w) { if (slideId === "memory" && !ex) { week = w; paintParts(); } },
+      setWeek: function (w) { wkSel = w; if (ex || slideId === "model") { week = w; paintParts(); } },
+      setX: function (v) { xT = v; },
+      status: function (k) { return stat[k] || "PASS"; },
+      weekNow: function () { return week == null ? 26 : week; },
+      drag: function (dx, dy) { tYaw -= dx * .006; tPitch = clamp(tPitch + dy * .005, -.45, .65); },
+      focusOn: function (k) {
+        var h = null; HOT.forEach(function (o) { if (o.k === k) h = o; });
+        if (!h || !controls) return;
+        if (!inter) { from = null; startInter(); }
+        var ta = controls.target.clone(), dir = camera.position.clone().sub(ta).normalize();
+        focus = { t0: performance.now(), ta: ta, tb: h.v.clone(), pa: camera.position.clone(), pb: h.v.clone().add(dir.multiplyScalar(h.dist)) };
+        controls.autoRotate = false;
+        return h.x;
+      },
+      explore: function (on, wk) {
+        ex = on; focus = null;
+        if (on) {
+          from = null; ringFail = false; override = null; week = wk; wkSel = wk; paintParts(); tYaw = tPitch = 0;
+          if (clock === 0) { camera.position.copy(st.p); camera.lookAt(st.t); }
+          startInter();
+        } else {
+          stopInter();
+          uYaw = tYaw = uPitch = tPitch = 0;
+        }
+      },
+      tick: function (now, dt) {
+        clock += dt;
+        var kk = 1 - Math.pow(.004, dt);
+        if (from && !ex) {
+          var f = reduce ? 1 : easeIO(clamp((now - t0) / dur, 0, 1));
+          st.p.lerpVectors(from.p, new THREE.Vector3().fromArray(to.p), f); st.t.lerpVectors(from.t, new THREE.Vector3().fromArray(to.t), f);
+          st.x = lerp(from.x, to.x, f); st.r = lerp(from.r, to.r, f); st.rf = lerp(from.rf, to.rf, f); st.sh = lerp(from.sh, to.sh, f);
+          if (f >= 1) { from = null; if (slideId === "model" && !flow) startInter(); }
+        }
+        if (!from && (ex || slideId === "model")) { st.x += (xT - st.x) * kk; st.r += (1 - st.r) * kk; st.rf += (.3 - st.rf) * kk; }
+        uYaw += (tYaw - uYaw) * kk; uPitch += (tPitch - uPitch) * kk;
+        if (inter) {
+          if (focus) {
+            var ff = easeIO(clamp((now - focus.t0) / 1300, 0, 1));
+            camera.position.lerpVectors(focus.pa, focus.pb, ff); controls.target.lerpVectors(focus.ta, focus.tb, ff);
+            if (ff >= 1) focus = null;
+          }
+          controls.update();
+        } else {
+          orbitNow = orbitAngle();
+          var v = st.p.clone().sub(st.t).applyAxisAngle(UP, orbitNow + uYaw);
+          if (Math.abs(uPitch) > 1e-4) v.applyAxisAngle(new THREE.Vector3().crossVectors(v, UP).normalize(), uPitch);
+          camera.position.copy(st.t).add(v);
+          camera.lookAt(st.t);
+        }
+        var W = innerWidth, H = innerHeight;
+        shNow += (((flow || ex) ? 0 : st.sh) - shNow) * kk;
+        camera.setViewOffset(W, H, -shNow * W, 0, W, H);
+        hMat.opacity = .96 - .86 * st.x; boreMat.opacity = .96 - .9 * st.x; hMat.depthWrite = st.x < .3;
+        PARTS.forEach(function (p) {
+          var s = stat[p.key], m = mats[p.key], live = week != null || !!(override && override[p.key]);
+          tmpC.set(live ? COL[s] : COL.muted);
+          m.color.copy(tmpC);
+          m.emissive.copy(tmpC).multiplyScalar(!live || s === "PASS" ? .16 : .38 + (reduce ? 0 : .22 * Math.sin(clock * 4)) * (s === "FAIL" ? 1 : .5));
+          m.opacity = Math.min(p.key === "magnet" ? .72 : 1, st.x * 1.1);
+          var tg = tagEls[p.key], v = anchors[p.key].clone().project(camera);
+          var show = !flow && !ex && slideId === "demo" && st.x > .85 && v.z < 1 && v.y < .72 && v.x < .92;
+          tg.style.opacity = show ? 1 : 0;
+          if (show) {
+            tg.style.left = ((v.x * .5 + .5) * W) + "px"; tg.style.top = ((-v.y * .5 + .5) * H) + "px";
+            tg.firstChild.style.background = COL[s]; tg.lastChild.textContent = WORD[s]; tg.lastChild.style.color = COL[s];
+          }
+        });
+        var ringC = ringFail ? COL.FAIL : (week != null ? COL[stat.magnet] : COL.signal);
+        ringMat.color.set(ringC);
+        pulses.forEach(function (r, i) {
+          var ph = reduce ? 0 : ((clock * .32 + i / 3) % 1);
+          r.scale.setScalar(1 + ph * .85); r.material.opacity = Math.pow(1 - ph, 2) * .55 * st.rf; r.material.color.set(ringC);
+        });
+        HOT.forEach(function (h) {
+          if (!(ex || (slideId === "model" && !flow))) { h.el.style.visibility = "hidden"; return; }
+          var q = h.v.clone().project(camera), on = q.z < 1 && Math.abs(q.x) < 1.05 && Math.abs(q.y) < 1.05;
+          h.el.style.visibility = on ? "visible" : "hidden";
+          if (on) {
+            h.el.style.left = clamp((q.x * .5 + .5) * W, 70, W - 70) + "px"; h.el.style.top = clamp((-q.y * .5 + .5) * H, 90, H - 40) + "px";
+            h.el.firstChild.style.background = COL[h.k === "voxel" || h.k === "roi" ? "WARN" : stat[h.k]];
+          }
+        });
+        roi1Mat.opacity = .5 * st.r; roi1Mat.emissiveIntensity = .25 + (reduce ? 0 : .35 * (.5 + .5 * Math.sin(clock * 3.2))) * st.r;
+        roi0Mat.emissiveIntensity = .5 + .4 * st.r;
+        voxMat.emissiveIntensity = .3 + (reduce ? 0 : .3 * Math.sin(clock * 3));
+        renderer.render(scene, camera);
+      }
+    };
+  }
+  three = initThree();
+  if (!three) { document.getElementById("nogl").hidden = false; document.getElementById("stage").style.display = "none"; document.getElementById("b-3d").hidden = true; }
+
+  /* ---------------- drag the scene on slides, explore mode ---------------- */
+  var deckEl = document.getElementById("deck"), drag = null;
+  function emptyArea(t) { return t === deckEl || t === frame || (t.classList && (t.classList.contains("slide") || t.classList.contains("chrome"))); }
+  deckEl.addEventListener("pointerdown", function (e) {
+    if (!three || flow || exploring || e.pointerType !== "mouse" || e.button !== 0 || !emptyArea(e.target)) return;
+    drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    try { deckEl.setPointerCapture(e.pointerId); } catch (er) {}
+    root.classList.add("dragging");
+  });
+  deckEl.addEventListener("pointermove", function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    three.drag(e.clientX - drag.x, e.clientY - drag.y); drag.x = e.clientX; drag.y = e.clientY;
+  });
+  function endDrag() { drag = null; root.classList.remove("dragging"); }
+  deckEl.addEventListener("pointerup", endDrag); deckEl.addEventListener("pointercancel", endDrag);
+  deckEl.addEventListener("dblclick", function (e) { if (three && !flow && emptyArea(e.target)) setExplore(true); });
+
+  var exploring = false, modelOn = false, xEl = document.getElementById("explore"), b3d = document.getElementById("b-3d");
+  function syncOverlay() { xEl.hidden = !(exploring || modelOn); }
+  var wkIn = document.getElementById("x-week"), xrIn = document.getElementById("x-ray"), selHot = null;
+  function setExplore(on, quiet) {
+    if (!three || on === exploring) return;
+    exploring = on; root.classList.toggle("explore", on); syncOverlay(); b3d.setAttribute("aria-pressed", on ? "true" : "false");
+    if (on) {
+      finishAll(); endDrag();
+      document.getElementById("scrim").style.opacity = 0; document.getElementById("veil").style.opacity = 0;
+      three.explore(true, +wkIn.value); three.setX(+xrIn.value / 100);
+      selectHot(null); document.getElementById("x-close").focus();
+      try { history.replaceState(null, "", "#explore"); } catch (e) {}
+    } else {
+      three.explore(false);
+      if (!quiet) show(cur, true);
+    }
+  }
+  b3d.addEventListener("click", function () { setExplore(!exploring); });
+  document.getElementById("x-close").addEventListener("click", function () { setExplore(false); });
+  Array.prototype.forEach.call(document.querySelectorAll(".seg [data-v]"), function (b) { b.addEventListener("click", function () { setVariant(b.dataset.v); }); });
+  function weekLabel(w) { return w === 0 ? "week 0 · May scan" : w === 26 ? "week 26 · Nov scan" : "week " + w; }
+  wkIn.addEventListener("input", function () { document.getElementById("x-week-o").textContent = weekLabel(+wkIn.value); if (three) three.setWeek(+wkIn.value); renderInfo(); });
+  xrIn.addEventListener("input", function () { document.getElementById("x-ray-o").textContent = xrIn.value + "%"; if (three) three.setX(+xrIn.value / 100); });
+  function selectHot(k) {
+    selHot = k;
+    Array.prototype.forEach.call(document.querySelectorAll(".hot"), function (b) { b.setAttribute("aria-pressed", b.dataset.k === k ? "true" : "false"); });
+    if (k && three) {
+      var xr = three.focusOn(k);
+      if (xr && +xrIn.value / 100 < xr) { xrIn.value = Math.round(xr * 100); document.getElementById("x-ray-o").textContent = xrIn.value + "%"; three.setX(xr); }
+    }
+    renderInfo();
+  }
+  var PART_TEXT = {
+    magnet: "Field uniformity and frequency, read from the weekly bottle scan. Caution when the peak is wider than 4.5 Hz, fail above 6 Hz.",
+    head: "Signal strength: the bottle scan's signal-to-noise as a share of the coil's baseline. Caution below 90%, fail below 70% (catalogue F09).",
+    body: "RF transmit, read from the water left over in the bottle scan. Caution above 0.5, fail above 1.5 (catalogue F15).",
+    grad: "Geometry: the size error on a 190 mm bottle. Caution above 1 mm, fail above 2 mm (catalogue F01)."
+  };
+  function renderInfo() {
+    if (!(exploring || modelOn) || !three) return;
+    var box = document.getElementById("x-info"), h = box.children[0], p = box.children[1], sm = box.children[2];
+    var w = +wkIn.value, rec = VAR[variant].rec[w], cond = variant === "machine" ? "shim degrading" : "scanner healthy";
+    if (!selHot) {
+      h.textContent = "Inside the scanner";
+      p.textContent = "The brain is the StarterPack subject, lying in the bore as it was scanned. Click a label: the spectroscopy voxel, the measured region, or a part of the machine that the scanner twin follows.";
+      sm.textContent = "Brain and region surfaces: StarterPack v0.3 NIfTI files. Scanner: schematic.";
+    } else if (selHot === "voxel") {
+      h.textContent = "Spectroscopy voxel";
+      p.textContent = "A 2 cm cube in the frontal lobe where choline and creatine are measured. Choline / creatine: 0.69 in May, 0.85 in November. In November the peaks were wider (8.7 → 11.4 Hz) and noisier (signal-to-noise 31 → 25).";
+      sm.textContent = "PRESS, TE 30 ms, 64 averages · StarterPack, synthetic subject";
+    } else if (selHot === "roi") {
+      h.textContent = "Measured region";
+      p.textContent = "Blue: the May outline, 22,140 mm³. Amber: the November outline, 27,810 mm³. The two images line up to 0.002 mm and differ only by noise, so the outline changed, not the brain.";
+      sm.textContent = "Twin estimate after November: 22,190 ± 697 mm³";
+    } else {
+      var s = three.status(selHot);
+      h.textContent = { magnet: "Magnet & shim", head: "Head coil", body: "Transmitter", grad: "Gradients" }[selHot] + " · " + WORD[s];
+      h.style.color = "";
+      p.textContent = PART_TEXT[selHot] + (selHot === "magnet" ? " Week " + w + ": " + rec.lwx.toFixed(1) + " Hz." : "");
+      sm.textContent = "Scanner twin, " + cond + ", " + weekLabel(w) + " · simulated record";
+    }
+  }
+
+  /* ---------------- boot ---------------- */
+  setVariant(variant);
+  layout();
+  if (flow) setMode(true);
+  var wantExplore = location.hash === "#explore", start = fromHash();
+  show(start >= 0 ? start : 0, true);
+  if (wantExplore) setExplore(true);
+
+  var last = performance.now();
+  function frameLoop(now) {
+    var dt = Math.min(.05, (now - last) / 1000); last = now;
+    stepTweens(now);
+    if (!document.hidden) {
+      if (three) three.tick(now, dt);
+      if (!flow && cur >= 0) { var s = slides[cur]; fids.forEach(function (c) { if (s.contains(c)) drawFid(c, now / 1000); }); }
+    }
+    tickTimer();
+    requestAnimationFrame(frameLoop);
+  }
+  requestAnimationFrame(frameLoop);
+})();
+</script>

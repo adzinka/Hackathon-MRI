@@ -10,6 +10,14 @@ AI use (declare it in the pitch): drafted with Claude and reviewed by the team.
 are, and what to measure next. Plan and checkpoints: [CHECKPOINTS.md](CHECKPOINTS.md). New here: [CONTRIBUTING.md](CONTRIBUTING.md).
 Data pack for the scanner experts: [scanner_data/](scanner_data/README.md).
 
+## Pitch
+- **Presentation (online):** https://claude.ai/artifact/CjZcyfQWdpu2sCh56WuUgN
+  (straight to the interactive 3D model: https://claude.ai/artifact/CjZcyfQWdpu2sCh56WuUgN#explore)
+- **Offline copy:** [docs/story.html](docs/story.html), opened in any browser (internet only for the 3D library and fonts).
+- Keys: → / space / clicker next · ← back · N speaker notes and 3:00 timer · V demo verdict · E explore in 3D · F full screen.
+- Slide plan and script: [docs/ScanTwin_slides_guideline.md](docs/ScanTwin_slides_guideline.md). Source:
+  `docs/story_src.html` + `docs/story_assets/`; rebuild with `python scripts/build_story.py`.
+
 ## Setup
 ```bash
 pip install -r requirements.txt

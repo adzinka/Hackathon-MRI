@@ -13,3 +13,5 @@ real_data/
 *.SDAT
 *.SPAR
 *.7
+# local backups of earlier page versions
+docs/old/

@@ -6,7 +6,7 @@ git clone <repo-url> twin-evidence && cd twin-evidence
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 # the StarterPack is NOT in the repo: unzip MRI_Hackathon_DataScience_StarterPack_v0.3 next to this folder
-STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 69 tests must pass
+STARTERPACK=../MRI_Hackathon_DataScience_StarterPack_v0.3 pytest -q     # 88 tests must pass
 streamlit run app.py
 ```
 
@@ -31,7 +31,7 @@ streamlit run app.py
 | `twin_evidence/longitudinal.py` | weekly phantom + brain sessions on a failing scanner: the full chain | Metrology / DT |
 | `scripts/generate_scenarios.py` | builds `scenario_data/` (≈ 7 min) | all |
 | `scripts/export_scanner_data.py` | builds `scanner_data/` for the scanner experts | Metrology |
-| `docs/` | team briefing and pitch showcase pages | pitch |
+| `docs/` | team briefing, showcase and pitch deck pages | pitch |
 | `CHECKPOINTS.md` | the plan: what must be true after each working hour | all |
 
 ## Data contract (ScanTwin catalogue v1.1)
@@ -53,3 +53,5 @@ reload changed modules in `twin_evidence/`.
 - Every invented number is labelled `SIMULATED` in data, UI and slides.
 - After changing `scanner.py`, rerun `python scripts/export_scanner_data.py ../MRI_Hackathon_DataScience_StarterPack_v0.3`.
 - `docs/showcase.html` is built from `docs/showcase_src.html` + brain meshes; edit the source.
+- `docs/story.html` (the pitch deck) is built by `python scripts/build_story.py` from `docs/story_src.html` +
+  `docs/story_assets/`; edit the source.
