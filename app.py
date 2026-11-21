@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import json
 import math
+import os
 from pathlib import Path
 
 import numpy as np
@@ -68,16 +69,53 @@ def fmt(v, obs):
     return f"{v:,.0f}".replace(",", " ") if obs == "roi_volume" else f"{v:.3f}"
 
 
+PACK = "MRI_Hackathon_DataScience_StarterPack_v0.3"
+HERE = Path(__file__).resolve().parent
+
+
+def find_pack(raw: str) -> Path | None:
+    """The StarterPack folder from the typed path (quotes, the zip's nested folder and the launch folder don't matter);
+    empty -> $STARTERPACK, then next to the repo, then the working directory."""
+    raw = raw.strip().strip('"').strip("'")
+    bases = [Path(raw).expanduser()] if raw else []
+    if raw and not Path(raw).is_absolute():
+        bases.append(HERE / raw)
+    if not raw:
+        bases += [Path(p) for p in [os.environ.get("STARTERPACK")] if p] + [HERE.parent / PACK, HERE / PACK, Path.cwd() / PACK]
+    for b in bases:
+        for c in (b, b / PACK):
+            if (c / "05_TwinReady_JSON_CSV").is_dir():
+                return c.resolve()
+    return None
+
+
 # ---------- sidebar ----------
 st.sidebar.title("ScanTwin")
-with st.sidebar.expander("⚙️ Settings"):
-    root = st.text_input("StarterPack v0.3 folder", "../MRI_Hackathon_DataScience_StarterPack_v0.3")
-if not (Path(root) / "05_TwinReady_JSON_CSV").exists():
-    st.error(f"StarterPack not found at `{root}`. Set the path in the sidebar.")
+with st.sidebar.expander("⚙️ Settings", expanded=find_pack("") is None):
+    typed = st.text_input("StarterPack v0.3 folder", "", placeholder="found automatically; or paste the folder path",
+                          help=f"The unzipped {PACK} folder (the one that contains 05_TwinReady_JSON_CSV).")
+    found = find_pack(typed)
+    if found:
+        st.caption(f"Using `{found}`")
+if found is None:
+    st.error(f"StarterPack not found{f' at `{typed}`' if typed.strip() else ''}. Unzip {PACK}.zip next to the "
+             f"repository (`{HERE.parent}`) or paste the path of the unzipped folder in ⚙️ Settings. "
+             "It must contain `05_TwinReady_JSON_CSV`.")
     st.stop()
+root = str(found)
 thresholds, schema, manifest, PK = load_pack(str(Path(root).resolve()))
 
-mode = st.sidebar.radio("Page", ["🔎 Check a scan", "🧪 Hackathon lab"], index=0, key="mode",
+# deep link from the pitch deck (slide 4.1): ?demo=machine | caution opens the November choline packet
+# in the Hackathon lab with the matching scanner state; applied once per session so the sidebar stays usable
+DEMO_SCANNER = {"machine": "shim_degrading", "caution": "stable"}
+demo = st.query_params.get("demo")
+if demo in DEMO_SCANNER and st.session_state.get("_demo_applied") != demo:
+    st.session_state.update(mode="🧪 Hackathon lab", packet=f"E-t1-cho  ·  {PK['E-t1-cho']['observable']}",
+                            scanner=DEMO_SCANNER[demo], _demo_applied=demo)
+st.session_state.setdefault("mode", "🔎 Check a scan")
+st.session_state.setdefault("scanner", "shim_degrading")
+
+mode = st.sidebar.radio("Page", ["🔎 Check a scan", "🧪 Hackathon lab"], key="mode",
                         help="Check a scan: upload a spectrum or packet and get a verdict. "
                              "Hackathon lab: the worked StarterPack example, scanner twin and fault scenarios.")
 if mode.startswith("🔎"):
@@ -95,7 +133,9 @@ if uploaded is not None:
         choices = {f"⬆ {up.get('packet_id', 'uploaded')}  ·  {up.get('observable')}": up, **choices}
     except json.JSONDecodeError as e:
         st.sidebar.error(f"Not valid JSON: {e}")
-label = st.sidebar.radio("Follow-up packet to judge", list(choices))
+if st.session_state.get("packet") not in choices:
+    st.session_state.pop("packet", None)
+label = st.sidebar.radio("Follow-up packet to judge", list(choices), key="packet")
 packet = choices[label]
 
 st.sidebar.markdown("**Declared team policy**")
@@ -106,7 +146,7 @@ st.sidebar.markdown("**Scanner twin** (SIMULATED weekly phantom record)")
 from twin_evidence import longitudinal as LNG
 from twin_evidence.scanner_link import ScannerRecord, attribution, CLASS_TEXT
 SCANNER_CHOICES = ["none"] + list(LNG.FAULTS)
-scanner_choice = st.sidebar.radio("State of the scanner from week 14 to 26", SCANNER_CHOICES, index=1,
+scanner_choice = st.sidebar.radio("State of the scanner from week 14 to 26", SCANNER_CHOICES, key="scanner",
                                   format_func=lambda k: "no scanner twin (Gate 1 reference)" if k == "none" else LNG.FAULTS[k]["title"])
 
 
